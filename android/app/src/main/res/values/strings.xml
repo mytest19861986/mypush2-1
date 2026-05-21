@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">پیشگام سلامت</string>
+    <string name="title_activity_main">پیشگام سلامت</string>
+    <string name="package_name">ir.pishegamsalamat.app</string>
+    <string name="custom_url_scheme">ir.pishegamsalamat.app</string>
+</resources>

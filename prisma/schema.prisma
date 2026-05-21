@@ -1,0 +1,425 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// Users & Authentication
+// ============================================
+
+model User {
+  id               String    @id @default(cuid())
+  mobile           String    @unique
+  email            String?   @unique
+  password         String?
+  status           String    @default("ACTIVE") // ACTIVE, INACTIVE, BLOCKED
+  isMobileVerified Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
+
+  // Relations
+  profile            UserProfile?
+  roles              UserRole[]
+  agent              Agent?
+  doctor             Doctor?
+  uploads            Upload[]
+  refreshTokens      RefreshToken[]
+  devices            UserDevice[]
+  loginLogs          LoginLog[]
+  auditLogs          AuditLog[]
+  agentReviews       AgentDocument[] @relation("DocumentReviewer")
+  userPlans          UserPlan[]
+  referredBy         UserPlan[]       @relation("Referrer")
+  contracts          Contract[]
+  commissions        Commission[]
+  transactions       Transaction[]
+
+  @@index([mobile])
+  @@index([status])
+}
+
+model UserProfile {
+  id           String    @id @default(cuid())
+  userId       String    @unique
+  firstName    String?   @default("")
+  lastName     String?   @default("")
+  nationalCode String?   @unique
+  avatar       String?
+  birthDate    DateTime?
+  gender       String?   // MALE, FEMALE
+  address      String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// Roles & Permissions (RBAC)
+// ============================================
+
+model Role {
+  id           String    @id @default(cuid())
+  name         String    @unique // SUPER_ADMIN, ADMIN, SUPPORT, AGENT, USER, DOCTOR
+  title        String    // عنوان فارسی
+  description  String?   @default("")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+}
+
+model Permission {
+  id        String  @id @default(cuid())
+  name      String  @unique // manage_users, view_reports, etc.
+  module    String  // users, agents, doctors, reports, plans, contracts
+  title     String? // عنوان فارسی
+  createdAt DateTime @default(now())
+
+  rolePermissions RolePermission[]
+}
+
+model UserRole {
+  id         String   @id @default(cuid())
+  userId     String
+  roleId     String
+  assignedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+}
+
+model RolePermission {
+  id           String   @id @default(cuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+}
+
+// ============================================
+// Doctors (پزشکان)
+// ============================================
+
+model Doctor {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  medicalCode   String?   @unique  // کد نظام پزشکی
+  specialty     String?   // تخصص
+  clinicName    String?   // نام مطب
+  clinicAddress String?   // آدرس مطب
+  city          String?   // شهر
+  province      String?   // استان
+  phone         String?   // تلفن مطب
+  bio           String?   // بیوگرافی
+  discountPercent Int     @default(0) // درصد تخفیف ویزیت (توسط مدیر — ۰ = استفاده از طرح بیمار)
+  status        String    @default("PENDING") // PENDING, APPROVED, REJECTED, SUSPENDED
+  verifiedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contracts Contract[]
+
+  @@index([status])
+  @@index([specialty])
+}
+
+// ============================================
+// Discount Plans (طرح‌های تخفیف)
+// ============================================
+
+model DiscountPlan {
+  id          String    @id @default(cuid())
+  name        String    // نام طرح
+  description String?   // توضیحات
+  price       Int       @default(0)     // قیمت (تومان)
+  discountPercent Int   @default(0)     // درصد تخفیف
+  durationDays Int      @default(30)    // مدت طرح (روز)
+  maxUses     Int       @default(-1)    // حداکثر دفعات استفاده (-1 = نامحدود)
+  status      String    @default("ACTIVE") // ACTIVE, INACTIVE
+  features    String?   // ویژگی‌های طرح (JSON array)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  userPlans UserPlan[]
+
+  @@index([status])
+}
+
+// ============================================
+// User Plans (طرح‌های خریداری شده توسط کاربران)
+// ============================================
+
+model UserPlan {
+  id             String    @id @default(cuid())
+  userId         String
+  planId         String
+  referrerId     String?   // نماینده‌ای که معرفی کرده
+  status         String    @default("ACTIVE") // ACTIVE, EXPIRED, CANCELLED
+  startDate      DateTime  @default(now())
+  endDate        DateTime
+  remainingUses  Int       @default(-1)  // دفعات باقی‌مانده (-1 = نامحدود)
+  totalUses      Int       @default(0)
+  paymentRef     String?   // reference ID for payment
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan     DiscountPlan  @relation(fields: [planId], references: [id])
+  referrer   User?         @relation("Referrer", fields: [referrerId], references: [id])
+  contracts  Contract[]
+  commissions Commission[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([endDate])
+}
+
+// ============================================
+// Contracts (قراردادها / ویزیت‌ها)
+// ============================================
+
+model Contract {
+  id              String    @id @default(cuid())
+  userId          String
+  userPlanId      String
+  doctorId        String
+  patientNote     String?   // توضیحات بیمار
+  doctorNote      String?   // گزارش پزشک
+  diagnosis       String?   // تشخیص
+  prescriptions   String?   // نسخه (JSON)
+  discountAmount  Int       @default(0)    // مبلغ تخفیف (تومان)
+  totalAmount     Int       @default(0)    // مبلغ کل (تومان)
+  status          String    @default("PENDING") // PENDING, CONFIRMED, COMPLETED, CANCELLED
+  confirmedAt     DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userPlan UserPlan    @relation(fields: [userPlanId], references: [id])
+  doctor   Doctor      @relation(fields: [doctorId], references: [id])
+
+  @@index([userId])
+  @@index([userPlanId])
+  @@index([doctorId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================
+// Agents (نمایندگان)
+// ============================================
+
+model Agent {
+  id           String    @id @default(cuid())
+  userId       String    @unique
+  businessName String?
+  status       String    @default("PENDING") // PENDING, UNDER_REVIEW, APPROVED, REJECTED, SUSPENDED
+  score        Float     @default(0)
+  description  String?
+  verifiedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents  AgentDocument[]
+
+  @@index([status])
+}
+
+model AgentDocument {
+  id         String    @id @default(cuid())
+  agentId    String
+  type       String    // NATIONAL_CARD, BUSINESS_LICENSE, CERTIFICATE, OTHER
+  file       String    // path to file
+  status     String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  reviewedBy String?
+  reviewedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  agent   Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  reviewer User? @relation("DocumentReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([agentId])
+  @@index([status])
+}
+
+// ============================================
+// Commissions (پورسانت‌ها)
+// ============================================
+
+model Commission {
+  id            String    @id @default(cuid())
+  agentId       String    // کاربر نماینده
+  userPlanId    String    // طرح خریداری شده
+  amount        Int       @default(0)     // مبلغ پورسانت (تومان)
+  percent       Int       @default(0)     // درصد پورسانت
+  status        String    @default("PENDING") // PENDING, APPROVED, PAID, CANCELLED
+  paidAt        DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  agent   User     @relation(fields: [agentId], references: [id])
+  userPlan UserPlan @relation(fields: [userPlanId], references: [id])
+
+  @@index([agentId])
+  @@index([status])
+}
+
+// ============================================
+// Transactions (تراکنش‌ها)
+// ============================================
+
+model Transaction {
+  id          String    @id @default(cuid())
+  userId      String
+  type        String    // PURCHASE, COMMISSION_PAYOUT, REFUND
+  amount      Int       @default(0)     // مبلغ (تومان)
+  description String?
+  status      String    @default("SUCCESS") // SUCCESS, FAILED, PENDING
+  refId       String?   // reference ID
+  createdAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+// ============================================
+// Page Content (محتوای صفحات عمومی)
+// ============================================
+
+model PageContent {
+  id        String   @id @default(cuid())
+  slug      String   @unique  // about, terms, privacy, contact, faq
+  title     String
+  content   String   @default("")
+  status    String   @default("PUBLISHED") // DRAFT, PUBLISHED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+}
+
+// ============================================
+// Uploads
+// ============================================
+
+model Upload {
+  id        String   @id @default(cuid())
+  userId    String
+  path      String
+  type      String   // AVATAR, DOCUMENT, GENERAL
+  size      Int      @default(0)
+  mimeType  String   @default("")
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ============================================
+// Authentication Tokens & Sessions
+// ============================================
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  device    String?
+  ip        String?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+model UserDevice {
+  id          String   @id @default(cuid())
+  userId      String
+  deviceId    String
+  deviceName  String?
+  ip          String?
+  lastLoginAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceId])
+}
+
+model LoginLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  mobile    String?
+  ip        String?
+  device    String?
+  status    String   // SUCCESS, FAILED
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ============================================
+// OTP Codes (stored in DB for persistence)
+// ============================================
+
+model OtpCode {
+  id            String   @id @default(cuid())
+  mobile        String
+  code          String
+  verifyAttempts Int     @default(0)
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+
+  @@index([mobile])
+  @@index([expiresAt])
+}
+
+// ============================================
+// Audit Logs
+// ============================================
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String   // USER_LOGIN, PLAN_PURCHASED, CONTRACT_CREATED, etc.
+  entity    String?  // User, Agent, Doctor, Plan, Contract, etc.
+  entityId  String?
+  details   String?  // JSON string for additional context
+  ip        String?
+  device    String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([entity])
+  @@index([createdAt])
+}
