@@ -1,0 +1,9 @@
+import { useAuthStore } from '@/stores/auth-store'
+
+const handleLogout = () => {
+  useAuthStore.getState().logout()
+  window.location.href = '/login'
+}
+
+// در JSX:
+<Button variant="destructive" onClick={handleLogout}>خروج</Button>

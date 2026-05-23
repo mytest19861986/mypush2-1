@@ -37,6 +37,8 @@ import { doctorsService } from '@/services'
 import type { DoctorItem } from '@/types'
 import { toPersianNum, getDisplayName, formatDate } from '@/utils/formatters'
 import { DOCTOR_STATUS_LABELS } from '@/constants'
+import { useAuthStore } from '@/stores/auth-store' // اضافه کنید اگر قبلاً اضافه نشده
+import { useRouter } from 'next/navigation'
 
 /* ── Specialty filter options ─────────────────────────────── */
 
@@ -59,6 +61,7 @@ const SPECIALTY_FILTERS = [
 
 export default function AdminDoctorsPage() {
   const { toast } = useToast()
+  const router = useRouter()
   const [doctors, setDoctors] = useState<DoctorItem[]>([])
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
@@ -73,6 +76,7 @@ export default function AdminDoctorsPage() {
   const [detailError, setDetailError] = useState<string | null>(null)
   const [discountInput, setDiscountInput] = useState('0')
   const [savingDiscount, setSavingDiscount] = useState(false)
+  const { logout } = useAuthStore()
 
   const fetchDoctors = useCallback(async () => {
     setIsLoading(true)
@@ -185,8 +189,23 @@ export default function AdminDoctorsPage() {
     }
   }
 
+  const handleLogout = async () => {
+    await logout()
+    window.location.href = '/auth/login'
+  }
+
   return (
     <div className="space-y-6">
+      {/* دکمه خروج واضح */}
+      <div className="flex justify-end">
+        <Button
+          variant="destructive"
+          onClick={handleLogout}
+          className="mb-2"
+        >
+          خروج
+        </Button>
+      </div>
       <PageHeader
         title="مدیریت پزشکان"
         description={
@@ -243,7 +262,7 @@ export default function AdminDoctorsPage() {
               doctors.map((doctor) => (
                 <tr key={doctor.id} className="border-b hover:bg-muted/30 group transition-colors">
                   <td className="px-4 py-3 text-sm font-medium">
-                    {getDisplayName(doctor.user)}
+                    {doctor.user?.profile?.firstName || ''} {doctor.user?.profile?.lastName || ''}
                   </td>
                   <td className="px-4 py-3 text-sm">
                     {doctor.specialty || '—'}

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,10 +29,9 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { useToast } from '@/hooks/use-toast'
-import { PageHeader, SearchFilterBar, DataTable, StatusBadge } from '@/components/shared'
+import { PageHeader, SearchFilterBar, StatusBadge } from '@/components/shared'
 import { usersService } from '@/services'
 import type { UserItem } from '@/types'
-import type { Column } from '@/components/shared'
 import { toPersianNum, formatDate, getDisplayName } from '@/utils/formatters'
 import { USER_STATUS_LABELS } from '@/constants'
 
@@ -123,64 +123,6 @@ export default function AdminUsersPage() {
     }
   }
 
-  const columns: Column<UserItem>[] = [
-    {
-      key: 'mobile',
-      header: 'موبایل',
-      render: (row) => (
-        <span className="font-mono text-sm">{row.mobile}</span>
-      ),
-    },
-    {
-      key: 'profile',
-      header: 'نام',
-      render: (row) => {
-        const name = getDisplayName(row as unknown as { profile: { firstName: string | null; lastName: string | null } | null; mobile: string })
-        return <span className="font-medium">{name !== 'کاربر' ? name : '—'}</span>
-      },
-    },
-    {
-      key: 'email',
-      header: 'ایمیل',
-      hiddenOn: 'md',
-      render: (row) => (
-        <span className="max-w-[180px] truncate text-sm text-muted-foreground">
-          {row.email || '—'}
-        </span>
-      ),
-    },
-    {
-      key: 'status',
-      header: 'وضعیت',
-      render: (row) => <StatusBadge status={row.status} />,
-    },
-    {
-      key: 'roles',
-      header: 'نقش‌ها',
-      hiddenOn: 'lg',
-      render: (row) => (
-        <div className="flex flex-wrap gap-1">
-          {row.roles.map((role) => (
-            <Badge key={role.id} variant="outline" className="text-xs">
-              {role.title}
-            </Badge>
-          ))}
-          {row.roles.length === 0 && (
-            <span className="text-xs text-muted-foreground">بدون نقش</span>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: 'createdAt',
-      header: 'تاریخ',
-      hiddenOn: 'sm',
-      render: (row) => (
-        <span className="text-sm text-muted-foreground">{formatDate(row.createdAt)}</span>
-      ),
-    },
-  ]
-
   return (
     <div className="space-y-6">
       <PageHeader
@@ -210,63 +152,100 @@ export default function AdminUsersPage() {
         }}
       />
 
-      <DataTable<UserItem>
-        columns={columns}
-        data={users}
-        isLoading={isLoading}
-        emptyMessage="کاربری یافت نشد"
-        page={page}
-        totalPages={totalPages}
-        total={total}
-        onPageChange={setPage}
-        rowKey={(row) => row.id}
-        actions={(row) => (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <MoreHorizontal className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => handleStatusChange(row.id, 'ACTIVE')}
-                disabled={changingId === row.id || row.status === 'ACTIVE'}
-              >
-                <UserCheck className="ml-2 size-4 text-emerald-600" />
-                فعال‌سازی
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleStatusChange(row.id, 'INACTIVE')}
-                disabled={changingId === row.id || row.status === 'INACTIVE'}
-              >
-                <UserX className="ml-2 size-4 text-amber-600" />
-                غیرفعال‌سازی
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleStatusChange(row.id, 'BLOCKED')}
-                disabled={changingId === row.id || row.status === 'BLOCKED'}
-              >
-                <Ban className="ml-2 size-4 text-red-600" />
-                مسدود کردن
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() => setDeleteTarget(row)}
-              >
-                <Trash2 className="ml-2 size-4" />
-                حذف
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      />
+      <div className="rounded-lg border overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-muted/50 border-b">
+            <tr>
+              <th className="px-4 py-3 text-right font-semibold text-sm">موبایل</th>
+              <th className="px-4 py-3 text-right font-semibold text-sm">نام</th>
+              <th className="px-4 py-3 text-right font-semibold text-sm">ایمیل</th>
+              <th className="px-4 py-3 text-right font-semibold text-sm">وضعیت</th>
+              <th className="px-4 py-3 text-right font-semibold text-sm">نقش‌ها</th>
+              <th className="px-4 py-3 text-right font-semibold text-sm">تاریخ</th>
+              <th className="px-4 py-3 text-right font-semibold text-sm">عملیات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <tr key={i} className="border-b hover:bg-muted/30">
+                  <td colSpan={7} className="px-4 py-3">
+                    <Skeleton className="h-6 w-full" />
+                  </td>
+                </tr>
+              ))
+            ) : users.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                  کاربری یافت نشد
+                </td>
+              </tr>
+            ) : (
+              users.map((user) => (
+                <tr key={user.id} className="border-b hover:bg-muted/30 group transition-colors">
+                  <td className="px-4 py-3 font-mono text-sm">{user.mobile}</td>
+                  <td className="px-4 py-3 font-medium text-sm">{getDisplayName(user)}</td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">{user.email || '—'}</td>
+                  <td className="px-4 py-3 text-sm"><StatusBadge status={user.status} /></td>
+                  <td className="px-4 py-3 text-sm">
+                    <div className="flex flex-wrap gap-1">
+                      <Badge variant="outline" className="text-xs">
+                        کاربر عادی
+                      </Badge>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">{formatDate(user.createdAt)}</td>
+                  <td className="px-4 py-3 text-sm">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <MoreHorizontal className="size-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => handleStatusChange(user.id, 'ACTIVE')}
+                          disabled={changingId === user.id || user.status === 'ACTIVE'}
+                        >
+                          <UserCheck className="ml-2 size-4 text-emerald-600" />
+                          فعال‌سازی
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleStatusChange(user.id, 'INACTIVE')}
+                          disabled={changingId === user.id || user.status === 'INACTIVE'}
+                        >
+                          <UserX className="ml-2 size-4 text-amber-600" />
+                          غیرفعال‌سازی
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleStatusChange(user.id, 'BLOCKED')}
+                          disabled={changingId === user.id || user.status === 'BLOCKED'}
+                        >
+                          <Ban className="ml-2 size-4 text-red-600" />
+                          مسدود کردن
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => setDeleteTarget(user)}
+                        >
+                          <Trash2 className="ml-2 size-4" />
+                          حذف
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
 
-      {/* Delete confirmation */}
       <AlertDialog
         open={!!deleteTarget}
         onOpenChange={() => setDeleteTarget(null)}

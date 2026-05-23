@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '@/stores/auth-store'
 import { ErrorBoundary, ThemeToggle } from '@/components/shared'
+import ProvinceCitySelector from '@/components/shared/province-city-selector'
 import { toPersianNum, formatPrice } from '@/utils/formatters'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -42,7 +43,7 @@ const fadeInUp = {
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: i * 0.1, duration: 0.5, ease: 'easeOut' },
+    transition: { delay: i * 0.1, duration: 0.5 },
   }),
 }
 
@@ -158,8 +159,17 @@ const footerLinks = [
 
 export default function Home() {
   const router = useRouter()
-  const { user, isAuthenticated, isLoading, initialize } = useAuthStore()
+  const { user, isAuthenticated, isLoading, initialize, logout } = useAuthStore()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  const isUserRegisteredAsDoctorOrAgent = () => {
+    return user?.roles?.includes('DOCTOR') || user?.roles?.includes('AGENT');
+  };
+
+const handleLogout = async () => {
+  await logout();
+  window.location.href = '/';
+}
 
   useEffect(() => {
     initialize()
@@ -182,16 +192,24 @@ export default function Home() {
 
   const userRole = user?.roles?.[0] || null
 
-  // Role-based dashboard redirect
-  const getDashboardPath = () => {
+  // Province and City Selector
+  const handleLocationChange = ({ province, city }) => {
+    console.log('Selected Location:', province, city);
+  };
+  
+const getDashboardPath = () => {
     if (user?.roles?.includes('SUPER_ADMIN') || user?.roles?.includes('ADMIN')) return '/admin/dashboard'
+    // Restrict user management panel to only normal users by redirecting others away
     if (user?.roles?.includes('DOCTOR')) return '/doctor/dashboard'
     if (user?.roles?.includes('AGENT')) return '/agent/dashboard'
-    return '/user/dashboard'
+    if (user?.roles?.includes('NORMAL_USER')) return '/user/dashboard'
+    // If user role is not normal user, redirect to home or no access page
+    return '/no-access'
   }
 
   return (
     <div dir="rtl" className="min-h-screen flex flex-col bg-background">
+      
       {/* ═══════════ 1. STICKY NAVBAR ═══════════ */}
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-gray-950/80 backdrop-blur-lg border-b/50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -277,21 +295,17 @@ export default function Home() {
             <HeartPulse className="h-7 w-7 text-primary" />
             <span className="font-bold text-lg text-foreground">حامی کارت</span>
           </div>
+          
 
           {/* Center: Nav links (desktop) */}
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
             <a href="#home" className="hover:text-primary transition-colors">خانه</a>
             <a href="#plans" className="hover:text-primary transition-colors">طرح‌ها</a>
-            <a href="#doctors" className="hover:text-primary transition-colors">درباره ما</a>
-            <a href="#faq" className="hover:text-primary transition-colors">سوالات متداول</a>
-            <a href="/register/doctor" className="hover:text-primary transition-colors text-emerald-700 font-semibold">ثبت‌نام پزشک</a>
-            <a href="/register/agent" className="hover:text-primary transition-colors text-emerald-700 font-semibold">ثبت‌نام نماینده</a>
           </nav>
 
           {/* Left: Auth + Register buttons (desktop) */}
           <div className="hidden md:flex items-center gap-2">
             <ThemeToggle />
-
             {isAuthenticated && displayName ? (
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
@@ -314,6 +328,37 @@ export default function Home() {
                   پنل کاربری
                   <ArrowLeft className="h-4 w-4 mr-1" />
                 </Button>
+                {/* Logout button */}
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="ml-2"
+                  onClick={handleLogout}
+                >
+                  خروج
+                </Button>
+                {!isUserRegisteredAsDoctorOrAgent() && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-emerald-700 border-emerald-300 hover:bg-emerald-50 ml-2"
+                      onClick={() => router.push('/register/doctor')}
+                    >
+                      <Stethoscope className="h-4 w-4 ml-1" />
+                      ثبت‌نام پزشک
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                      onClick={() => router.push('/register/agent')}
+                    >
+                      <Briefcase className="h-4 w-4 ml-1" />
+                      ثبت‌نام نماینده
+                    </Button>
+                  </>
+                )}
               </div>
             ) : (
               <>
@@ -336,34 +381,13 @@ export default function Home() {
                   ثبت‌نام نماینده
                 </Button>
                 <Button
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                  size="sm"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs px-3"
                   onClick={() => router.push('/auth/login')}
                 >
                   ورود / ثبت‌نام
                 </Button>
               </>
-            )}
-          </div>
-
-          {/* Mobile: only login button + theme toggle */}
-          <div className="flex md:hidden items-center gap-2">
-            <ThemeToggle />
-            {isAuthenticated ? (
-              <Button
-                size="sm"
-                className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs px-3"
-                onClick={() => router.push(getDashboardPath())}
-              >
-                پنل
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs px-3"
-                onClick={() => router.push('/auth/login')}
-              >
-                ورود
-              </Button>
             )}
           </div>
         </div>
@@ -420,11 +444,11 @@ export default function Home() {
                   </Button>
                   <Button
                     size="lg"
-                    variant="outline"
-                    className="border-white/40 text-white hover:bg-white/10 px-8 h-12"
+                    className="bg-white text-emerald-700 hover:bg-emerald-50 font-semibold px-8 h-12"
                     onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
                   >
                     اطلاعات بیشتر
+                    <ArrowLeft className="h-4 w-4 mr-2" />
                   </Button>
                 </motion.div>
               </motion.div>
@@ -609,7 +633,7 @@ export default function Home() {
                     شبکه گسترده‌ای از بهترین پزشکان متخصص در سراسر کشور آماده ارائه خدمات درمانی با کیفیت بالا و تخفیف ویژه به شما هستند.
                   </motion.p>
                   <motion.div variants={fadeInUp} custom={2} className="flex flex-wrap gap-4 mb-8">
-                    {[
+                    {[ 
                       { icon: Shield, label: 'پزشکان معتمد' },
                       { icon: Award, label: 'برترین تخصص‌ها' },
                       { icon: Clock, label: 'نوبت‌دهی آسان' },
@@ -821,21 +845,27 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Column 2: Useful Links */}
-            {footerLinks.map((col) => (
-              <div key={col.title}>
-                <h3 className="font-semibold mb-4 text-sm">{col.title}</h3>
-                <ul className="space-y-2.5">
-                  {col.items.map((item) => (
-                    <li key={item}>
-                      <a href="#" className="text-sm text-background/60 hover:text-primary transition-colors">
-                        {item}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            {/* Column 2: Useful Links + About/FAQ */}
+            <div>
+              <h3 className="font-semibold mb-4 text-sm">لینک‌های مفید</h3>
+              <ul className="space-y-2.5">
+                <li>
+                  <a href="#doctors" className="text-sm text-background/60 hover:text-primary transition-colors">درباره ما</a>
+                </li>
+                <li>
+                  <a href="#faq" className="text-sm text-background/60 hover:text-primary transition-colors">سوالات متداول</a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-background/60 hover:text-primary transition-colors">قوانین و مقررات</a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-background/60 hover:text-primary transition-colors">حریم خصوصی</a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-background/60 hover:text-primary transition-colors">شرایط استفاده</a>
+                </li>
+              </ul>
+            </div>
 
             {/* Column 3: Contact */}
             <div>

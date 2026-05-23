@@ -28,10 +28,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
-import { PageHeader, SearchFilterBar, DataTable, StatusBadge } from '@/components/shared'
+import { PageHeader, SearchFilterBar, StatusBadge } from '@/components/shared'
 import { agentsService } from '@/services'
 import type { AgentItem } from '@/types'
-import type { Column } from '@/components/shared'
 import { toPersianNum, getDisplayName, formatDate } from '@/utils/formatters'
 import { AGENT_STATUS_LABELS, DOCUMENT_TYPE_LABELS, DOCUMENT_STATUS_LABELS } from '@/constants'
 
@@ -136,60 +135,7 @@ export default function AdminAgentsPage() {
     }
   }
 
-  const columns: Column<AgentItem>[] = [
-    {
-      key: 'name',
-      header: 'نام',
-      render: (row) => (
-        <span className="font-medium">
-          {getDisplayName(row.user)}
-        </span>
-      ),
-    },
-    {
-      key: 'mobile',
-      header: 'موبایل',
-      render: (row) => (
-        <span className="font-mono text-sm">{row.user?.mobile || '—'}</span>
-      ),
-    },
-    {
-      key: 'businessName',
-      header: 'کسب‌وکار',
-      hiddenOn: 'md',
-      render: (row) => (
-        <span className="max-w-[180px] truncate text-sm text-muted-foreground">
-          {row.businessName || '—'}
-        </span>
-      ),
-    },
-    {
-      key: 'status',
-      header: 'وضعیت',
-      render: (row) => <StatusBadge status={row.status} />,
-    },
-    {
-      key: 'documents',
-      header: 'مدارک',
-      hiddenOn: 'sm',
-      render: (row) => (
-        <Badge variant="outline">
-          <FileSearch className="ml-1 size-3" />
-          {toPersianNum(row.documentCount ?? row.documents?.length ?? 0)}
-        </Badge>
-      ),
-    },
-    {
-      key: 'createdAt',
-      header: 'تاریخ',
-      hiddenOn: 'lg',
-      render: (row) => (
-        <span className="text-sm text-muted-foreground">
-          {formatDate(row.createdAt)}
-        </span>
-      ),
-    },
-  ]
+  // ...existing code...
 
   return (
     <div className="space-y-6">
@@ -215,64 +161,103 @@ export default function AdminAgentsPage() {
         }}
       />
 
-      <DataTable<AgentItem>
-        columns={columns}
-        data={agents}
-        isLoading={isLoading}
-        emptyMessage="نماینده‌ای یافت نشد"
-        page={page}
-        totalPages={totalPages}
-        total={total}
-        onPageChange={setPage}
-        rowKey={(row) => row.id}
-        actions={(row) => (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <MoreHorizontal className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleViewDetail(row.id)}>
-                <Eye className="ml-2 size-4" />
-                مشاهده جزئیات
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              {row.status !== 'APPROVED' && (
-                <DropdownMenuItem
-                  onClick={() => handleStatusChange(row.id, 'APPROVED')}
-                  disabled={changingId === row.id}
-                >
-                  <CheckCircle className="ml-2 size-4 text-emerald-600" />
-                  تأیید
-                </DropdownMenuItem>
-              )}
-              {row.status !== 'REJECTED' && (
-                <DropdownMenuItem
-                  onClick={() => handleStatusChange(row.id, 'REJECTED')}
-                  disabled={changingId === row.id}
-                >
-                  <XCircle className="ml-2 size-4 text-red-600" />
-                  رد
-                </DropdownMenuItem>
-              )}
-              {row.status !== 'SUSPENDED' && (
-                <DropdownMenuItem
-                  onClick={() => handleStatusChange(row.id, 'SUSPENDED')}
-                  disabled={changingId === row.id}
-                >
-                  <Ban className="ml-2 size-4 text-orange-600" />
-                  تعلیق
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      />
+
+      {/* Manual Table */}
+      <div className="rounded-lg border overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-muted/50 border-b">
+            <tr>
+              <th className="px-4 py-3 text-right font-semibold text-sm">نام</th>
+              <th className="px-4 py-3 text-right font-semibold text-sm">موبایل</th>
+              <th className="px-4 py-3 text-right font-semibold text-sm">کسب‌وکار</th>
+              <th className="px-4 py-3 text-right font-semibold text-sm">وضعیت</th>
+              <th className="px-4 py-3 text-right font-semibold text-sm">مدارک</th>
+              <th className="px-4 py-3 text-right font-semibold text-sm">تاریخ</th>
+              <th className="px-4 py-3 text-right font-semibold text-sm">عملیات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <tr key={i} className="border-b hover:bg-muted/30">
+                  <td colSpan={7} className="px-4 py-3">
+                    <Skeleton className="h-6 w-full" />
+                  </td>
+                </tr>
+              ))
+            ) : agents.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                  نماینده‌ای یافت نشد
+                </td>
+              </tr>
+            ) : (
+              agents.map((agent) => (
+                <tr key={agent.id} className="border-b hover:bg-muted/30 group transition-colors">
+                  <td className="px-4 py-3 font-medium text-sm">{getDisplayName(agent.user)}</td>
+                  <td className="px-4 py-3 font-mono text-sm">{agent.user?.mobile || '—'}</td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">{agent.businessName || '—'}</td>
+                  <td className="px-4 py-3 text-sm"><StatusBadge status={agent.status} /></td>
+                  <td className="px-4 py-3 text-sm">
+                    <Badge variant="outline">
+                      <FileSearch className="ml-1 size-3" />
+                      {toPersianNum(agent.documentCount ?? agent.documents?.length ?? 0)}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">{formatDate(agent.createdAt)}</td>
+                  <td className="px-4 py-3 text-sm">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <MoreHorizontal className="size-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleViewDetail(agent.id)}>
+                          <Eye className="ml-2 size-4" />
+                          مشاهده جزئیات
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {agent.status !== 'APPROVED' && (
+                          <DropdownMenuItem
+                            onClick={() => handleStatusChange(agent.id, 'APPROVED')}
+                            disabled={changingId === agent.id}
+                          >
+                            <CheckCircle className="ml-2 size-4 text-emerald-600" />
+                            تأیید
+                          </DropdownMenuItem>
+                        )}
+                        {agent.status !== 'REJECTED' && (
+                          <DropdownMenuItem
+                            onClick={() => handleStatusChange(agent.id, 'REJECTED')}
+                            disabled={changingId === agent.id}
+                          >
+                            <XCircle className="ml-2 size-4 text-red-600" />
+                            رد
+                          </DropdownMenuItem>
+                        )}
+                        {agent.status !== 'SUSPENDED' && (
+                          <DropdownMenuItem
+                            onClick={() => handleStatusChange(agent.id, 'SUSPENDED')}
+                            disabled={changingId === agent.id}
+                          >
+                            <Ban className="ml-2 size-4 text-orange-600" />
+                            تعلیق
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {/* Agent detail dialog */}
       <Dialog

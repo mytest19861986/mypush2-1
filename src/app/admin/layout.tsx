@@ -67,6 +67,7 @@ const navItems: NavItem[] = [
   { href: '/admin/doctors', label: 'پزشکان', icon: <Stethoscope className="size-5" /> },
   { href: '/admin/agents', label: 'نمایندگان', icon: <Briefcase className="size-5" /> },
   { href: '/admin/plans', label: 'طرح‌ها', icon: <CreditCard className="size-5" /> },
+  { href: '/admin/financial-management', label: 'مدیریت مالی', icon: <CreditCard className="size-5" /> },
   { href: '/admin/roles', label: 'نقش‌ها', icon: <Shield className="size-5" /> },
   { href: '/admin/permissions', label: 'دسترسی‌ها', icon: <Shield className="size-5" /> },
   { href: '/admin/audit-logs', label: 'گزارشات', icon: <BarChart3 className="size-5" /> },
