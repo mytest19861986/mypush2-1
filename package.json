@@ -52,6 +52,7 @@
     "@reactuses/core": "^6.0.5",
     "@tanstack/react-query": "^5.82.0",
     "@tanstack/react-table": "^8.21.3",
+    "axios": "^1.16.1",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -82,6 +83,9 @@
     "uuid": "^11.1.0",
     "vaul": "^1.1.2",
     "z-ai-web-dev-sdk": "^0.0.18",
+    "zarinpal-checkout": "^1.1.0",
+    "zarinpal-node-sdk": "^2.2.0",
+    "zarinpal-pay": "^3.0.0",
     "zod": "^4.0.2",
     "zustand": "^5.0.6"
   },
