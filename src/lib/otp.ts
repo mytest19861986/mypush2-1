@@ -1,6 +1,7 @@
 // OTP management using SQLite database for persistence.
 // Survives server restarts, HMR, and multi-process deployments.
 
+import { randomInt } from 'node:crypto'
 import { db } from './db'
 
 // Configuration
@@ -14,8 +15,8 @@ const RESEND_WINDOW_MS = 5 * 60 * 1000 // 5 minutes
  */
 export function generateOTP(): string {
   const min = 10000
-  const max = 99999
-  return String(Math.floor(Math.random() * (max - min + 1)) + min)
+  const max = 100000
+  return String(randomInt(min, max))
 }
 
 /**
