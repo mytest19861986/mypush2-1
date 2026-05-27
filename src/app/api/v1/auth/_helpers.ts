@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { generateAccessToken, generateRefreshToken } from '@/lib/jwt'
 import { getUserPermissions, getUserRoles } from '@/lib/permissions'
 import { createAuditLog, AuditActions } from '@/lib/audit'
+import { hashRefreshToken } from '@/lib/refresh-token'
 
 /**
  * Build the standard user response object with roles, permissions, and profile.
@@ -69,10 +70,12 @@ export async function generateAuthTokens(params: {
 
   // Store refresh token in DB (expires in 30 days)
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+  // TODO(security): Stop storing legacy raw refresh tokens after tokenHash migration is complete.
   await db.refreshToken.create({
     data: {
       userId,
       token: refreshToken,
+      tokenHash: hashRefreshToken(refreshToken),
       expiresAt,
       device: device ?? undefined,
       ip: ip ?? undefined,

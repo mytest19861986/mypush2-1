@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { successResponse, errorResponse } from '@/lib/api-response'
 import { db } from '@/lib/db'
+import { hashRefreshToken } from '@/lib/refresh-token'
 import { generateAuthTokens, getClientIp } from '../_helpers'
 
 // Zod schema for request body
@@ -27,9 +28,9 @@ export async function POST(request: NextRequest) {
     const { refreshToken } = parsed.data
     const ip = getClientIp(request)
 
-    // Find refresh token in database
-    const storedToken = await db.refreshToken.findUnique({
-      where: { token: refreshToken },
+    // Prefer hashed lookup, with raw-token fallback for legacy rows.
+    let storedToken = await db.refreshToken.findFirst({
+      where: { tokenHash: hashRefreshToken(refreshToken) },
       include: {
         user: {
           select: {
@@ -39,6 +40,20 @@ export async function POST(request: NextRequest) {
         },
       },
     })
+
+    if (!storedToken) {
+      storedToken = await db.refreshToken.findUnique({
+        where: { token: refreshToken },
+        include: {
+          user: {
+            select: {
+              id: true,
+              status: true,
+            },
+          },
+        },
+      })
+    }
 
     if (!storedToken) {
       return errorResponse('INVALID_TOKEN', 'توکن بازنشانی نامعتبر است', 401)
