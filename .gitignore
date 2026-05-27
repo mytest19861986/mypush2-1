@@ -71,3 +71,8 @@ server.log
 
 # Upload directory
 /upload/
+
+#db.dev
+prisma/prisma/dev.db
+prisma/prisma/dev.db-journal
+prisma/prisma/dev.db-wal
