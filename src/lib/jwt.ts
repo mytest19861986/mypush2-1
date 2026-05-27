@@ -1,11 +1,25 @@
 import { SignJWT, jwtVerify } from 'jose'
 
 // JWT configuration
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-change-in-production'
+const JWT_SECRET = getRequiredJwtSecret()
 
 // Token expiry durations
 const ACCESS_TOKEN_EXPIRY = '15m'
 const REFRESH_TOKEN_EXPIRY = '30d'
+
+function getRequiredJwtSecret(): string {
+  const secret = process.env.JWT_SECRET
+
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable is required')
+  }
+
+  if (secret.length < 32) {
+    throw new Error('JWT_SECRET must be at least 32 characters long')
+  }
+
+  return secret
+}
 
 function getSecret() {
   return new TextEncoder().encode(JWT_SECRET)
