@@ -286,7 +286,7 @@ const getDashboardPath = () => {
                       className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
                       onClick={() => { setMobileMenuOpen(false); router.push('/auth/login') }}
                     >
-                      ورود / ثبت‌نام
+                      ورود / ثبت‌ نام
                     </Button>
                   )}
                 </div>
@@ -540,7 +540,7 @@ const getDashboardPath = () => {
                 className="text-center mb-12"
               >
                 <motion.h2 variants={fadeInUp} custom={0} className="text-2xl md:text-3xl font-bold text-foreground mb-3">
-                  طرح‌های تخفیف
+                  طرح‌ها تخفیف
                 </motion.h2>
                 <motion.p variants={fadeInUp} custom={1} className="text-muted-foreground max-w-lg mx-auto">
                   طرح مناسب خود را انتخاب و از تخفیف ویژه خدمات درمانی بهره‌مند شوید
