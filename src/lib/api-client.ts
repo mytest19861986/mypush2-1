@@ -1,20 +1,5 @@
 import { useAuthStore } from '@/stores/auth-store'
-
-export interface ApiResponse<T = unknown> {
-  success: boolean
-  data?: T
-  message?: string
-  error?: {
-    code: string
-    message: string
-  }
-  pagination?: {
-    page: number
-    limit: number
-    total: number
-    totalPages: number
-  }
-}
+import type { ApiErrorBody, ApiResponse, PaginatedResponse } from '@/types'
 
 export class ApiError extends Error {
   code: string
@@ -153,27 +138,17 @@ class ApiClient {
 export const apiClient = new ApiClient()
 
 // Response type aliases
-export interface ApiSuccessResponse<T> {
+export type { ApiResponse, PaginatedResponse } from '@/types'
+
+export type ApiSuccessResponse<T> = {
   success: true
   data: T
   message?: string
 }
 
-export interface ApiPaginatedResponse<T> {
-  success: true
-  data: T[]
-  pagination: {
-    page: number
-    limit: number
-    total: number
-    totalPages: number
-  }
-}
+export type ApiPaginatedResponse<T> = PaginatedResponse<T>
 
-export interface ApiErrorResponse {
+export type ApiErrorResponse = {
   success: false
-  error: {
-    code: string
-    message: string
-  }
+  error: ApiErrorBody
 }

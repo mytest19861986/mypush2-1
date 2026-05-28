@@ -25,11 +25,11 @@ export interface ApiResponse<T = unknown> {
   success: boolean
   data?: T
   message?: string
-  error?: ApiError
+  error?: ApiErrorBody
   pagination?: PaginationMeta
 }
 
-export interface ApiError {
+export interface ApiErrorBody {
   code: string
   message: string
 }

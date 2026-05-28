@@ -1,4 +1,5 @@
-import { apiClient, ApiError, type ApiResponse, type PaginatedResponse } from '@/lib/api-client'
+import { apiClient, ApiError } from '@/lib/api-client'
+import type { ApiResponse } from '@/types'
 
 export class BaseService {
   protected client = apiClient

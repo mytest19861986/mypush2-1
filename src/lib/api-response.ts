@@ -1,4 +1,5 @@
 // Standard API response helpers for consistent API responses across the application.
+import type { ApiErrorBody, PaginationMeta, PaginatedResponse } from '@/types'
 
 interface SuccessResponse<T> {
   success: true
@@ -8,23 +9,7 @@ interface SuccessResponse<T> {
 
 interface ErrorResponse {
   success: false
-  error: {
-    code: string
-    message: string
-  }
-}
-
-interface PaginationMeta {
-  page: number
-  limit: number
-  total: number
-  totalPages: number
-}
-
-interface PaginatedResponse<T> {
-  success: true
-  data: T[]
-  pagination: PaginationMeta
+  error: ApiErrorBody
 }
 
 /**
@@ -60,7 +45,7 @@ export function errorResponse(
  */
 export function paginatedResponse<T>(
   data: T[],
-  pagination: { page: number; limit: number; total: number; totalPages: number }
+  pagination: PaginationMeta
 ): Response {
   return Response.json(
     { success: true, data, pagination } satisfies PaginatedResponse<T>
