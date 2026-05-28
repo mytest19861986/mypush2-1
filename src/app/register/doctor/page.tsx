@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
-import { useAuthStore } from '@/stores/auth-store'
+import { doctorsService } from '@/services/doctors.service'
+import { ApiError } from '@/lib/api-client'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -58,7 +59,6 @@ const fadeInUp = {
 
 export default function RegisterDoctorPage() {
   const router = useRouter()
-  const { user, accessToken } = useAuthStore()
 
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -88,25 +88,15 @@ export default function RegisterDoctorPage() {
 
     setLoading(true)
     try {
-      const res = await fetch('/api/v1/doctor/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify(form),
-      })
-
-      const data = await res.json()
-
-      if (res.ok && data.success) {
-        setSubmitted(true)
-        toast.success(data.message || 'درخواست ثبت‌نام پزشکی با موفقیت ثبت شد')
+      await doctorsService.register(form)
+      setSubmitted(true)
+      toast.success('درخواست ثبت‌نام پزشکی با موفقیت ثبت شد')
+    } catch (error) {
+      if (error instanceof ApiError) {
+        toast.error(error.message || 'خطا در ثبت درخواست')
       } else {
-        toast.error(data.error?.message || 'خطا در ثبت درخواست')
+        toast.error('خطای شبکه. لطفاً دوباره تلاش کنید')
       }
-    } catch {
-      toast.error('خطای شبکه. لطفاً دوباره تلاش کنید')
     } finally {
       setLoading(false)
     }
