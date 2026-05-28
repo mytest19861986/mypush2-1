@@ -51,6 +51,12 @@ class ApiClient {
     return json.data as T
   }
 
+  /**
+   * GET requests return the full API envelope.
+   *
+   * Consumers should check `response.success`, read `response.data`, and use
+   * `response.pagination` when present.
+   */
   async get<T = unknown>(path: string): Promise<ApiResponse<T>> {
     const res = await fetch(`${this.baseUrl}${path}`, {
       method: 'GET',
@@ -59,22 +65,48 @@ class ApiClient {
     return res.json()
   }
 
+  /**
+   * POST requests return only the response `data` payload.
+   *
+   * On non-2xx responses or `{ success: false }`, this throws `ApiError`.
+   */
   async post<T = unknown>(path: string, body?: unknown): Promise<T> {
     return this.request<T>('POST', path, body)
   }
 
+  /**
+   * PUT requests return only the response `data` payload.
+   *
+   * On non-2xx responses or `{ success: false }`, this throws `ApiError`.
+   */
   async put<T = unknown>(path: string, body?: unknown): Promise<T> {
     return this.request<T>('PUT', path, body)
   }
 
+  /**
+   * PATCH requests return only the response `data` payload.
+   *
+   * On non-2xx responses or `{ success: false }`, this throws `ApiError`.
+   */
   async patch<T = unknown>(path: string, body?: unknown): Promise<T> {
     return this.request<T>('PATCH', path, body)
   }
 
+  /**
+   * DELETE requests return only the response `data` payload.
+   *
+   * On non-2xx responses or `{ success: false }`, this throws `ApiError`.
+   */
   async delete<T = unknown>(path: string): Promise<T> {
     return this.request<T>('DELETE', path)
   }
 
+  /**
+   * Upload requests return the full API envelope.
+   *
+   * On non-2xx responses or `{ success: false }`, this throws `ApiError`.
+   * Consumers can check `response.success` and read `response.data`.
+   */
   async upload<T = unknown>(
     path: string,
     formData: FormData,
@@ -128,7 +160,10 @@ class ApiClient {
     })
   }
 
-  // TODO(deprecated): Do not pass auth tokens in URLs; prefer fetch with an Authorization header.
+  /**
+   * @deprecated Do not pass auth tokens in URLs. Prefer `fetch` with an
+   * Authorization header for downloads.
+   */
   getDownloadUrl(path: string): string {
     const token = useAuthStore.getState().accessToken
     return `${this.baseUrl}${path}${path.includes('?') ? '&' : '?'}token=${token}`
