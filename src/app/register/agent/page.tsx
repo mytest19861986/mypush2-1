@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
-import { useAuthStore } from '@/stores/auth-store'
+import { agentsService } from '@/services/agents.service'
+import { ApiError } from '@/lib/api-client'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,7 +30,6 @@ const fadeInUp = {
 
 export default function RegisterAgentPage() {
   const router = useRouter()
-  const { accessToken } = useAuthStore()
 
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -53,25 +53,15 @@ export default function RegisterAgentPage() {
 
     setLoading(true)
     try {
-      const res = await fetch('/api/v1/agents/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify(form),
-      })
-
-      const data = await res.json()
-
-      if (res.ok && data.success) {
-        setSubmitted(true)
-        toast.success('درخواست ثبت‌نام نمایندگی با موفقیت ثبت شد')
+      await agentsService.register(form)
+      setSubmitted(true)
+      toast.success('درخواست ثبت‌نام نمایندگی با موفقیت ثبت شد')
+    } catch (error) {
+      if (error instanceof ApiError) {
+        toast.error(error.message || 'خطا در ثبت درخواست')
       } else {
-        toast.error(data.error?.message || 'خطا در ثبت درخواست')
+        toast.error('خطای شبکه. لطفاً دوباره تلاش کنید')
       }
-    } catch {
-      toast.error('خطای شبکه. لطفاً دوباره تلاش کنید')
     } finally {
       setLoading(false)
     }
