@@ -1,6 +1,5 @@
 import { BaseService } from './base.service'
-import type { ApiResponse } from '@/lib/api-client'
-import type { ContractItem } from '@/types'
+import type { ApiResponse, ContractItem } from '@/types'
 
 interface ContractListParams {
   page?: number
