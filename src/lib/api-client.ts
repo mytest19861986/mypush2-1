@@ -143,6 +143,7 @@ class ApiClient {
     })
   }
 
+  // TODO(deprecated): Do not pass auth tokens in URLs; prefer fetch with an Authorization header.
   getDownloadUrl(path: string): string {
     const token = useAuthStore.getState().accessToken
     return `${this.baseUrl}${path}${path.includes('?') ? '&' : '?'}token=${token}`

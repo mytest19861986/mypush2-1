@@ -269,17 +269,27 @@ function UploadForm({ onUploaded }: { onUploaded: () => void }) {
 // ---------- Document List ----------
 
 function DocumentList({ documents }: { documents: AgentDocumentItem[] }) {
+  const { toast } = useToast()
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
 
   const handleDownload = async (doc: AgentDocumentItem) => {
     setDownloadingId(doc.id)
     try {
       const token = useAuthStore.getState().accessToken
-      if (!token) return
+      if (!token) {
+        toast({
+          title: 'خطا',
+          description: 'برای دانلود فایل ابتدا وارد شوید',
+          variant: 'destructive',
+        })
+        return
+      }
 
-      const response = await fetch(
-        `/api/v1/agents/documents/${doc.id}/download?token=${token}`
-      )
+      const response = await fetch(`/api/v1/agents/documents/${doc.id}/download`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
 
       if (!response.ok) {
         throw new Error('خطا در دانلود فایل')
@@ -295,7 +305,11 @@ function DocumentList({ documents }: { documents: AgentDocumentItem[] }) {
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
     } catch {
-      // silent fail for download
+      toast({
+        title: 'خطا',
+        description: 'خطا در دانلود فایل',
+        variant: 'destructive',
+      })
     } finally {
       setDownloadingId(null)
     }
