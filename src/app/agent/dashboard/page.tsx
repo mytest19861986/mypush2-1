@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAuthStore } from '@/stores/auth-store'
 import { agentsService } from '@/services/agents.service'
+import { commissionsService } from '@/services/commissions.service'
 import { StatCard, StatusBadge } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -62,9 +63,7 @@ export default function AgentDashboardPage() {
       try {
         const [agentRes, commRes] = await Promise.all([
           agentsService.getMyProfile(),
-          fetch('/api/v1/agents/commissions?limit=5', {
-            headers: { Authorization: `Bearer ${useAuthStore.getState().accessToken}` },
-          }).then(r => r.json()),
+          commissionsService.getAgentRecentCommissions(),
         ])
 
         if (agentRes.success && agentRes.data) {
@@ -75,10 +74,7 @@ export default function AgentDashboardPage() {
           setRecentCommissions(commRes.data)
         }
 
-        // Fetch stats separately
-        const statsRes = await fetch('/api/v1/agents/commissions?stats=true', {
-          headers: { Authorization: `Bearer ${useAuthStore.getState().accessToken}` },
-        }).then(r => r.json())
+        const statsRes = await commissionsService.getAgentCommissionStats();
         if (statsRes.success && statsRes.data) {
           setStats(statsRes.data)
         }
