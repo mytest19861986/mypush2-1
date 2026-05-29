@@ -17,9 +17,10 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '10', 10) || 10))
   const status = searchParams.get('status') || ''
   const includeStats = searchParams.get('stats') === 'true'
+  const agentUserId = payload!.sub
 
   const agent = await db.agent.findUnique({
-    where: { userId: payload!.sub },
+    where: { userId: agentUserId },
     select: { id: true },
   })
 
@@ -33,32 +34,32 @@ export async function GET(request: NextRequest) {
       await Promise.all([
         // Total commission amount
         db.commission.aggregate({
-          where: { agentId: agent.id },
+          where: { agentId: agentUserId },
           _sum: { amount: true },
         }),
         // Paid commission amount
         db.commission.aggregate({
-          where: { agentId: agent.id, status: 'PAID' },
+          where: { agentId: agentUserId, status: 'PAID' },
           _sum: { amount: true },
         }),
         // Pending commission amount
         db.commission.aggregate({
-          where: { agentId: agent.id, status: { in: ['PENDING', 'APPROVED'] } },
+          where: { agentId: agentUserId, status: { in: ['PENDING', 'APPROVED'] } },
           _sum: { amount: true },
         }),
         // Cancelled commission amount
         db.commission.aggregate({
-          where: { agentId: agent.id, status: 'CANCELLED' },
+          where: { agentId: agentUserId, status: 'CANCELLED' },
           _sum: { amount: true },
         }),
         // Total unique users referred
         db.userPlan.groupBy({
           by: ['userId'],
-          where: { referrerId: agent.id },
+          where: { referrerId: agentUserId },
         }),
         // Active plans referred
         db.userPlan.count({
-          where: { referrerId: agent.id, status: 'ACTIVE' },
+          where: { referrerId: agentUserId, status: 'ACTIVE' },
         }),
       ])
 
@@ -73,7 +74,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Build where clause
-  const where: Record<string, unknown> = { agentId: agent.id }
+  const where: Record<string, unknown> = { agentId: agentUserId }
   if (status) {
     where.status = status
   }
