@@ -20,6 +20,7 @@ export const AuditActions = {
   UPLOAD_CREATED: 'UPLOAD_CREATED',
   COMMISSION_APPROVED: 'COMMISSION_APPROVED',
   COMMISSION_CANCELLED: 'COMMISSION_CANCELLED',
+  COMMISSION_PAID: 'COMMISSION_PAID',
 } as const
 
 export type AuditAction = (typeof AuditActions)[keyof typeof AuditActions]
