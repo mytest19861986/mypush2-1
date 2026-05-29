@@ -19,6 +19,15 @@ export class CommissionsService extends BaseService {
     return this.get<AgentCommissionStats>('/agents/commissions?stats=true')
   }
 
+  async getAgentCommissions(params: { page?: number; limit?: number; status?: string } = {}) {
+    const searchParams = new URLSearchParams()
+    if (params.page) searchParams.set('page', String(params.page))
+    if (params.limit) searchParams.set('limit', String(params.limit))
+    if (params.status && params.status !== 'all') searchParams.set('status', params.status)
+    const qs = searchParams.toString()
+    return this.get<CommissionItem[]>(`/agents/commissions${qs ? `?${qs}` : ''}`)
+  }
+
   async getMyCommissions() {
     return this.get<CommissionItem[]>('/commissions/my')
   }
