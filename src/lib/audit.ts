@@ -19,6 +19,7 @@ export const AuditActions = {
   PERMISSION_UPDATED: 'PERMISSION_UPDATED',
   UPLOAD_CREATED: 'UPLOAD_CREATED',
   COMMISSION_APPROVED: 'COMMISSION_APPROVED',
+  COMMISSION_CANCELLED: 'COMMISSION_CANCELLED',
 } as const
 
 export type AuditAction = (typeof AuditActions)[keyof typeof AuditActions]
