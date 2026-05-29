@@ -43,32 +43,11 @@ export default function AgentCommissionsPage() {
   const fetchCommissions = useCallback(async () => {
     setLoading(true)
     try {
-      const token = localStorage.getItem('auth-storage')
-      let accessToken = ''
-      if (token) {
-        try {
-          const parsed = JSON.parse(token)
-          accessToken = parsed?.state?.accessToken || ''
-        } catch {
-          // ignore
-        }
-      }
-
-      const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: pagination.pageSize.toString(),
+      const data = await commissionsService.getAgentCommissions({
+        page: pagination.page,
+        limit: pagination.pageSize,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
       })
-      if (statusFilter && statusFilter !== 'all') {
-        params.set('status', statusFilter)
-      }
-
-      const headers: Record<string, string> = {}
-      if (accessToken) {
-        headers.Authorization = `Bearer ${accessToken}`
-      }
-
-      const res = await fetch(`/api/v1/agents/commissions?${params.toString()}`, { headers })
-      const data = await res.json()
       if (data.success && data.data) {
         setCommissions(data.data)
         if (data.pagination) {
