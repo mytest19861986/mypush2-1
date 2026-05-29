@@ -7,7 +7,7 @@ import { DoctorRoute } from '@/components/guards/DoctorRoute'
 import { ErrorBoundary } from '@/components/shared'
 import { ThemeToggle } from '@/components/shared/theme-toggle'
 import { useAuthStore } from '@/stores/auth-store'
-import { doctorsService } from '@/services'
+import { authService, doctorsService } from '@/services'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -118,7 +118,7 @@ function Topbar({
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/v1/auth/logout', { method: 'POST' })
+      await authService.logout()
     } catch {
       // Continue logout even if API fails
     }

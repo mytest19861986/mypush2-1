@@ -8,7 +8,7 @@ import { ErrorBoundary } from '@/components/shared'
 import { ThemeToggle } from '@/components/shared/theme-toggle'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { useAuthStore } from '@/stores/auth-store'
-import { agentsService } from '@/services'
+import { agentsService, authService } from '@/services'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -61,7 +61,7 @@ function SidebarContent({
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/v1/auth/logout', { method: 'POST' })
+      await authService.logout()
     } catch {
       // Continue logout even if API fails
     }
