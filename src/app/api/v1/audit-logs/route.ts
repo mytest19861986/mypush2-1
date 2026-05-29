@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { requirePermission } from '@/lib/auth'
 import { errorResponse, paginatedResponse } from '@/lib/api-response'
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
   const endDate = searchParams.get('endDate') || undefined
 
   // ── Build Where Clause ──
-  const where: Record<string, unknown> = {}
+  const where: Prisma.AuditLogWhereInput = {}
 
   if (action) {
     where.action = action
@@ -40,12 +41,9 @@ export async function GET(request: NextRequest) {
   }
 
   if (startDate || endDate) {
-    where.createdAt = {} as Record<string, Date>
-    if (startDate) {
-      where.createdAt.gte = new Date(startDate)
-    }
-    if (endDate) {
-      where.createdAt.lte = new Date(endDate)
+    where.createdAt = {
+      ...(startDate ? { gte: new Date(startDate) } : {}),
+      ...(endDate ? { lte: new Date(endDate) } : {}),
     }
   }
 

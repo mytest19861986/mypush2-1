@@ -89,7 +89,7 @@ const pageTitles: Record<string, string> = {
 /* ── Sidebar Content (shared between mobile & desktop) ──── */
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
-  const pathname = usePathname()
+  const pathname = usePathname() ?? ''
   const { user, logout } = useAuthStore()
 
   const userInitials = user?.profile
@@ -229,7 +229,7 @@ function AdminSidebar() {
 /* ── Top Bar ────────────────────────────────────────────── */
 
 function AdminTopbar() {
-  const pathname = usePathname()
+  const pathname = usePathname() ?? ''
   const { user, logout } = useAuthStore()
 
   const currentPageTitle = pageTitles[pathname] || 'مدیریت'

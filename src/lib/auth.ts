@@ -109,7 +109,7 @@ export async function requireRole(
 ): Promise<PermissionResult> {
   const { authenticated, payload, error } = await authenticateRequest(request)
 
-  if (!authenticated) {
+  if (!authenticated || !payload) {
     return {
       authorized: false,
       payload: null,
@@ -147,7 +147,7 @@ export async function requirePermission(
 ): Promise<PermissionResult> {
   const { authenticated, payload, error } = await authenticateRequest(request)
 
-  if (!authenticated) {
+  if (!authenticated || !payload) {
     return {
       authorized: false,
       payload: null,

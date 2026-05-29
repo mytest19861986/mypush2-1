@@ -14,7 +14,6 @@ const config: CapacitorConfig = {
     backgroundColor: '#ffffff',
   },
   // اجازه دسترسی HTTP بدون SSL
-  hostnameAllowlist: ['107.173.47.76', 'localhost'],
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,

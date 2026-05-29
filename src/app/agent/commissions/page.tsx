@@ -21,6 +21,18 @@ import type { Column } from '@/components/shared/data-table'
 
 // ---------- Types ----------
 
+type AgentCommissionItem = CommissionItem & {
+  userPlan?: CommissionItem['userPlan'] & {
+    user?: {
+      id?: string
+      profile?: {
+        firstName: string | null
+        lastName: string | null
+      } | null
+    } | null
+  }
+}
+
 interface CommissionStats {
   totalCommission: number
   paidCommission: number
@@ -34,7 +46,7 @@ interface CommissionStats {
 
 export default function AgentCommissionsPage() {
   const [stats, setStats] = useState<CommissionStats | null>(null)
-  const [commissions, setCommissions] = useState<CommissionItem[]>([])
+  const [commissions, setCommissions] = useState<AgentCommissionItem[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('all')
 
@@ -49,7 +61,7 @@ export default function AgentCommissionsPage() {
         status: statusFilter !== 'all' ? statusFilter : undefined,
       })
       if (data.success && data.data) {
-        setCommissions(data.data)
+        setCommissions(data.data as AgentCommissionItem[])
         if (data.pagination) {
           pagination.setTotalPages(data.pagination.totalPages)
           pagination.setTotal(data.pagination.total)
@@ -88,7 +100,7 @@ export default function AgentCommissionsPage() {
 
   // ---------- Table Columns ----------
 
-  const columns: Column<CommissionItem>[] = [
+  const columns: Column<AgentCommissionItem>[] = [
     {
       key: 'userPlan',
       header: 'کاربر',

@@ -40,8 +40,8 @@ export class PlansService extends BaseService {
     return this.patch<DiscountPlanItem>(`/plans/${id}`, data)
   }
 
-  async delete(id: string) {
-    return this.client.delete(`/plans/${id}`)
+  async delete<T = unknown>(id: string): Promise<T> {
+    return this.client.delete<T>(`/plans/${id}`)
   }
 
   async getMyPlans() {

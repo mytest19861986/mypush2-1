@@ -42,16 +42,24 @@ interface AppShellProps {
   breadcrumbs?: BreadcrumbItem[]
 }
 
+type AppShellUser = NonNullable<ReturnType<typeof useAuthStore.getState>['user']> & {
+  agent?: {
+    id?: string
+    businessName?: string | null
+    status: string
+  } | null
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function getUserDisplayName(user: NonNullable<ReturnType<typeof useAuthStore.getState>['user']>) {
+function getUserDisplayName(user: AppShellUser) {
   const first = user.profile?.firstName ?? ''
   const last = user.profile?.lastName ?? ''
   if (first || last) return `${first} ${last}`.trim()
   return user.mobile
 }
 
-function getUserInitials(user: NonNullable<ReturnType<typeof useAuthStore.getState>['user']>) {
+function getUserInitials(user: AppShellUser) {
   const first = user.profile?.firstName?.charAt(0) ?? ''
   const last = user.profile?.lastName?.charAt(0) ?? ''
   if (first || last) return `${first}${last}`
@@ -82,6 +90,7 @@ function getRoleBadgeVariant(role: string): 'default' | 'secondary' | 'destructi
 
 export function AppShell({ children, breadcrumbs }: AppShellProps) {
   const { user, isLoading, logout } = useAuthStore()
+  const shellUser = user as AppShellUser | null
 
   const handleLogout = async () => {
     await logout()
@@ -111,7 +120,7 @@ export function AppShell({ children, breadcrumbs }: AppShellProps) {
                 <Skeleton className="h-9 w-24 rounded-md" />
                 <Skeleton className="h-8 w-8 rounded-full" />
               </div>
-            ) : user ? (
+            ) : shellUser ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -120,19 +129,19 @@ export function AppShell({ children, breadcrumbs }: AppShellProps) {
                   >
                     <Avatar className="h-8 w-8">
                       <AvatarImage
-                        src={user.profile?.avatar ?? undefined}
-                        alt={getUserDisplayName(user)}
+                        src={shellUser.profile?.avatar ?? undefined}
+                        alt={getUserDisplayName(shellUser)}
                       />
                       <AvatarFallback className="text-xs">
-                        {getUserInitials(user)}
+                        {getUserInitials(shellUser)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="hidden flex-col items-start sm:flex">
                       <span className="text-sm font-medium leading-none">
-                        {getUserDisplayName(user)}
+                        {getUserDisplayName(shellUser)}
                       </span>
                       <span className="text-xs text-muted-foreground leading-none mt-0.5">
-                        {user.agent?.businessName ?? user.mobile}
+                        {shellUser.agent?.businessName ?? shellUser.mobile}
                       </span>
                     </div>
                     <ChevronLeft className="hidden h-4 w-4 text-muted-foreground sm:block" />
@@ -142,10 +151,10 @@ export function AppShell({ children, breadcrumbs }: AppShellProps) {
                   <DropdownMenuLabel>
                     <div className="flex flex-col gap-1">
                       <span className="font-medium">
-                        {getUserDisplayName(user)}
+                        {getUserDisplayName(shellUser)}
                       </span>
                       <span className="text-xs font-normal text-muted-foreground" dir="ltr">
-                        {user.mobile}
+                        {shellUser.mobile}
                       </span>
                     </div>
                   </DropdownMenuLabel>
@@ -157,13 +166,13 @@ export function AppShell({ children, breadcrumbs }: AppShellProps) {
                       <User className="ml-2 h-4 w-4" />
                       <span>پروفایل من</span>
                     </DropdownMenuItem>
-                    {user.agent && (
+                    {shellUser.agent && (
                       <DropdownMenuItem>
                         <Building2 className="ml-2 h-4 w-4" />
-                        <span>{user.agent.businessName ?? 'پنل نماینده'}</span>
-                        {user.agent.status !== 'APPROVED' && (
+                        <span>{shellUser.agent.businessName ?? 'پنل نماینده'}</span>
+                        {shellUser.agent.status !== 'APPROVED' && (
                           <Badge variant="outline" className="mr-auto text-xs px-1.5 py-0">
-                            {user.agent.status}
+                            {shellUser.agent.status}
                           </Badge>
                         )}
                       </DropdownMenuItem>
@@ -173,7 +182,7 @@ export function AppShell({ children, breadcrumbs }: AppShellProps) {
                   <DropdownMenuSeparator />
 
                   <DropdownMenuGroup>
-                    {user.roles.map((role) => (
+                    {shellUser.roles.map((role) => (
                       <div key={role} className="flex items-center gap-2 px-2 py-1 text-xs text-muted-foreground">
                         <Shield className="h-3.5 w-3.5" />
                         <Badge variant={getRoleBadgeVariant(role)} className="text-xs">

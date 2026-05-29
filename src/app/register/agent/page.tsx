@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { motion } from 'framer-motion'
+import { motion, type Variants } from 'framer-motion'
 import { agentsService } from '@/services/agents.service'
 import { ApiError } from '@/lib/api-client'
 import { Card, CardContent } from '@/components/ui/card'
@@ -23,9 +23,11 @@ import {
   UserPlus,
 } from 'lucide-react'
 
-const fadeInUp = {
+const easeOut = [0, 0, 0.2, 1] as const
+
+const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: easeOut } },
 }
 
 export default function RegisterAgentPage() {

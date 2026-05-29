@@ -6,7 +6,7 @@ import { StatusBadge } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, type Variants } from 'framer-motion'
 import { useDebounce } from '@/hooks/shared'
 import {
   UserSearch,
@@ -28,9 +28,16 @@ import type { PatientLookupResult, UserPlanItem } from '@/types'
 
 // ---------- Animation ----------
 
-const fadeIn = {
+const easeOut = [0, 0, 0.2, 1] as const
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.1 } },
+}
+
+const fadeIn: Variants = {
   hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: easeOut } },
   exit: { opacity: 0, y: -8, transition: { duration: 0.2 } },
 }
 
@@ -110,7 +117,7 @@ export default function DoctorPatientsPage() {
       className="space-y-6"
       initial="hidden"
       animate="show"
-      variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } }}
+      variants={containerVariants}
     >
       {/* Page Header */}
       <motion.div variants={fadeIn}>

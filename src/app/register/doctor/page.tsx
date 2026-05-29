@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { motion } from 'framer-motion'
+import { motion, type Variants } from 'framer-motion'
 import { doctorsService } from '@/services/doctors.service'
 import { ApiError } from '@/lib/api-client'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -52,9 +52,11 @@ const specialties = [
   { value: 'دندان‌پزشکی', label: 'دندان‌پزشکی' },
 ]
 
-const fadeInUp = {
+const easeOut = [0, 0, 0.2, 1] as const
+
+const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: easeOut } },
 }
 
 export default function RegisterDoctorPage() {

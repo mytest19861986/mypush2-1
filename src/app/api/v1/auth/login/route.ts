@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
           select: {
             firstName: true,
             lastName: true,
+            nationalCode: true,
             avatar: true,
           },
         },

@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
+import { motion, type Variants } from 'framer-motion'
 import { toast } from 'sonner'
 import {
   HeartPulse,
@@ -27,10 +27,11 @@ import {
   InputOTPSlot,
   InputOTPSeparator,
 } from '@/components/ui/input-otp'
-import { useAuthStore, type AuthUser } from '@/stores/auth-store'
+import { useAuthStore } from '@/stores/auth-store'
 import { authService } from '@/services'
 import { useCountdown } from '@/hooks/shared'
 import { isValidIranianMobile } from '@/utils/formatters'
+import type { AuthUser } from '@/types'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -40,7 +41,7 @@ const MAX_MOBILE_LENGTH = 11
 
 // ─── Animation Variants ──────────────────────────────────────────────────────
 
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -48,7 +49,7 @@ const containerVariants = {
   },
 }
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
@@ -57,7 +58,7 @@ const itemVariants = {
   },
 }
 
-const brandingVariants = {
+const brandingVariants: Variants = {
   hidden: { opacity: 0, x: -30 },
   visible: {
     opacity: 1,

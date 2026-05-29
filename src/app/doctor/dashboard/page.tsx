@@ -16,7 +16,7 @@ import {
   CalendarDays,
   TrendingUp,
 } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { motion, type Variants } from 'framer-motion'
 import { formatPrice, toPersianNum, getDisplayName, formatDate } from '@/utils/formatters'
 import type { DoctorItem, ContractItem } from '@/types'
 
@@ -31,7 +31,9 @@ interface DashboardStats {
 
 // ---------- Animation Variants ----------
 
-const containerVariants = {
+const easeOut = [0, 0, 0.2, 1] as const
+
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
@@ -39,9 +41,9 @@ const containerVariants = {
   },
 }
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 12 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: easeOut } },
 }
 
 // ---------- Dashboard Page ----------

@@ -102,14 +102,12 @@ export default function AdminDashboardPage() {
           value={totalUsers}
           icon={Users}
           description="ثبت‌نام شده در سامانه"
-          isLoading={isLoading}
         />
         <StatCard
           title="کل پزشکان"
           value={stats?.totalDoctors ?? 0}
           icon={Stethoscope}
           description="پزشکان ثبت‌نام شده"
-          isLoading={isLoading}
         />
         <StatCard
           title="کل نمایندگان"
@@ -117,14 +115,12 @@ export default function AdminDashboardPage() {
           icon={Briefcase}
           description={`${toPersianNum(pendingAgents)} در انتظار تأیید`}
           trend={pendingAgents > 0 ? { value: pendingAgents, isUp: true } : undefined}
-          isLoading={isLoading}
         />
         <StatCard
           title="طرح‌های فعال"
           value={activePlans}
           icon={CreditCard}
           description="طرح تخفیف فعال"
-          isLoading={isLoading}
         />
         <StatCard
           title="قراردادهای امروز"
@@ -132,14 +128,12 @@ export default function AdminDashboardPage() {
           icon={FileCheck}
           description="ویزیت‌های ثبت شده"
           trend={todayContracts > 0 ? { value: todayContracts, isUp: true } : undefined}
-          isLoading={isLoading}
         />
         <StatCard
           title="درآمد ماهانه"
           value={formatPriceWithUnit(monthlyRevenue)}
           icon={DollarSign}
           description="تومان — این ماه"
-          isLoading={isLoading}
         />
       </div>
 

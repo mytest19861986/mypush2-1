@@ -46,7 +46,7 @@ const navItems = [
 // ---------- Sidebar Content ----------
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
-  const pathname = usePathname()
+  const pathname = usePathname() ?? ''
   const { user, logout } = useAuthStore()
   const router = useRouter()
 

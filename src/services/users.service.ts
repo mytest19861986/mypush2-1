@@ -28,8 +28,8 @@ export class UsersService extends BaseService {
     return this.patch(`/users/${id}/status`, { status })
   }
 
-  async delete(id: string) {
-    return this.client.delete(`/users/${id}`)
+  async delete<T = unknown>(id: string): Promise<T> {
+    return this.client.delete<T>(`/users/${id}`)
   }
 }
 
