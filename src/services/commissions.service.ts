@@ -10,6 +10,11 @@ export interface AgentCommissionStats {
   activePlans: number
 }
 
+interface PayCommissionData {
+  refId?: string
+  description?: string
+}
+
 export class CommissionsService extends BaseService {
   async getAgentRecentCommissions() {
     return this.get<CommissionItem[]>('/agents/commissions?limit=5')
@@ -38,6 +43,25 @@ export class CommissionsService extends BaseService {
     if (params.limit) searchParams.set('limit', String(params.limit))
     if (params.status) searchParams.set('status', params.status)
     return this.get<CommissionItem[]>(`/commissions?${searchParams.toString()}`)
+  }
+
+  async getById(id: string) {
+    return this.get<CommissionItem>(`/commissions/${id}`)
+  }
+
+  async approve(id: string) {
+    return this.patch<CommissionItem>(`/commissions/${id}/approve`)
+  }
+
+  async cancel(id: string, reason?: string) {
+    return this.patch<CommissionItem>(
+      `/commissions/${id}/cancel`,
+      reason ? { reason } : undefined
+    )
+  }
+
+  async pay(id: string, data?: PayCommissionData) {
+    return this.post<CommissionItem>(`/commissions/${id}/pay`, data)
   }
 }
 
