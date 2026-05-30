@@ -5,8 +5,6 @@ import { createAuditLog, AuditActions } from '@/lib/audit'
 import { successResponse, errorResponse } from '@/lib/api-response'
 import { getClientIp } from '@/app/api/v1/auth/_helpers'
 
-const validStatuses = ['PENDING', 'APPROVED', 'PAID', 'CANCELLED'] as const
-
 // PATCH /api/v1/commissions/[id]/approve - Approve pending commission
 export async function PATCH(
   request: NextRequest,
@@ -33,10 +31,6 @@ export async function PATCH(
 
     if (!commission) {
       return errorResponse('NOT_FOUND', 'Commission not found', 404)
-    }
-
-    if (!validStatuses.includes(commission.status as (typeof validStatuses)[number])) {
-      return errorResponse('BAD_REQUEST', `Invalid commission status '${commission.status}'`)
     }
 
     if (commission.status !== 'PENDING') {
