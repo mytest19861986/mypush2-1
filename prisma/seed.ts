@@ -29,6 +29,8 @@ const PERMISSIONS = [
   { name: 'view_audit_logs', module: 'audit_logs', title: 'مشاهده لاگ‌ها' },
   { name: 'manage_settings', module: 'settings', title: 'مدیریت تنظیمات' },
   { name: 'manage_commissions', module: 'commissions', title: 'مدیریت پورسانت‌ها' },
+  { name: 'manage_user_passwords', module: 'users', title: 'Manage user passwords' },
+  { name: 'reset_user_password', module: 'users', title: 'Reset user password' },
   { name: 'manage_payments', module: 'payments', title: 'Manage payments' },
   { name: 'view_payments', module: 'payments', title: 'View payments' },
   { name: 'grant_user_plans', module: 'plans', title: 'Grant user plans' },
@@ -46,7 +48,7 @@ const PERMISSIONS = [
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
   SUPER_ADMIN: [
-    'manage_users', 'manage_agents', 'approve_agents', 'manage_doctors', 'approve_doctors',
+    'manage_users', 'manage_user_passwords', 'reset_user_password', 'manage_agents', 'approve_agents', 'manage_doctors', 'approve_doctors',
     'manage_plans', 'manage_contracts', 'manage_visits', 'manage_reviews', 'view_reviews',
     'manage_sales_customers', 'view_sales_customers', 'view_reports', 'manage_roles', 'manage_permissions',
     'upload_documents', 'view_audit_logs', 'manage_settings', 'manage_commissions',
@@ -54,7 +56,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'manage_settlements', 'manage_payments', 'view_payments', 'grant_user_plans',
   ],
   ADMIN: [
-    'manage_users', 'manage_agents', 'approve_agents', 'manage_doctors', 'approve_doctors',
+    'manage_users', 'manage_user_passwords', 'reset_user_password', 'manage_agents', 'approve_agents', 'manage_doctors', 'approve_doctors',
     'manage_plans', 'manage_contracts', 'manage_visits', 'manage_reviews', 'view_reviews',
     'manage_sales_customers', 'view_sales_customers', 'view_reports', 'upload_documents', 'view_audit_logs',
     'manage_commission_payments', 'view_wallets', 'manage_wallets', 'view_settlements',
