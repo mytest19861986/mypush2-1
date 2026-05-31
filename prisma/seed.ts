@@ -29,6 +29,8 @@ const PERMISSIONS = [
   { name: 'view_audit_logs', module: 'audit_logs', title: 'مشاهده لاگ‌ها' },
   { name: 'manage_settings', module: 'settings', title: 'مدیریت تنظیمات' },
   { name: 'manage_commissions', module: 'commissions', title: 'مدیریت پورسانت‌ها' },
+  { name: 'manage_payments', module: 'payments', title: 'Manage payments' },
+  { name: 'view_payments', module: 'payments', title: 'View payments' },
 ] as const
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
@@ -36,10 +38,12 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'manage_users', 'manage_agents', 'approve_agents', 'manage_doctors', 'approve_doctors',
     'manage_plans', 'manage_contracts', 'view_reports', 'manage_roles', 'manage_permissions',
     'upload_documents', 'view_audit_logs', 'manage_settings', 'manage_commissions',
+    'manage_payments', 'view_payments',
   ],
   ADMIN: [
     'manage_users', 'manage_agents', 'approve_agents', 'manage_doctors', 'approve_doctors',
     'manage_plans', 'manage_contracts', 'view_reports', 'upload_documents', 'view_audit_logs',
+    'manage_payments', 'view_payments',
   ],
   SUPPORT: ['manage_users', 'manage_doctors', 'view_reports', 'upload_documents'],
   DOCTOR: ['manage_contracts', 'upload_documents'],

@@ -4,11 +4,18 @@ import { db } from '@/lib/db'
 import { requireAuth } from '@/lib/auth'
 import { successResponse, errorResponse } from '@/lib/api-response'
 import { createAuditLog, AuditActions } from '@/lib/audit'
+import { linkPlanHolderToUserByNationalCode } from '@/lib/plan-holder-linking'
 
 const updateProfileSchema = z.object({
   firstName: z.string().max(50).optional(),
   lastName: z.string().max(50).optional(),
-  nationalCode: z.string().max(10).optional(),
+  nationalCode: z
+    .string()
+    .trim()
+    .refine((value) => value === '' || /^\d{10}$/.test(value), {
+      message: 'National code must be 10 digits',
+    })
+    .optional(),
   address: z.string().max(500).optional(),
   gender: z.enum(['MALE', 'FEMALE']).optional(),
 })
@@ -30,6 +37,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const { firstName, lastName, nationalCode, address, gender } = parsed.data
+    const shouldLinkPlanHolder = nationalCode !== undefined && nationalCode.length > 0
 
     // Validate national code format if provided
     if (nationalCode && nationalCode.length > 0) {
@@ -76,6 +84,27 @@ export async function PUT(request: NextRequest) {
       })
     }
 
+    let planHolderLinking:
+      | Awaited<ReturnType<typeof linkPlanHolderToUserByNationalCode>>
+      | undefined
+
+    if (shouldLinkPlanHolder) {
+      planHolderLinking = await linkPlanHolderToUserByNationalCode({
+        userId: user.sub,
+        nationalCode,
+        actorId: user.sub,
+        request,
+      })
+
+      if (planHolderLinking.conflict) {
+        return errorResponse(
+          'PLAN_HOLDER_LINK_CONFLICT',
+          'This national code is already linked to another user',
+          409
+        )
+      }
+    }
+
     // Fetch updated profile to return
     const profile = await db.userProfile.findUnique({
       where: { userId: user.sub },
@@ -98,6 +127,8 @@ export async function PUT(request: NextRequest) {
         avatar: profile?.avatar,
         address: profile?.address,
         gender: profile?.gender,
+        planHolderLinked: planHolderLinking?.linked ?? false,
+        linkedPlansCount: planHolderLinking?.linkedUserPlansCount ?? 0,
       },
       'Profile updated successfully'
     )

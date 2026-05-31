@@ -3,8 +3,11 @@ import { z } from 'zod'
 import { db } from '@/lib/db'
 import { authenticateRequest } from '@/lib/auth'
 import { successResponse, errorResponse } from '@/lib/api-response'
+import { createAuditLog, AuditActions } from '@/lib/audit'
+import { createPendingPayment } from '@/lib/payments'
+import { getClientIp } from '@/app/api/v1/auth/_helpers'
 
-// POST /api/v1/user-plans — Purchase plan (requires auth)
+// POST /api/v1/user-plans - Start online plan purchase (requires auth)
 export async function POST(request: NextRequest) {
   try {
     const { authenticated, payload, error } = await authenticateRequest(request)
@@ -14,126 +17,120 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
 
     const schema = z.object({
-      planId: z.string().min(1, 'شناسه طرح الزامی است'),
-      referrerCode: z.string().optional(),
+      planId: z.string().min(1, 'Plan id is required'),
+      referralCode: z.string().trim().max(20).optional(),
+      referrerCode: z.string().trim().max(20).optional(),
     })
 
     const parsed = schema.safeParse(body)
     if (!parsed.success) {
-      return errorResponse('VALIDATION_ERROR', parsed.error.issues.map((e) => e.message).join('. '), 400)
+      return errorResponse(
+        'VALIDATION_ERROR',
+        parsed.error.issues.map((e) => e.message).join('. '),
+        400
+      )
     }
 
-    const { planId, referrerCode } = parsed.data
+    const { planId } = parsed.data
+    const referralCode = parsed.data.referralCode ?? parsed.data.referrerCode
 
-    // Verify plan exists and is active
     const plan = await db.discountPlan.findUnique({ where: { id: planId } })
     if (!plan) {
-      return errorResponse('NOT_FOUND', 'طرح مورد نظر یافت نشد', 404)
+      return errorResponse('NOT_FOUND', 'Plan not found', 404)
     }
     if (plan.status !== 'ACTIVE') {
-      return errorResponse('INVALID_PLAN', 'این طرح فعال نیست', 400)
+      return errorResponse('INVALID_PLAN', 'Plan is not active', 400)
     }
-
-    // Calculate end date
-    const startDate = new Date()
-    const endDate = new Date(startDate.getTime() + plan.durationDays * 24 * 60 * 60 * 1000)
 
     const user = await db.user.findUnique({
       where: { id: userId },
       include: { profile: true },
     })
     if (!user?.profile?.nationalCode) {
-      return errorResponse('PROFILE_INCOMPLETE', 'کد ملی کاربر برای صدور طرح الزامی است', 400)
+      return errorResponse(
+        'PROFILE_INCOMPLETE',
+        'Profile national code is required before purchasing a plan',
+        400
+      )
     }
 
-    const planHolder = await db.planHolder.upsert({
-      where: { nationalCode: user.profile.nationalCode },
-      update: {
-        userId,
-        firstName: user.profile.firstName,
-        lastName: user.profile.lastName,
-        mobile: user.mobile,
-        birthDate: user.profile.birthDate,
-        gender: user.profile.gender,
-        status: 'ACTIVE',
-      },
-      create: {
-        userId,
-        firstName: user.profile.firstName,
-        lastName: user.profile.lastName,
-        nationalCode: user.profile.nationalCode,
-        mobile: user.mobile,
-        birthDate: user.profile.birthDate,
-        gender: user.profile.gender,
-        status: 'ACTIVE',
-      },
-    })
-
-    // Determine referrer
     let referrerId: string | null = null
-    if (referrerCode) {
-      // Find agent user by their referral code (using mobile as referrer code)
+    if (referralCode) {
       const referrerUser = await db.user.findUnique({
-        where: { mobile: referrerCode },
+        where: { mobile: referralCode },
         include: { agent: true },
       })
-      if (referrerUser && referrerUser.agent && referrerUser.agent.status === 'APPROVED' && referrerUser.id !== userId) {
+
+      if (
+        referrerUser &&
+        referrerUser.agent &&
+        referrerUser.agent.status === 'APPROVED' &&
+        referrerUser.id !== userId
+      ) {
         referrerId = referrerUser.id
       }
     }
 
-    // Create UserPlan
-    const userPlan = await db.userPlan.create({
-      data: {
-        userId,
+    const payment = await createPendingPayment({
+      userId,
+      planId,
+      amount: plan.price,
+      discountAmount: 0,
+      gateway: 'MANUAL_DEV',
+      metadata: {
+        ...(referralCode ? { referralCode } : {}),
+        ...(referrerId ? { referrerId } : {}),
+      },
+    })
+
+    createAuditLog({
+      userId,
+      action: AuditActions.PAYMENT_CREATED,
+      entity: 'Payment',
+      entityId: payment.id,
+      details: {
         planId,
-        planHolderId: planHolder.id,
-        referrerId,
-        status: 'ACTIVE',
-        startDate,
-        endDate,
-        remainingUses: plan.maxUses === -1 ? -1 : plan.maxUses,
+        amount: payment.amount,
+        discountAmount: payment.discountAmount,
+        finalAmount: payment.finalAmount,
+        status: payment.status,
       },
-      include: {
-        plan: true,
+      ip: getClientIp(request),
+      device: request.headers.get('user-agent') || undefined,
+    }).catch(console.error)
+
+    return successResponse(
+      {
+        paymentId: payment.id,
+        status: payment.status,
+        payment: {
+          id: payment.id,
+          status: payment.status,
+          amount: payment.amount,
+          discountAmount: payment.discountAmount,
+          finalAmount: payment.finalAmount,
+          gateway: payment.gateway,
+          createdAt: payment.createdAt.toISOString(),
+        },
+        plan: {
+          id: plan.id,
+          name: plan.name,
+          price: plan.price,
+          durationDays: plan.durationDays,
+          maxUses: plan.maxUses,
+        },
+        userPlan: null,
       },
-    })
-
-    // Create commission for referrer if applicable
-    if (referrerId && plan.price > 0) {
-      const commissionAmount = Math.floor(plan.price * 10 / 100)
-      if (commissionAmount > 0) {
-        await db.commission.create({
-          data: {
-            agentId: referrerId,
-            userPlanId: userPlan.id,
-            amount: commissionAmount,
-            percent: 10,
-            status: 'PENDING',
-          },
-        })
-      }
-    }
-
-    // Create transaction record
-    await db.transaction.create({
-      data: {
-        userId,
-        type: 'PURCHASE',
-        amount: plan.price,
-        description: `خرید طرح ${plan.name}`,
-        status: 'SUCCESS',
-      },
-    })
-
-    return successResponse(userPlan, 'طرح با موفقیت خریداری شد', 201)
+      'Payment created and pending confirmation',
+      201
+    )
   } catch (err) {
     console.error('[POST /api/v1/user-plans]', err)
-    return errorResponse('INTERNAL_ERROR', 'خطای داخلی سرور', 500)
+    return errorResponse('INTERNAL_ERROR', 'Internal server error', 500)
   }
 }
 
-// GET /api/v1/user-plans/my — Get current user's plans (requires auth)
+// GET /api/v1/user-plans/my - Get current user's plans (requires auth)
 export async function GET(request: NextRequest) {
   try {
     const { authenticated, payload, error } = await authenticateRequest(request)
@@ -162,6 +159,6 @@ export async function GET(request: NextRequest) {
     return successResponse(userPlans)
   } catch (err) {
     console.error('[GET /api/v1/user-plans/my]', err)
-    return errorResponse('INTERNAL_ERROR', 'خطای داخلی سرور', 500)
+    return errorResponse('INTERNAL_ERROR', 'Internal server error', 500)
   }
 }

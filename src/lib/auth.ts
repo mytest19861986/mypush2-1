@@ -205,3 +205,11 @@ export async function requireAnyPermission(
     error: null,
   }
 }
+
+export function canManagePayments(payload: { roles: string[]; permissions: string[] }): boolean {
+  return (
+    payload.roles.includes('SUPER_ADMIN') ||
+    payload.roles.includes('ADMIN') ||
+    payload.permissions.includes('manage_payments')
+  )
+}
