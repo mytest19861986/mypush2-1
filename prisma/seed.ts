@@ -37,6 +37,11 @@ const PERMISSIONS = [
   { name: 'view_reviews', module: 'reviews', title: 'View reviews' },
   { name: 'manage_sales_customers', module: 'sales_customers', title: 'Manage sales customers' },
   { name: 'view_sales_customers', module: 'sales_customers', title: 'View sales customers' },
+  { name: 'view_wallets', module: 'wallets', title: 'View wallets' },
+  { name: 'manage_wallets', module: 'wallets', title: 'Manage wallets' },
+  { name: 'view_settlements', module: 'settlements', title: 'View settlements' },
+  { name: 'manage_settlements', module: 'settlements', title: 'Manage settlements' },
+  { name: 'manage_commission_payments', module: 'commissions', title: 'Manage commission payments' },
 ] as const
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
@@ -45,13 +50,15 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'manage_plans', 'manage_contracts', 'manage_visits', 'manage_reviews', 'view_reviews',
     'manage_sales_customers', 'view_sales_customers', 'view_reports', 'manage_roles', 'manage_permissions',
     'upload_documents', 'view_audit_logs', 'manage_settings', 'manage_commissions',
-    'manage_payments', 'view_payments', 'grant_user_plans',
+    'manage_commission_payments', 'view_wallets', 'manage_wallets', 'view_settlements',
+    'manage_settlements', 'manage_payments', 'view_payments', 'grant_user_plans',
   ],
   ADMIN: [
     'manage_users', 'manage_agents', 'approve_agents', 'manage_doctors', 'approve_doctors',
     'manage_plans', 'manage_contracts', 'manage_visits', 'manage_reviews', 'view_reviews',
     'manage_sales_customers', 'view_sales_customers', 'view_reports', 'upload_documents', 'view_audit_logs',
-    'manage_payments', 'view_payments', 'grant_user_plans',
+    'manage_commission_payments', 'view_wallets', 'manage_wallets', 'view_settlements',
+    'manage_settlements', 'manage_payments', 'view_payments', 'grant_user_plans',
   ],
   SUPPORT: ['manage_users', 'manage_doctors', 'view_reports', 'upload_documents'],
   DOCTOR: ['manage_contracts', 'upload_documents'],

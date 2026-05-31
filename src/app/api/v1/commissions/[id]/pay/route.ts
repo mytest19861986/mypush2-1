@@ -1,9 +1,14 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { requirePermission } from '@/lib/auth'
+import { authenticateRequest } from '@/lib/auth'
 import { AuditActions } from '@/lib/audit'
 import { successResponse, errorResponse } from '@/lib/api-response'
 import { getClientIp } from '@/app/api/v1/auth/_helpers'
+import {
+  DuplicateWalletTransactionError,
+  canManageCommissionPayments,
+  creditWallet,
+} from '@/lib/wallets'
 
 const maxRefIdLength = 100
 const maxDescriptionLength = 500
@@ -14,9 +19,11 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { authorized, payload, error } = await requirePermission(request, 'manage_commissions')
-    if (!authorized) {
-      return errorResponse('FORBIDDEN', error!, payload ? 403 : 401)
+    const { authenticated, payload, error } = await authenticateRequest(request)
+    if (!authenticated || !payload) return errorResponse('UNAUTHORIZED', error!, 401)
+
+    if (!canManageCommissionPayments(payload)) {
+      return errorResponse('FORBIDDEN', 'Commission payment permission required', 403)
     }
 
     const { id } = await params
@@ -76,8 +83,8 @@ export async function POST(
         return { ok: false as const, error: errorResponse('NOT_FOUND', 'Commission not found', 404) }
       }
 
-      if (commission.paidAt) {
-        return { ok: false as const, error: errorResponse('BAD_REQUEST', 'Commission is already paid') }
+      if (commission.paidAt || commission.status === 'PAID') {
+        return { ok: false as const, error: errorResponse('CONFLICT', 'Commission is already paid', 409) }
       }
 
       if (commission.status !== 'APPROVED') {
@@ -105,24 +112,21 @@ export async function POST(
         return { ok: false as const, error: errorResponse('BAD_REQUEST', 'Commission is already paid') }
       }
 
-      const paidCommission = await tx.commission.findUniqueOrThrow({
-        where: { id },
+      const walletCredit = await creditWallet({
+        tx,
+        userId: commission.agentId,
+        amount: commission.amount,
+        type: 'CREDIT',
+        referenceType: 'COMMISSION',
+        referenceId: commission.id,
+        description: description ?? 'Commission credited',
       })
 
-      const transaction = await tx.transaction.create({
-        data: {
-          userId: commission.agentId,
-          amount: commission.amount,
-          type: 'COMMISSION_PAYOUT',
-          status: 'SUCCESS',
-          refId,
-          description,
-        },
-      })
+      const paidCommission = await tx.commission.findUniqueOrThrow({ where: { id } })
 
       await tx.auditLog.create({
         data: {
-          userId: payload!.sub,
+          userId: payload.sub,
           action: AuditActions.COMMISSION_PAID,
           entity: 'Commission',
           entityId: id,
@@ -133,9 +137,30 @@ export async function POST(
             previousStatus: commission.status,
             newStatus: 'PAID',
             paidAt,
-            transactionId: transaction.id,
+            walletId: walletCredit.wallet.id,
+            walletTransactionId: walletCredit.transaction.id,
             refId,
             description,
+          }),
+          ip,
+          device,
+        },
+      })
+
+      await tx.auditLog.create({
+        data: {
+          userId: payload.sub,
+          action: AuditActions.WALLET_CREDITED,
+          entity: 'Wallet',
+          entityId: walletCredit.wallet.id,
+          details: JSON.stringify({
+            walletId: walletCredit.wallet.id,
+            walletTransactionId: walletCredit.transaction.id,
+            userId: commission.agentId,
+            amount: commission.amount,
+            balanceAfter: walletCredit.wallet.balance,
+            referenceType: 'COMMISSION',
+            referenceId: commission.id,
           }),
           ip,
           device,
@@ -151,6 +176,10 @@ export async function POST(
 
     return successResponse(result.commission, 'Commission paid successfully')
   } catch (err) {
+    if (err instanceof DuplicateWalletTransactionError) {
+      return errorResponse('CONFLICT', 'Wallet transaction already exists for this commission', 409)
+    }
+
     console.error('[POST /api/v1/commissions/[id]/pay]', err)
     return errorResponse('INTERNAL_ERROR', 'Internal server error', 500)
   }
