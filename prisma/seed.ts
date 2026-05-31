@@ -33,18 +33,20 @@ const PERMISSIONS = [
   { name: 'view_payments', module: 'payments', title: 'View payments' },
   { name: 'grant_user_plans', module: 'plans', title: 'Grant user plans' },
   { name: 'manage_visits', module: 'visits', title: 'Manage visits' },
+  { name: 'manage_reviews', module: 'reviews', title: 'Manage reviews' },
+  { name: 'view_reviews', module: 'reviews', title: 'View reviews' },
 ] as const
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
   SUPER_ADMIN: [
     'manage_users', 'manage_agents', 'approve_agents', 'manage_doctors', 'approve_doctors',
-    'manage_plans', 'manage_contracts', 'manage_visits', 'view_reports', 'manage_roles', 'manage_permissions',
+    'manage_plans', 'manage_contracts', 'manage_visits', 'manage_reviews', 'view_reviews', 'view_reports', 'manage_roles', 'manage_permissions',
     'upload_documents', 'view_audit_logs', 'manage_settings', 'manage_commissions',
     'manage_payments', 'view_payments', 'grant_user_plans',
   ],
   ADMIN: [
     'manage_users', 'manage_agents', 'approve_agents', 'manage_doctors', 'approve_doctors',
-    'manage_plans', 'manage_contracts', 'manage_visits', 'view_reports', 'upload_documents', 'view_audit_logs',
+    'manage_plans', 'manage_contracts', 'manage_visits', 'manage_reviews', 'view_reviews', 'view_reports', 'upload_documents', 'view_audit_logs',
     'manage_payments', 'view_payments', 'grant_user_plans',
   ],
   SUPPORT: ['manage_users', 'manage_doctors', 'view_reports', 'upload_documents'],

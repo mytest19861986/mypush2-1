@@ -37,6 +37,9 @@ export const AuditActions = {
   USER_PLAN_CREATED: 'USER_PLAN_CREATED',
   ADMIN_PLAN_GRANTED: 'ADMIN_PLAN_GRANTED',
   VISIT_CREATED: 'VISIT_CREATED',
+  REVIEW_CREATED: 'REVIEW_CREATED',
+  REVIEW_APPROVED: 'REVIEW_APPROVED',
+  REVIEW_REJECTED: 'REVIEW_REJECTED',
 } as const
 
 export type AuditAction = (typeof AuditActions)[keyof typeof AuditActions]
