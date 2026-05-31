@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has a password set
-    if (!user.password) {
+    if (!user.passwordHash) {
       return errorResponse(
         'PASSWORD_NOT_SET',
         'رمز عبور تنظیم نشده است. لطفاً ابتدا با شماره موبایل وارد شوید',
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify password
-    const isPasswordValid = await compare(password, user.password)
+    const isPasswordValid = await compare(password, user.passwordHash)
     if (!isPasswordValid) {
       // Audit log for failed login
       createAuditLog({

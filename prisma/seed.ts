@@ -173,11 +173,11 @@ async function createUser(mobile: string, email: string | undefined, password: s
     where: { mobile },
     update: {
       email: email ?? undefined,
-      password: hashedPassword,
+      passwordHash: hashedPassword,
       status: 'ACTIVE',
       isMobileVerified: true,
     },
-    create: { mobile, email, password: hashedPassword, status: 'ACTIVE', isMobileVerified: true },
+    create: { mobile, email, passwordHash: hashedPassword, status: 'ACTIVE', isMobileVerified: true },
   })
   await db.userProfile.upsert({
     where: { userId: user.id },
@@ -235,10 +235,29 @@ async function seedUsers() {
   if (plan) {
     const endDate = new Date()
     endDate.setDate(endDate.getDate() + 90)
+    const planHolder = await db.planHolder.upsert({
+      where: { nationalCode: '0012345678' },
+      update: {
+        userId: user.id,
+        firstName: '',
+        lastName: '',
+        mobile: '09111111111',
+        status: 'ACTIVE',
+      },
+      create: {
+        userId: user.id,
+        firstName: '',
+        lastName: '',
+        nationalCode: '0012345678',
+        mobile: '09111111111',
+        status: 'ACTIVE',
+      },
+    })
     const userPlan = await db.userPlan.create({
       data: {
         userId: user.id,
         planId: plan.id,
+        planHolderId: planHolder.id,
         referrerId: agent.id,
         status: 'ACTIVE',
         endDate,

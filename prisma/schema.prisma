@@ -12,15 +12,20 @@ datasource db {
 // ============================================
 
 model User {
-  id               String    @id @default(cuid())
-  mobile           String    @unique
-  email            String?   @unique
-  password         String?
-  status           String    @default("ACTIVE") // ACTIVE, INACTIVE, BLOCKED
-  isMobileVerified Boolean   @default(false)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  deletedAt        DateTime?
+  id                     String    @id @default(cuid())
+  mobile                 String    @unique
+  email                  String?   @unique
+  passwordHash           String?
+  status                 String    @default("ACTIVE") // ACTIVE, INACTIVE, BLOCKED
+  isMobileVerified       Boolean   @default(false)
+  isPasswordLoginEnabled Boolean   @default(false)
+  mustChangePassword     Boolean   @default(false)
+  passwordChangedAt      DateTime?
+  failedLoginAttempts    Int       @default(0)
+  lockedUntil            DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  deletedAt              DateTime?
 
   // Relations
   profile            UserProfile?
@@ -32,12 +37,19 @@ model User {
   devices            UserDevice[]
   loginLogs          LoginLog[]
   auditLogs          AuditLog[]
-  agentReviews       AgentDocument[] @relation("DocumentReviewer")
+  agentReviews       AgentDocument[]     @relation("DocumentReviewer")
   userPlans          UserPlan[]
-  referredBy         UserPlan[]       @relation("Referrer")
+  referredBy         UserPlan[]          @relation("Referrer")
   contracts          Contract[]
   commissions        Commission[]
   transactions       Transaction[]
+  planHolders        PlanHolder[]
+  payments           Payment[]
+  visits             Visit[]
+  reviews            Review[]
+  wallet             Wallet?
+  walletTransactions WalletTransaction[]
+  settlements        Settlement[]
 
   @@index([mobile])
   @@index([status])
@@ -51,7 +63,7 @@ model UserProfile {
   nationalCode String?   @unique
   avatar       String?
   birthDate    DateTime?
-  gender       String?   // MALE, FEMALE
+  gender       String? // MALE, FEMALE
   address      String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
@@ -64,21 +76,21 @@ model UserProfile {
 // ============================================
 
 model Role {
-  id           String    @id @default(cuid())
-  name         String    @unique // SUPER_ADMIN, ADMIN, SUPPORT, AGENT, USER, DOCTOR
-  title        String    // عنوان فارسی
-  description  String?   @default("")
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id          String   @id @default(cuid())
+  name        String   @unique // SUPER_ADMIN, ADMIN, SUPPORT, AGENT, USER, DOCTOR
+  title       String // عنوان فارسی
+  description String?  @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   userRoles       UserRole[]
   rolePermissions RolePermission[]
 }
 
 model Permission {
-  id        String  @id @default(cuid())
-  name      String  @unique // manage_users, view_reports, etc.
-  module    String  // users, agents, doctors, reports, plans, contracts
+  id        String   @id @default(cuid())
+  name      String   @unique // manage_users, view_reports, etc.
+  module    String // users, agents, doctors, reports, plans, contracts
   title     String? // عنوان فارسی
   createdAt DateTime @default(now())
 
@@ -114,24 +126,26 @@ model RolePermission {
 // ============================================
 
 model Doctor {
-  id            String    @id @default(cuid())
-  userId        String    @unique
-  medicalCode   String?   @unique  // کد نظام پزشکی
-  specialty     String?   // تخصص
-  clinicName    String?   // نام مطب
-  clinicAddress String?   // آدرس مطب
-  city          String?   // شهر
-  province      String?   // استان
-  phone         String?   // تلفن مطب
-  bio           String?   // بیوگرافی
-  discountPercent Int     @default(0) // درصد تخفیف ویزیت (توسط مدیر — ۰ = استفاده از طرح بیمار)
-  status        String    @default("PENDING") // PENDING, APPROVED, REJECTED, SUSPENDED
-  verifiedAt    DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  medicalCode     String?   @unique // کد نظام پزشکی
+  specialty       String? // تخصص
+  clinicName      String? // نام مطب
+  clinicAddress   String? // آدرس مطب
+  city            String? // شهر
+  province        String? // استان
+  phone           String? // تلفن مطب
+  bio             String? // بیوگرافی
+  discountPercent Int       @default(0) // درصد تخفیف ویزیت (توسط مدیر — ۰ = استفاده از طرح بیمار)
+  status          String    @default("PENDING") // PENDING, APPROVED, REJECTED, SUSPENDED
+  verifiedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   contracts Contract[]
+  visits    Visit[]
+  reviews   Review[]
 
   @@index([status])
   @@index([specialty])
@@ -142,19 +156,20 @@ model Doctor {
 // ============================================
 
 model DiscountPlan {
-  id          String    @id @default(cuid())
-  name        String    // نام طرح
-  description String?   // توضیحات
-  price       Int       @default(0)     // قیمت (تومان)
-  discountPercent Int   @default(0)     // درصد تخفیف
-  durationDays Int      @default(30)    // مدت طرح (روز)
-  maxUses     Int       @default(-1)    // حداکثر دفعات استفاده (-1 = نامحدود)
-  status      String    @default("ACTIVE") // ACTIVE, INACTIVE
-  features    String?   // ویژگی‌های طرح (JSON array)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id              String   @id @default(cuid())
+  name            String // نام طرح
+  description     String? // توضیحات
+  price           Int      @default(0) // قیمت (تومان)
+  discountPercent Int      @default(0) // درصد تخفیف
+  durationDays    Int      @default(30) // مدت طرح (روز)
+  maxUses         Int      @default(-1) // حداکثر دفعات استفاده (-1 = نامحدود)
+  status          String   @default("ACTIVE") // ACTIVE, INACTIVE
+  features        String? // ویژگی‌های طرح (JSON array)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   userPlans UserPlan[]
+  payments  Payment[]
 
   @@index([status])
 }
@@ -163,28 +178,92 @@ model DiscountPlan {
 // User Plans (طرح‌های خریداری شده توسط کاربران)
 // ============================================
 
-model UserPlan {
+model PlanHolder {
+  id           String    @id @default(cuid())
+  userId       String?
+  firstName    String?   @default("")
+  lastName     String?   @default("")
+  nationalCode String    @unique
+  mobile       String?
+  birthDate    DateTime?
+  gender       String?
+  status       String    @default("ACTIVE") // ACTIVE, INACTIVE
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user      User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userPlans UserPlan[]
+  visits    Visit[]
+  payments  Payment[]
+
+  @@index([userId])
+  @@index([mobile])
+  @@index([status])
+}
+
+model Payment {
   id             String    @id @default(cuid())
-  userId         String
-  planId         String
-  referrerId     String?   // نماینده‌ای که معرفی کرده
-  status         String    @default("ACTIVE") // ACTIVE, EXPIRED, CANCELLED
-  startDate      DateTime  @default(now())
-  endDate        DateTime
-  remainingUses  Int       @default(-1)  // دفعات باقی‌مانده (-1 = نامحدود)
-  totalUses      Int       @default(0)
-  paymentRef     String?   // reference ID for payment
+  userId         String?
+  planHolderId   String?
+  planId         String?
+  amount         Int       @default(0)
+  discountAmount Int       @default(0)
+  finalAmount    Int       @default(0)
+  status         String    @default("PENDING") // PENDING, SUCCESS, FAILED, CANCELLED
+  gateway        String?
+  authority      String?
+  refId          String?
+  trackingCode   String?
+  paidAt         DateTime?
+  failedAt       DateTime?
+  metadata       String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan     DiscountPlan  @relation(fields: [planId], references: [id])
-  referrer   User?         @relation("Referrer", fields: [referrerId], references: [id])
-  contracts  Contract[]
-  commissions Commission[]
+  user       User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  planHolder PlanHolder?   @relation(fields: [planHolderId], references: [id], onDelete: SetNull)
+  plan       DiscountPlan? @relation(fields: [planId], references: [id])
+  userPlan   UserPlan?
 
   @@index([userId])
+  @@index([planHolderId])
+  @@index([planId])
   @@index([status])
+  @@index([gateway])
+  @@index([refId])
+  @@index([createdAt])
+}
+
+model UserPlan {
+  id            String   @id @default(cuid())
+  userId        String?
+  planId        String
+  planHolderId  String
+  paymentId     String?  @unique
+  referrerId    String? // نماینده‌ای که معرفی کرده
+  source        String   @default("ONLINE_PAYMENT") // ONLINE_PAYMENT, SALES_CONFIRMED, ADMIN_GRANT
+  status        String   @default("ACTIVE") // ACTIVE, EXPIRED, CANCELLED
+  startDate     DateTime @default(now())
+  endDate       DateTime
+  remainingUses Int      @default(-1) // دفعات باقی‌مانده (-1 = نامحدود)
+  totalUses     Int      @default(0)
+  paymentRef    String? // reference ID for payment
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user        User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  plan        DiscountPlan @relation(fields: [planId], references: [id])
+  planHolder  PlanHolder   @relation(fields: [planHolderId], references: [id])
+  payment     Payment?     @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  referrer    User?        @relation("Referrer", fields: [referrerId], references: [id])
+  contracts   Contract[]
+  commissions Commission[]
+  visits      Visit[]
+
+  @@index([userId])
+  @@index([planHolderId])
+  @@index([status])
+  @@index([source])
   @@index([endDate])
 }
 
@@ -193,25 +272,26 @@ model UserPlan {
 // ============================================
 
 model Contract {
-  id              String    @id @default(cuid())
-  userId          String
-  userPlanId      String
-  doctorId        String
-  patientNote     String?   // توضیحات بیمار
-  doctorNote      String?   // گزارش پزشک
-  diagnosis       String?   // تشخیص
-  prescriptions   String?   // نسخه (JSON)
-  discountAmount  Int       @default(0)    // مبلغ تخفیف (تومان)
-  totalAmount     Int       @default(0)    // مبلغ کل (تومان)
-  status          String    @default("PENDING") // PENDING, CONFIRMED, COMPLETED, CANCELLED
-  confirmedAt     DateTime?
-  completedAt     DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id             String    @id @default(cuid())
+  userId         String
+  userPlanId     String
+  doctorId       String
+  patientNote    String? // توضیحات بیمار
+  doctorNote     String? // گزارش پزشک
+  diagnosis      String? // تشخیص
+  prescriptions  String? // نسخه (JSON)
+  discountAmount Int       @default(0) // مبلغ تخفیف (تومان)
+  totalAmount    Int       @default(0) // مبلغ کل (تومان)
+  status         String    @default("PENDING") // PENDING, CONFIRMED, COMPLETED, CANCELLED
+  confirmedAt    DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userPlan UserPlan    @relation(fields: [userPlanId], references: [id])
-  doctor   Doctor      @relation(fields: [doctorId], references: [id])
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userPlan UserPlan @relation(fields: [userPlanId], references: [id])
+  doctor   Doctor   @relation(fields: [doctorId], references: [id])
+  visit    Visit?
 
   @@index([userId])
   @@index([userPlanId])
@@ -223,6 +303,126 @@ model Contract {
 // ============================================
 // Agents (نمایندگان)
 // ============================================
+
+model Visit {
+  id             String    @id @default(cuid())
+  userId         String?
+  userPlanId     String
+  planHolderId   String
+  doctorId       String
+  contractId     String?   @unique
+  status         String    @default("PENDING") // PENDING, CONFIRMED, COMPLETED, CANCELLED
+  patientNote    String?
+  doctorNote     String?
+  diagnosis      String?
+  prescriptions  String?
+  discountAmount Int       @default(0)
+  totalAmount    Int       @default(0)
+  visitedAt      DateTime?
+  confirmedAt    DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user       User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userPlan   UserPlan   @relation(fields: [userPlanId], references: [id])
+  planHolder PlanHolder @relation(fields: [planHolderId], references: [id])
+  doctor     Doctor     @relation(fields: [doctorId], references: [id])
+  contract   Contract?  @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  review     Review?
+
+  @@index([userId])
+  @@index([userPlanId])
+  @@index([planHolderId])
+  @@index([doctorId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  doctorId  String
+  visitId   String   @unique
+  rating    Int
+  comment   String?
+  status    String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  visit  Visit  @relation(fields: [visitId], references: [id])
+
+  @@index([userId])
+  @@index([doctorId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Wallet {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  balance        Int      @default(0)
+  pendingBalance Int      @default(0)
+  currency       String   @default("IRR")
+  status         String   @default("ACTIVE") // ACTIVE, BLOCKED
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[]
+  settlements  Settlement[]
+
+  @@index([status])
+}
+
+model WalletTransaction {
+  id            String   @id @default(cuid())
+  walletId      String
+  userId        String
+  type          String // CREDIT, DEBIT, HOLD, RELEASE, SETTLEMENT
+  amount        Int      @default(0)
+  balanceAfter  Int?
+  status        String   @default("SUCCESS") // SUCCESS, PENDING, FAILED, CANCELLED
+  description   String?
+  referenceType String?
+  referenceId   String?
+  createdAt     DateTime @default(now())
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([walletId])
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+  @@index([referenceType, referenceId])
+  @@index([createdAt])
+}
+
+model Settlement {
+  id           String    @id @default(cuid())
+  walletId     String
+  userId       String
+  amount       Int       @default(0)
+  status       String    @default("PENDING") // PENDING, APPROVED, PAID, REJECTED, CANCELLED
+  trackingCode String?
+  receiptUrl   String?
+  requestedAt  DateTime  @default(now())
+  settledAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([walletId])
+  @@index([userId])
+  @@index([status])
+  @@index([trackingCode])
+  @@index([requestedAt])
+}
 
 model Agent {
   id           String    @id @default(cuid())
@@ -236,7 +436,7 @@ model Agent {
   updatedAt    DateTime  @updatedAt
 
   user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  documents  AgentDocument[]
+  documents AgentDocument[]
 
   @@index([status])
 }
@@ -244,15 +444,15 @@ model Agent {
 model AgentDocument {
   id         String    @id @default(cuid())
   agentId    String
-  type       String    // NATIONAL_CARD, BUSINESS_LICENSE, CERTIFICATE, OTHER
-  file       String    // path to file
+  type       String // NATIONAL_CARD, BUSINESS_LICENSE, CERTIFICATE, OTHER
+  file       String // path to file
   status     String    @default("PENDING") // PENDING, APPROVED, REJECTED
   reviewedBy String?
   reviewedAt DateTime?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
-  agent   Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agent    Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
   reviewer User? @relation("DocumentReviewer", fields: [reviewedBy], references: [id])
 
   @@index([agentId])
@@ -264,17 +464,17 @@ model AgentDocument {
 // ============================================
 
 model Commission {
-  id            String    @id @default(cuid())
-  agentId       String    // کاربر نماینده
-  userPlanId    String    // طرح خریداری شده
-  amount        Int       @default(0)     // مبلغ پورسانت (تومان)
-  percent       Int       @default(0)     // درصد پورسانت
-  status        String    @default("PENDING") // PENDING, APPROVED, PAID, CANCELLED
-  paidAt        DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id         String    @id @default(cuid())
+  agentId    String // کاربر نماینده
+  userPlanId String // طرح خریداری شده
+  amount     Int       @default(0) // مبلغ پورسانت (تومان)
+  percent    Int       @default(0) // درصد پورسانت
+  status     String    @default("PENDING") // PENDING, APPROVED, PAID, CANCELLED
+  paidAt     DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
-  agent   User     @relation(fields: [agentId], references: [id])
+  agent    User     @relation(fields: [agentId], references: [id])
   userPlan UserPlan @relation(fields: [userPlanId], references: [id])
 
   @@index([agentId])
@@ -286,14 +486,14 @@ model Commission {
 // ============================================
 
 model Transaction {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   userId      String
-  type        String    // PURCHASE, COMMISSION_PAYOUT, REFUND
-  amount      Int       @default(0)     // مبلغ (تومان)
+  type        String // PURCHASE, COMMISSION_PAYOUT, REFUND
+  amount      Int      @default(0) // مبلغ (تومان)
   description String?
-  status      String    @default("SUCCESS") // SUCCESS, FAILED, PENDING
-  refId       String?   // reference ID
-  createdAt   DateTime  @default(now())
+  status      String   @default("SUCCESS") // SUCCESS, FAILED, PENDING
+  refId       String? // reference ID
+  createdAt   DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -308,7 +508,7 @@ model Transaction {
 
 model PageContent {
   id        String   @id @default(cuid())
-  slug      String   @unique  // about, terms, privacy, contact, faq
+  slug      String   @unique // about, terms, privacy, contact, faq
   title     String
   content   String   @default("")
   status    String   @default("PUBLISHED") // DRAFT, PUBLISHED
@@ -326,7 +526,7 @@ model Upload {
   id        String   @id @default(cuid())
   userId    String
   path      String
-  type      String   // AVATAR, DOCUMENT, GENERAL
+  type      String // AVATAR, DOCUMENT, GENERAL
   size      Int      @default(0)
   mimeType  String   @default("")
   createdAt DateTime @default(now())
@@ -378,7 +578,7 @@ model LoginLog {
   mobile    String?
   ip        String?
   device    String?
-  status    String   // SUCCESS, FAILED
+  status    String // SUCCESS, FAILED
   createdAt DateTime @default(now())
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -392,12 +592,12 @@ model LoginLog {
 // ============================================
 
 model OtpCode {
-  id            String   @id @default(cuid())
-  mobile        String
-  code          String
-  verifyAttempts Int     @default(0)
-  expiresAt     DateTime
-  createdAt     DateTime @default(now())
+  id             String   @id @default(cuid())
+  mobile         String
+  code           String
+  verifyAttempts Int      @default(0)
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
 
   @@index([mobile])
   @@index([expiresAt])
@@ -410,10 +610,10 @@ model OtpCode {
 model AuditLog {
   id        String   @id @default(cuid())
   userId    String?
-  action    String   // USER_LOGIN, PLAN_PURCHASED, CONTRACT_CREATED, etc.
-  entity    String?  // User, Agent, Doctor, Plan, Contract, etc.
+  action    String // USER_LOGIN, PLAN_PURCHASED, CONTRACT_CREATED, etc.
+  entity    String? // User, Agent, Doctor, Plan, Contract, etc.
   entityId  String?
-  details   String?  // JSON string for additional context
+  details   String? // JSON string for additional context
   ip        String?
   device    String?
   createdAt DateTime @default(now())

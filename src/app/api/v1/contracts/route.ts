@@ -129,6 +129,10 @@ export async function POST(request: NextRequest) {
   }
 
   const resolvedPatientId = patientId ?? userPlan.userId
+  if (!resolvedPatientId) {
+    return errorResponse('VALIDATION_ERROR', 'Legacy contract creation requires a linked user account', 400)
+  }
+
   const effectiveDiscountPercent = getEffectiveDiscountPercent(
     doctor.discountPercent,
     userPlan.plan.discountPercent

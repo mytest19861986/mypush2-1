@@ -38,6 +38,37 @@ export async function POST(request: NextRequest) {
     const startDate = new Date()
     const endDate = new Date(startDate.getTime() + plan.durationDays * 24 * 60 * 60 * 1000)
 
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      include: { profile: true },
+    })
+    if (!user?.profile?.nationalCode) {
+      return errorResponse('PROFILE_INCOMPLETE', 'کد ملی کاربر برای صدور طرح الزامی است', 400)
+    }
+
+    const planHolder = await db.planHolder.upsert({
+      where: { nationalCode: user.profile.nationalCode },
+      update: {
+        userId,
+        firstName: user.profile.firstName,
+        lastName: user.profile.lastName,
+        mobile: user.mobile,
+        birthDate: user.profile.birthDate,
+        gender: user.profile.gender,
+        status: 'ACTIVE',
+      },
+      create: {
+        userId,
+        firstName: user.profile.firstName,
+        lastName: user.profile.lastName,
+        nationalCode: user.profile.nationalCode,
+        mobile: user.mobile,
+        birthDate: user.profile.birthDate,
+        gender: user.profile.gender,
+        status: 'ACTIVE',
+      },
+    })
+
     // Determine referrer
     let referrerId: string | null = null
     if (referrerCode) {
@@ -56,6 +87,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId,
         planId,
+        planHolderId: planHolder.id,
         referrerId,
         status: 'ACTIVE',
         startDate,
