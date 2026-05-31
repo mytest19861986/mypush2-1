@@ -169,3 +169,39 @@ export async function requirePermission(
     error: null,
   }
 }
+
+/**
+ * Permission guard for endpoints that accept any one of multiple permissions.
+ */
+export async function requireAnyPermission(
+  request: NextRequest,
+  permissions: string[]
+): Promise<PermissionResult> {
+  const { authenticated, payload, error } = await authenticateRequest(request)
+
+  if (!authenticated || !payload) {
+    return {
+      authorized: false,
+      payload: null,
+      error,
+    }
+  }
+
+  const hasPermission = permissions.some((permission) =>
+    payload.permissions.includes(permission)
+  )
+
+  if (!hasPermission) {
+    return {
+      authorized: false,
+      payload,
+      error: `Permission denied: required one of '${permissions.join("', '")}'`,
+    }
+  }
+
+  return {
+    authorized: true,
+    payload,
+    error: null,
+  }
+}
