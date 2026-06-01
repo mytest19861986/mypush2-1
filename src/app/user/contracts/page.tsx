@@ -1,327 +1,273 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { contractsService } from '@/services'
-import { PageHeader, StatusBadge } from '@/components/shared'
-import { toPersianNum, formatPrice, formatDate, getDisplayName } from '@/utils/formatters'
-import { CONTRACT_STATUS_LABELS } from '@/constants'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
+import { apiClient } from '@/lib/api-client'
+import { PageHeader, StatusBadge, StatCard } from '@/components/shared'
 import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import {
-  FileText,
-  Activity,
-  Calendar,
-  Stethoscope,
-  AlertCircle,
-  RefreshCw,
-  Filter,
-} from 'lucide-react'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import type { ContractItem } from '@/types'
+import { Label } from '@/components/ui/label'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Textarea } from '@/components/ui/textarea'
+import { formatDate, toPersianNum } from '@/utils/formatters'
+import {
+  AlertCircle,
+  CalendarDays,
+  ClipboardList,
+  FileText,
+  MessageSquare,
+  RefreshCw,
+  Star,
+  Stethoscope,
+} from 'lucide-react'
 
-// ---------- Contract Detail Dialog ----------
+type UserVisit = {
+  visitId: string
+  status: string
+  visitedAt: string | null
+  createdAt: string
+  doctorName?: string | null
+  doctorSpecialty?: string | null
+  notes?: string | null
+  plan?: {
+    title?: string | null
+    endDate?: string | null
+  } | null
+  doctor?: {
+    name?: string | null
+    specialty?: string | null
+  } | null
+}
 
-function ContractDetailDialog({
-  contract,
-  open,
-  onOpenChange,
-}: {
-  contract: ContractItem | null
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}) {
-  if (!contract) return null
+type ReviewItem = {
+  reviewId: string
+  visitId: string
+  rating: number
+  comment: string | null
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | string
+  createdAt: string
+}
 
-  const doctorName = contract.doctor?.user?.profile
-    ? getDisplayName({ profile: contract.doctor.user.profile })
-    : 'نامشخص'
+const reviewStatusLabels: Record<string, string> = {
+  PENDING: 'در انتظار بررسی',
+  APPROVED: 'تایید شده',
+  REJECTED: 'رد شده',
+}
 
+const reviewStatusClasses: Record<string, string> = {
+  PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+  APPROVED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  REJECTED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+}
+
+function formatOptionalDate(date?: string | null) {
+  return date ? formatDate(date) : 'ثبت نشده'
+}
+
+function getDoctorName(visit: UserVisit) {
+  return visit.doctorName || visit.doctor?.name || 'پزشک'
+}
+
+function getDoctorSpecialty(visit: UserVisit) {
+  return visit.doctorSpecialty || visit.doctor?.specialty || 'تخصص ثبت نشده'
+}
+
+function getVisitNote(visit: UserVisit) {
+  return visit.notes || null
+}
+
+function ReviewStatus({ review }: { review: ReviewItem }) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg" dir="rtl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Activity className="size-5" />
-            جزئیات قرارداد
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4 mt-2">
-          {/* Doctor Info */}
-          <div className="rounded-lg border p-4 space-y-2">
-            <h4 className="text-sm font-semibold flex items-center gap-2">
-              <Stethoscope className="size-4 text-primary" />
-              اطلاعات پزشک
-            </h4>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div>
-                <span className="text-muted-foreground">نام پزشک:</span>
-                <p className="font-medium">{doctorName}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">تخصص:</span>
-                <p className="font-medium">
-                  {contract.doctor?.specialty || 'نامشخص'}
-                </p>
-              </div>
-              {contract.doctor?.clinicName && (
-                <div className="col-span-2">
-                  <span className="text-muted-foreground">مطب:</span>
-                  <p className="font-medium">{contract.doctor.clinicName}</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Diagnosis & Notes */}
-          <div className="rounded-lg border p-4 space-y-3">
-            <h4 className="text-sm font-semibold">توضیحات</h4>
-            <div className="space-y-2 text-sm">
-              {contract.diagnosis && (
-                <div>
-                  <span className="text-muted-foreground">تشخیص:</span>
-                  <p className="mt-0.5">{contract.diagnosis}</p>
-                </div>
-              )}
-              {contract.patientNote && (
-                <div>
-                  <span className="text-muted-foreground">توضیحات بیمار:</span>
-                  <p className="mt-0.5">{contract.patientNote}</p>
-                </div>
-              )}
-              {contract.doctorNote && (
-                <div>
-                  <span className="text-muted-foreground">گزارش پزشک:</span>
-                  <p className="mt-0.5">{contract.doctorNote}</p>
-                </div>
-              )}
-              {!contract.diagnosis &&
-                !contract.patientNote &&
-                !contract.doctorNote && (
-                  <p className="text-muted-foreground">توضیحاتی ثبت نشده</p>
-                )}
-            </div>
-          </div>
-
-          {/* Financial */}
-          <div className="rounded-lg border p-4 space-y-2">
-            <h4 className="text-sm font-semibold">اطلاعات مالی</h4>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div>
-                <span className="text-muted-foreground">مبلغ کل:</span>
-                <p className="font-medium">{formatPrice(contract.totalAmount)} تومان</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">مبلغ تخفیف:</span>
-                <p className="font-medium text-emerald-600">
-                  {formatPrice(contract.discountAmount)} تومان
-                </p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">طرح:</span>
-                <p className="font-medium">{contract.userPlan?.plan?.name || 'نامشخص'}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">درصد تخفیف:</span>
-                <p className="font-medium">
-                  {toPersianNum(contract.userPlan?.plan?.discountPercent || 0)}%
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Dates */}
-          <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <Calendar className="size-3" />
-              تاریخ ایجاد: {formatDate(contract.createdAt)}
-            </div>
-            {contract.confirmedAt && (
-              <div className="flex items-center gap-1">
-                <Calendar className="size-3" />
-                تایید: {formatDate(contract.confirmedAt)}
-              </div>
-            )}
-            {contract.completedAt && (
-              <div className="flex items-center gap-1">
-                <Calendar className="size-3" />
-                تکمیل: {formatDate(contract.completedAt)}
-              </div>
-            )}
-          </div>
-
-          {/* Status */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">وضعیت:</span>
-            <StatusBadge
-              status={contract.status}
-              label={CONTRACT_STATUS_LABELS[contract.status] || contract.status}
-            />
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-xs text-muted-foreground">نظر شما ثبت شده است</span>
+      <Badge
+        variant="secondary"
+        className={reviewStatusClasses[review.status] || 'bg-muted text-muted-foreground'}
+      >
+        {reviewStatusLabels[review.status] || review.status}
+      </Badge>
+    </div>
   )
 }
 
-// ---------- Mobile Contract Card ----------
-
-function MobileContractCard({
-  contract,
-  onView,
-}: {
-  contract: ContractItem
-  onView: () => void
-}) {
-  const doctorName = contract.doctor?.user?.profile
-    ? getDisplayName({ profile: contract.doctor.user.profile })
-    : 'نامشخص'
-
+function LoadingState() {
   return (
-    <Card className="transition-all hover:shadow-sm">
-      <CardContent className="p-4 space-y-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <Stethoscope className="size-4" />
+    <div className="space-y-6">
+      <Skeleton className="h-8 w-48" />
+      <Skeleton className="h-4 w-96 max-w-full" />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Skeleton className="h-28 rounded-lg" />
+        <Skeleton className="h-28 rounded-lg" />
+        <Skeleton className="h-28 rounded-lg" />
+      </div>
+      <Card>
+        <CardContent className="space-y-4 p-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="flex items-center gap-4">
+              <Skeleton className="size-10 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-40 max-w-full" />
+                <Skeleton className="h-3 w-64 max-w-full" />
+              </div>
+              <Skeleton className="hidden h-8 w-24 sm:block" />
             </div>
-            <div>
-              <p className="text-sm font-semibold">{doctorName}</p>
-              <p className="text-xs text-muted-foreground">
-                {contract.doctor?.specialty || 'تخصص نامشخص'}
-              </p>
-            </div>
-          </div>
-          <StatusBadge
-            status={contract.status}
-            label={CONTRACT_STATUS_LABELS[contract.status] || contract.status}
-          />
-        </div>
-
-        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Calendar className="size-3" />
-            {formatDate(contract.createdAt)}
-          </div>
-          {contract.diagnosis && (
-            <div className="flex items-center gap-1">
-              <Activity className="size-3" />
-              {contract.diagnosis}
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div className="text-xs text-muted-foreground">
-            <span className="text-foreground font-medium">
-              {formatPrice(contract.totalAmount)}
-            </span>{' '}
-            تومان
-            {contract.discountAmount > 0 && (
-              <span className="text-emerald-600 mr-2">
-                ({formatPrice(contract.discountAmount)} تخفیف)
-              </span>
-            )}
-          </div>
-          <Button variant="ghost" size="sm" className="text-xs" onClick={onView}>
-            جزئیات
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
   )
 }
-
-// ---------- Contracts Page ----------
 
 export default function UserContractsPage() {
-  const [contracts, setContracts] = useState<ContractItem[]>([])
-  const [loading, setLoading] = useState(true)
+  const [visits, setVisits] = useState<UserVisit[]>([])
+  const [reviews, setReviews] = useState<ReviewItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [statusFilter, setStatusFilter] = useState<string>('ALL')
-  const [selectedContract, setSelectedContract] = useState<ContractItem | null>(null)
-  const [detailOpen, setDetailOpen] = useState(false)
+  const [feedback, setFeedback] = useState<{
+    type: 'success' | 'error'
+    message: string
+  } | null>(null)
+  const [reviewVisit, setReviewVisit] = useState<UserVisit | null>(null)
+  const [rating, setRating] = useState(0)
+  const [comment, setComment] = useState('')
+  const [isSavingReview, setIsSavingReview] = useState(false)
+  const [reviewError, setReviewError] = useState<string | null>(null)
+  const isSavingRef = useRef(false)
 
-  const fetchContracts = async () => {
-    setLoading(true)
+  const reviewsByVisit = useMemo(
+    () =>
+      reviews.reduce<Record<string, ReviewItem>>((acc, review) => {
+        if (review.visitId) acc[review.visitId] = review
+        return acc
+      }, {}),
+    [reviews]
+  )
+
+  const stats = useMemo(() => {
+    return {
+      total: visits.length,
+      reviewed: visits.filter((visit) => reviewsByVisit[visit.visitId]).length,
+      pendingReview: visits.filter((visit) => !reviewsByVisit[visit.visitId]).length,
+    }
+  }, [reviewsByVisit, visits])
+
+  const fetchData = useCallback(async () => {
+    setIsLoading(true)
     setError(null)
+    setFeedback(null)
+
     try {
-      const res = await contractsService.getMyContracts()
-      if (res.success && res.data) {
-        setContracts(res.data as ContractItem[])
-      } else {
-        const errorMsg = (res as any).error?.message || 'خطا در دریافت اطلاعات قراردادها'
-        console.error('[Contracts fetch error]', res)
-        setError(errorMsg)
+      const [visitsRes, reviewsRes] = await Promise.all([
+        apiClient.get<UserVisit[]>('/visits/my?take=50'),
+        apiClient.get<ReviewItem[]>('/reviews/my?take=100'),
+      ])
+
+      if (!visitsRes.success || !visitsRes.data) {
+        throw new Error('خطا در دریافت سوابق ویزیت‌ها')
       }
+
+      setVisits(Array.isArray(visitsRes.data) ? visitsRes.data : [])
+      setReviews(
+        reviewsRes.success && Array.isArray(reviewsRes.data)
+          ? reviewsRes.data
+          : []
+      )
     } catch (err) {
-      console.error('[Contracts fetch exception]', err)
-      const msg = err instanceof Error ? err.message : 'خطا در ارتباط با سرور'
-      setError(msg)
+      const message = err instanceof Error ? err.message : 'خطا در ارتباط با سرور'
+      setVisits([])
+      setReviews([])
+      setError(message)
     } finally {
-      setLoading(false)
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  const openReviewDialog = (visit: UserVisit) => {
+    setReviewVisit(visit)
+    setRating(0)
+    setComment('')
+    setReviewError(null)
+  }
+
+  const closeReviewDialog = () => {
+    if (isSavingReview) return
+    setReviewVisit(null)
+    setRating(0)
+    setComment('')
+    setReviewError(null)
+  }
+
+  const submitReview = async () => {
+    if (!reviewVisit || isSavingRef.current) return
+
+    if (rating < 1 || rating > 5) {
+      setReviewError('لطفا امتیاز خود را از ۱ تا ۵ انتخاب کنید.')
+      return
+    }
+
+    if (comment.trim().length > 1000) {
+      setReviewError('متن نظر نباید بیشتر از ۱۰۰۰ کاراکتر باشد.')
+      return
+    }
+
+    isSavingRef.current = true
+    setIsSavingReview(true)
+    setReviewError(null)
+    setFeedback(null)
+
+    try {
+      const createdReview = await apiClient.post<ReviewItem>('/reviews', {
+        visitId: reviewVisit.visitId,
+        rating,
+        comment: comment.trim() || undefined,
+      })
+
+      setReviews((prev) => [
+        createdReview,
+        ...prev.filter((review) => review.visitId !== createdReview.visitId),
+      ])
+      setFeedback({
+        type: 'success',
+        message: 'نظر شما با موفقیت ثبت شد و پس از تایید نمایش داده می‌شود.',
+      })
+      setReviewVisit(null)
+      setRating(0)
+      setComment('')
+      setReviewError(null)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'خطا در ثبت نظر'
+      setReviewError(message)
+      setFeedback({ type: 'error', message })
+    } finally {
+      isSavingRef.current = false
+      setIsSavingReview(false)
     }
   }
 
-  useEffect(() => {
-    fetchContracts()
-  }, [])
-
-  // ---------- Filter ----------
-
-  const filteredContracts =
-    statusFilter === 'ALL'
-      ? contracts
-      : contracts.filter((c) => c.status === statusFilter)
-
-  // ---------- Loading ----------
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-10 w-full max-w-xs" />
-        <div className="space-y-3">
-          <Skeleton className="h-24 rounded-lg" />
-          <Skeleton className="h-24 rounded-lg" />
-          <Skeleton className="h-24 rounded-lg" />
-        </div>
-      </div>
-    )
+  if (isLoading) {
+    return <LoadingState />
   }
-
-  // ---------- Error ----------
 
   if (error) {
     return (
       <Card className="border-destructive/50">
-        <CardContent className="flex flex-col items-center gap-3 py-12">
+        <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
           <AlertCircle className="size-12 text-destructive" />
           <p className="font-medium text-destructive">{error}</p>
-          <Button variant="outline" onClick={fetchContracts}>
-            <RefreshCw className="ml-2 size-4" />
+          <Button variant="outline" className="gap-2" onClick={fetchData}>
+            <RefreshCw className="size-4" />
             تلاش مجدد
           </Button>
         </CardContent>
@@ -330,174 +276,254 @@ export default function UserContractsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-6" dir="rtl">
       <PageHeader
-        title="قراردادها و سابقه ویزیت"
-        description="مشاهده تمام قراردادها و سابقه ویزیت‌های شما"
-        action={
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40">
-              <Filter className="ml-2 size-4" />
-              <SelectValue placeholder="فیلتر وضعیت" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">همه</SelectItem>
-              <SelectItem value="PENDING">در انتظار</SelectItem>
-              <SelectItem value="CONFIRMED">تایید شده</SelectItem>
-              <SelectItem value="COMPLETED">تکمیل شده</SelectItem>
-              <SelectItem value="CANCELLED">لغو شده</SelectItem>
-            </SelectContent>
-          </Select>
-        }
+        title="سوابق ویزیت‌های من"
+        description="ویزیت‌های ثبت‌شده شما در سامانه حامی کارت را مشاهده و در صورت تمایل نظر خود را ثبت کنید."
       />
 
-      {/* Stats Bar */}
-      <div className="flex flex-wrap gap-3">
-        <Badge variant="outline" className="px-3 py-1.5">
-          <FileText className="ml-1 size-3" />
-          کل: {toPersianNum(contracts.length)}
-        </Badge>
-        <Badge variant="outline" className="bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 px-3 py-1.5">
-          در انتظار: {toPersianNum(contracts.filter((c) => c.status === 'PENDING').length)}
-        </Badge>
-        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 px-3 py-1.5">
-          تکمیل شده: {toPersianNum(contracts.filter((c) => c.status === 'COMPLETED').length)}
-        </Badge>
+      {feedback && (
+        <Card
+          className={
+            feedback.type === 'success'
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300'
+              : 'border-destructive/40 bg-destructive/5 text-destructive'
+          }
+        >
+          <CardContent className="p-4 text-sm">{feedback.message}</CardContent>
+        </Card>
+      )}
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard
+          title="کل ویزیت‌ها"
+          value={toPersianNum(stats.total)}
+          icon={ClipboardList}
+          iconClassName="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+        />
+        <StatCard
+          title="نظرهای ثبت‌شده"
+          value={toPersianNum(stats.reviewed)}
+          icon={MessageSquare}
+          iconClassName="bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400"
+        />
+        <StatCard
+          title="بدون نظر"
+          value={toPersianNum(stats.pendingReview)}
+          icon={Star}
+          iconClassName="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+        />
       </div>
 
-      {/* Empty State */}
-      {filteredContracts.length === 0 && (
+      {visits.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-12">
-            <div className="flex size-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
+          <CardContent className="flex flex-col items-center gap-4 p-8 text-center">
+            <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
               <FileText className="size-7" />
             </div>
-            <p className="text-sm text-muted-foreground text-center">
-              {statusFilter === 'ALL'
-                ? 'هنوز قراردادی ثبت نشده است.'
-                : `قراردادی با وضعیت "${CONTRACT_STATUS_LABELS[statusFilter as keyof typeof CONTRACT_STATUS_LABELS] || statusFilter}" یافت نشد.`}
-            </p>
-            {statusFilter !== 'ALL' && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setStatusFilter('ALL')}
-              >
-                نمایش همه قراردادها
-              </Button>
-            )}
+            <div>
+              <h2 className="font-semibold">هنوز ویزیتی برای شما ثبت نشده است.</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                پس از استفاده از طرح‌ها، سوابق ویزیت شما در این بخش نمایش داده می‌شود.
+              </p>
+            </div>
+            <Button asChild>
+              <Link href="/user/plans">مشاهده طرح‌ها</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ClipboardList className="size-4 text-primary" />
+              لیست ویزیت‌ها
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-muted-foreground">
+                    <th className="py-3 text-right font-medium">پزشک</th>
+                    <th className="py-3 text-right font-medium">تخصص</th>
+                    <th className="py-3 text-right font-medium">طرح</th>
+                    <th className="py-3 text-right font-medium">وضعیت ویزیت</th>
+                    <th className="py-3 text-right font-medium">تاریخ ویزیت</th>
+                    <th className="py-3 text-right font-medium">یادداشت پزشک</th>
+                    <th className="py-3 text-right font-medium">نظر شما</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visits.map((visit) => {
+                    const review = reviewsByVisit[visit.visitId]
+                    const note = getVisitNote(visit)
+
+                    return (
+                      <tr key={visit.visitId} className="border-b last:border-0">
+                        <td className="py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                              <Stethoscope className="size-4" />
+                            </div>
+                            <span className="font-medium">{getDoctorName(visit)}</span>
+                          </div>
+                        </td>
+                        <td className="py-4">{getDoctorSpecialty(visit)}</td>
+                        <td className="py-4">{visit.plan?.title || 'ثبت نشده'}</td>
+                        <td className="py-4">
+                          <StatusBadge status={visit.status} />
+                        </td>
+                        <td className="py-4">
+                          <div className="space-y-1">
+                            <p>{formatOptionalDate(visit.visitedAt)}</p>
+                            <p className="text-xs text-muted-foreground">
+                              ثبت: {formatOptionalDate(visit.createdAt)}
+                            </p>
+                          </div>
+                        </td>
+                        <td className="max-w-[220px] py-4">
+                          <span className="line-clamp-2 text-muted-foreground">
+                            {note || 'ثبت نشده'}
+                          </span>
+                        </td>
+                        <td className="py-4">
+                          {review ? (
+                            <ReviewStatus review={review} />
+                          ) : (
+                            <Button size="sm" onClick={() => openReviewDialog(visit)}>
+                              ثبت نظر
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="space-y-3 md:hidden">
+              {visits.map((visit) => {
+                const review = reviewsByVisit[visit.visitId]
+                const note = getVisitNote(visit)
+
+                return (
+                  <div key={visit.visitId} className="rounded-lg border p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold">{getDoctorName(visit)}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {getDoctorSpecialty(visit)}
+                        </p>
+                      </div>
+                      <StatusBadge status={visit.status} />
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-1 gap-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <FileText className="size-4" />
+                        <span>طرح: {visit.plan?.title || 'ثبت نشده'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CalendarDays className="size-4" />
+                        <span>تاریخ ویزیت: {formatOptionalDate(visit.visitedAt)}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CalendarDays className="size-4" />
+                        <span>ثبت در سامانه: {formatOptionalDate(visit.createdAt)}</span>
+                      </div>
+                    </div>
+
+                    {note && (
+                      <div className="mt-4 rounded-md bg-muted/50 p-3 text-sm leading-6">
+                        {note}
+                      </div>
+                    )}
+
+                    <div className="mt-4 flex justify-end">
+                      {review ? (
+                        <ReviewStatus review={review} />
+                      ) : (
+                        <Button size="sm" onClick={() => openReviewDialog(visit)}>
+                          ثبت نظر
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Desktop Table */}
-      {filteredContracts.length > 0 && (
-        <>
-          {/* Desktop */}
-          <Card className="hidden md:block">
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>پزشک</TableHead>
-                    <TableHead>تاریخ</TableHead>
-                    <TableHead>تشخیص</TableHead>
-                    <TableHead>مبلغ</TableHead>
-                    <TableHead>وضعیت</TableHead>
-                    <TableHead className="text-left">عملیات</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredContracts.map((contract) => {
-                    const doctorName = contract.doctor?.user?.profile
-                      ? getDisplayName({ profile: contract.doctor.user.profile })
-                      : 'نامشخص'
+      <Dialog open={Boolean(reviewVisit)} onOpenChange={(open) => !open && closeReviewDialog()}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="size-5 text-primary" />
+              ثبت نظر
+            </DialogTitle>
+          </DialogHeader>
 
-                    return (
-                      <TableRow key={contract.id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium text-sm">{doctorName}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {contract.doctor?.specialty || ''}
-                            </p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {formatDate(contract.createdAt)}
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm">
-                            {contract.diagnosis || (
-                              <span className="text-muted-foreground">—</span>
-                            )}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            <span className="font-medium">
-                              {formatPrice(contract.totalAmount)}
-                            </span>
-                            <span className="text-muted-foreground mr-1">
-                              تومان
-                            </span>
-                            {contract.discountAmount > 0 && (
-                              <span className="text-xs text-emerald-600 block">
-                                {formatPrice(contract.discountAmount)} تخفیف
-                              </span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge
-                            status={contract.status}
-                            label={CONTRACT_STATUS_LABELS[contract.status] || contract.status}
-                          />
-                        </TableCell>
-                        <TableCell className="text-left">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-xs"
-                            onClick={() => {
-                              setSelectedContract(contract)
-                              setDetailOpen(true)
-                            }}
-                          >
-                            جزئیات
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <div className="space-y-4">
+            {reviewVisit && (
+              <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+                <p className="font-medium">{getDoctorName(reviewVisit)}</p>
+                <p className="mt-1 text-muted-foreground">
+                  {reviewVisit.plan?.title || 'طرح ثبت نشده'}
+                </p>
+              </div>
+            )}
 
-          {/* Mobile Cards */}
-          <div className="md:hidden space-y-3">
-            {filteredContracts.map((contract) => (
-              <MobileContractCard
-                key={contract.id}
-                contract={contract}
-                onView={() => {
-                  setSelectedContract(contract)
-                  setDetailOpen(true)
-                }}
+            <div className="space-y-2">
+              <Label>امتیاز</Label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((value) => (
+                  <Button
+                    key={value}
+                    type="button"
+                    variant={rating === value ? 'default' : 'outline'}
+                    size="icon"
+                    onClick={() => setRating(value)}
+                    aria-label={`امتیاز ${value}`}
+                  >
+                    {toPersianNum(value)}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="reviewComment">نظر شما</Label>
+              <Textarea
+                id="reviewComment"
+                value={comment}
+                onChange={(event) => setComment(event.target.value.slice(0, 1000))}
+                placeholder="نظر خود را بنویسید..."
+                rows={4}
               />
-            ))}
-          </div>
-        </>
-      )}
+              <p className="text-xs text-muted-foreground">
+                {toPersianNum(comment.length)} / {toPersianNum(1000)}
+              </p>
+            </div>
 
-      {/* Detail Dialog */}
-      <ContractDetailDialog
-        contract={selectedContract}
-        open={detailOpen}
-        onOpenChange={setDetailOpen}
-      />
+            {reviewError && (
+              <p className="text-sm text-destructive">{reviewError}</p>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={closeReviewDialog} disabled={isSavingReview}>
+              انصراف
+            </Button>
+            <Button onClick={submitReview} disabled={isSavingReview}>
+              {isSavingReview ? 'در حال ثبت...' : 'ثبت نظر'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
