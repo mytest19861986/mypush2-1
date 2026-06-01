@@ -15,7 +15,13 @@ export async function buildUserResponse(user: {
   email: string | null
   isMobileVerified: boolean
   status: string
-  profile: { firstName: string | null; lastName: string | null; nationalCode: string | null; avatar: string | null } | null
+  profile: {
+    firstName: string | null
+    lastName: string | null
+    nationalCode: string | null
+    gender?: string | null
+    avatar: string | null
+  } | null
   agent: { id: string; businessName: string | null; status: string } | null
 }) {
   const [roles, permissions] = await Promise.all([
@@ -36,6 +42,7 @@ export async function buildUserResponse(user: {
           firstName: user.profile.firstName,
           lastName: user.profile.lastName,
           nationalCode: user.profile.nationalCode,
+          ...(user.profile.gender !== undefined ? { gender: user.profile.gender ?? null } : {}),
           avatar: user.profile.avatar,
         }
       : null,

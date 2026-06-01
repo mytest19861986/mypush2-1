@@ -8,7 +8,6 @@ import { PageHeader, StatCard, StatusBadge } from '@/components/shared'
 import { toPersianNum, formatPrice, formatDate, getDisplayName } from '@/utils/formatters'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
 import type { UserPlanItem, ContractItem } from '@/types'
@@ -193,6 +192,78 @@ export default function UserDashboardPage() {
         </div>
       </Card>
 
+      {/* My Plans */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between gap-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <CreditCard className="size-4 text-primary" />
+              طرح‌های من
+            </CardTitle>
+            {activePlans.length > 0 && (
+              <Link href="/user/plans">
+                <Button variant="ghost" size="sm" className="text-xs">
+                  مشاهده همه
+                  <ArrowLeft className="mr-1 size-3" />
+                </Button>
+              </Link>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {activePlans.length > 0 ? (
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+              {activePlans.map((plan) => (
+                <div key={plan.id} className="rounded-lg border bg-card p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                        <CreditCard className="size-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold">
+                          {plan.plan.name}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {toPersianNum(plan.plan.discountPercent)}٪ تخفیف
+                        </p>
+                      </div>
+                    </div>
+                    <StatusBadge status={plan.status} />
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-1 gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="size-3.5" />
+                      <span>شروع: {formatDate(plan.startDate)}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="size-3.5" />
+                      <span>پایان: {formatDate(plan.endDate)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-between gap-4 rounded-lg border border-dashed bg-muted/30 p-6 text-center sm:flex-row sm:text-right">
+              <div>
+                <p className="font-medium">هنوز طرح فعالی ندارید.</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  برای استفاده از تخفیف‌های درمانی، یک طرح مناسب انتخاب کنید.
+                </p>
+              </div>
+              <Link href="/user/plans">
+                <Button className="gap-2">
+                  <ShoppingCart className="size-4" />
+                  خرید طرح
+                </Button>
+              </Link>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
@@ -276,40 +347,6 @@ export default function UserDashboardPage() {
           />
         </div>
       </div>
-
-      {/* Active Plans Summary */}
-      {activePlans.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <CreditCard className="size-4" />
-              طرح‌های فعال شما
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {activePlans.map((plan) => (
-              <div key={plan.id}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-8 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">
-                      <CreditCard className="size-4" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">{plan.plan.name}</p>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Calendar className="size-3" />
-                        اعتبار تا: {formatDate(plan.endDate)}
-                      </p>
-                    </div>
-                  </div>
-                  <StatusBadge status={plan.status} label={`${toPersianNum(plan.plan.discountPercent)}% تخفیف`} />
-                </div>
-                <Separator className="mt-3" />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
 
       {/* Recent Contracts */}
       {recentContracts.length > 0 && (
