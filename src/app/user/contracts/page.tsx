@@ -73,7 +73,7 @@ function formatOptionalDate(date?: string | null) {
 }
 
 function getDoctorName(visit: UserVisit) {
-  return visit.doctorName || visit.doctor?.name || 'پزشک'
+  return visit.doctorName || visit.doctor?.name || 'پزشک ثبت نشده'
 }
 
 function getDoctorSpecialty(visit: UserVisit) {

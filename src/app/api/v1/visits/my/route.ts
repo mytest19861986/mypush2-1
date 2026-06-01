@@ -2,7 +2,6 @@ import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { authenticateRequest } from '@/lib/auth'
 import { successResponse, errorResponse } from '@/lib/api-response'
-import { toSafeVisitResponse } from '@/lib/visits'
 
 function parseBoundedInteger(value: string | null, defaultValue: number, maxValue: number) {
   if (value === null) return defaultValue
@@ -11,6 +10,19 @@ function parseBoundedInteger(value: string | null, defaultValue: number, maxValu
   if (!Number.isInteger(parsed) || parsed < 0) return null
 
   return Math.min(parsed, maxValue)
+}
+
+function getDoctorDisplayName(doctor: {
+  user: {
+    profile: {
+      firstName: string | null
+      lastName: string | null
+    } | null
+  }
+}) {
+  const profile = doctor.user.profile
+  const name = `${profile?.firstName || ''} ${profile?.lastName || ''}`.trim()
+  return name || null
 }
 
 // GET /api/v1/visits/my - Get visits linked to the current user
@@ -33,7 +45,21 @@ export async function GET(request: NextRequest) {
         status: true,
         visitedAt: true,
         createdAt: true,
-        doctorId: true,
+        doctor: {
+          select: {
+            specialty: true,
+            user: {
+              select: {
+                profile: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                  },
+                },
+              },
+            },
+          },
+        },
         planHolder: {
           select: {
             firstName: true,
@@ -56,7 +82,24 @@ export async function GET(request: NextRequest) {
       skip,
     })
 
-    return successResponse(visits.map(toSafeVisitResponse))
+    return successResponse(
+      visits.map((visit) => ({
+        visitId: visit.id,
+        status: visit.status,
+        visitedAt: visit.visitedAt?.toISOString() ?? null,
+        createdAt: visit.createdAt.toISOString(),
+        doctorName: getDoctorDisplayName(visit.doctor),
+        doctorSpecialty: visit.doctor.specialty,
+        plan: {
+          title: visit.userPlan.plan.name,
+          endDate: visit.userPlan.endDate.toISOString(),
+        },
+        planHolder: {
+          firstName: visit.planHolder.firstName,
+          lastName: visit.planHolder.lastName,
+        },
+      }))
+    )
   } catch (err) {
     console.error('[GET /api/v1/visits/my]', err)
     return errorResponse('INTERNAL_ERROR', 'Internal server error', 500)

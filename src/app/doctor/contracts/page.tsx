@@ -37,6 +37,141 @@ type DoctorVisit = {
   } | null
 }
 
+type ParsedJalaliDate = {
+  isoStart: string
+  isoEnd: string
+  timestamp: number
+}
+
+function normalizePersianDigits(value: string) {
+  return value
+    .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
+    .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+    .trim()
+}
+
+function padDatePart(value: number) {
+  return String(value).padStart(2, '0')
+}
+
+function jalaliToGregorian(jy: number, jm: number, jd: number) {
+  let days =
+    -355668 +
+    365 * (jy + 1595) +
+    Math.floor((jy + 1595) / 33) * 8 +
+    Math.floor((((jy + 1595) % 33) + 3) / 4) +
+    jd +
+    (jm < 7 ? (jm - 1) * 31 : (jm - 7) * 30 + 186)
+
+  let gy = 400 * Math.floor(days / 146097)
+  days %= 146097
+
+  if (days > 36524) {
+    gy += 100 * Math.floor(--days / 36524)
+    days %= 36524
+    if (days >= 365) days++
+  }
+
+  gy += 4 * Math.floor(days / 1461)
+  days %= 1461
+
+  if (days > 365) {
+    gy += Math.floor((days - 1) / 365)
+    days = (days - 1) % 365
+  }
+
+  let gd = days + 1
+  const monthDays = [
+    0,
+    31,
+    (gy % 4 === 0 && gy % 100 !== 0) || gy % 400 === 0 ? 29 : 28,
+    31,
+    30,
+    31,
+    30,
+    31,
+    31,
+    30,
+    31,
+    30,
+    31,
+  ]
+  let gm = 1
+
+  while (gm <= 12 && gd > monthDays[gm]) {
+    gd -= monthDays[gm]
+    gm++
+  }
+
+  return { gy, gm, gd }
+}
+
+function gregorianToJalali(gy: number, gm: number, gd: number) {
+  const gregorianMonthDays = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+  let jy = gy <= 1600 ? 0 : 979
+  gy -= gy <= 1600 ? 621 : 1600
+  const gy2 = gm > 2 ? gy + 1 : gy
+  let days =
+    365 * gy +
+    Math.floor((gy2 + 3) / 4) -
+    Math.floor((gy2 + 99) / 100) +
+    Math.floor((gy2 + 399) / 400) -
+    80 +
+    gd +
+    gregorianMonthDays[gm - 1]
+
+  jy += 33 * Math.floor(days / 12053)
+  days %= 12053
+  jy += 4 * Math.floor(days / 1461)
+  days %= 1461
+
+  if (days > 365) {
+    jy += Math.floor((days - 1) / 365)
+    days = (days - 1) % 365
+  }
+
+  if (days < 186) {
+    return {
+      jy,
+      jm: 1 + Math.floor(days / 31),
+      jd: 1 + (days % 31),
+    }
+  }
+
+  return {
+    jy,
+    jm: 7 + Math.floor((days - 186) / 30),
+    jd: 1 + ((days - 186) % 30),
+  }
+}
+
+function parseJalaliDateInput(value: string): ParsedJalaliDate | null {
+  const normalized = normalizePersianDigits(value)
+  if (!normalized) return null
+
+  const match = normalized.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/)
+  if (!match) return null
+
+  const jy = Number(match[1])
+  const jm = Number(match[2])
+  const jd = Number(match[3])
+
+  if (jm < 1 || jm > 12 || jd < 1 || jd > 31) return null
+
+  const { gy, gm, gd } = jalaliToGregorian(jy, jm, jd)
+  const roundTrip = gregorianToJalali(gy, gm, gd)
+  if (roundTrip.jy !== jy || roundTrip.jm !== jm || roundTrip.jd !== jd) return null
+
+  const start = new Date(Date.UTC(gy, gm - 1, gd, 0, 0, 0, 0))
+  const end = new Date(Date.UTC(gy, gm - 1, gd, 23, 59, 59, 999))
+
+  return {
+    isoStart: start.toISOString(),
+    isoEnd: end.toISOString(),
+    timestamp: start.getTime(),
+  }
+}
+
 function formatOptionalDate(date?: string | null) {
   return date ? formatDate(date) : 'ثبت نشده'
 }
@@ -78,10 +213,17 @@ export default function DoctorContractsPage() {
   const [appliedFromDate, setAppliedFromDate] = useState('')
   const [appliedToDate, setAppliedToDate] = useState('')
 
+  const parsedFromDate = fromDate ? parseJalaliDateInput(fromDate) : null
+  const parsedToDate = toDate ? parseJalaliDateInput(toDate) : null
+  const dateFormatError =
+    (fromDate && !parsedFromDate) || (toDate && !parsedToDate)
+      ? 'تاریخ را به فرمت ۱۴۰۳/۰۱/۰۱ وارد کنید.'
+      : null
   const dateRangeError =
-    fromDate && toDate && toDate < fromDate
+    parsedFromDate && parsedToDate && parsedToDate.timestamp < parsedFromDate.timestamp
       ? 'تاریخ پایان نمی‌تواند قبل از تاریخ شروع باشد.'
       : null
+  const filterError = dateFormatError || dateRangeError
 
   const fetchVisits = useCallback(async () => {
     setIsLoading(true)
@@ -136,9 +278,9 @@ export default function DoctorContractsPage() {
   }
 
   const applyFilters = () => {
-    if (dateRangeError) return
-    setAppliedFromDate(fromDate)
-    setAppliedToDate(toDate)
+    if (filterError) return
+    setAppliedFromDate(parsedFromDate?.isoStart ?? '')
+    setAppliedToDate(parsedToDate?.isoEnd ?? '')
   }
 
   return (
@@ -182,7 +324,9 @@ export default function DoctorContractsPage() {
               <Label htmlFor="fromDate">از تاریخ</Label>
               <Input
                 id="fromDate"
-                type="date"
+                type="text"
+                inputMode="numeric"
+                placeholder="۱۴۰۳/۰۱/۰۱"
                 value={fromDate}
                 onChange={(event) => setFromDate(event.target.value)}
                 dir="ltr"
@@ -192,13 +336,15 @@ export default function DoctorContractsPage() {
               <Label htmlFor="toDate">تا تاریخ</Label>
               <Input
                 id="toDate"
-                type="date"
+                type="text"
+                inputMode="numeric"
+                placeholder="۱۴۰۳/۰۱/۰۱"
                 value={toDate}
                 onChange={(event) => setToDate(event.target.value)}
                 dir="ltr"
               />
             </div>
-            <Button onClick={applyFilters} disabled={Boolean(dateRangeError)}>
+            <Button onClick={applyFilters} disabled={Boolean(filterError)}>
               اعمال فیلتر
             </Button>
             <Button
@@ -209,8 +355,11 @@ export default function DoctorContractsPage() {
               پاک کردن فیلتر
             </Button>
           </div>
-          {dateRangeError && (
-            <p className="mt-3 text-sm text-destructive">{dateRangeError}</p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            تاریخ‌ها را به صورت شمسی وارد کنید.
+          </p>
+          {filterError && (
+            <p className="mt-2 text-sm text-destructive">{filterError}</p>
           )}
         </CardContent>
       </Card>
