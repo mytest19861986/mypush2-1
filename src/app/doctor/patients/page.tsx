@@ -1,391 +1,394 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
-import { patientsService } from '@/services/patients.service'
-import { StatusBadge } from '@/components/shared'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { useState } from 'react'
+import { PageHeader } from '@/components/shared'
+import { apiClient } from '@/lib/api-client'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { motion, AnimatePresence, type Variants } from 'framer-motion'
-import { useDebounce } from '@/hooks/shared'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Textarea } from '@/components/ui/textarea'
+import { formatDate } from '@/utils/formatters'
 import {
-  UserSearch,
-  Search,
-  User,
-  Phone,
-  Hash,
-  CalendarDays,
-  Percent,
-  FileText,
-  ShieldCheck,
   AlertTriangle,
-  Loader2,
+  CalendarDays,
   CheckCircle2,
-  ArrowLeft,
+  FileText,
+  Hash,
+  Loader2,
+  Search,
+  ShieldCheck,
+  User,
+  UserSearch,
 } from 'lucide-react'
-import { toPersianNum, formatDate } from '@/utils/formatters'
-import type { PatientLookupResult, UserPlanItem } from '@/types'
 
-// ---------- Animation ----------
-
-const easeOut = [0, 0, 0.2, 1] as const
-
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.1 } },
+type PlanHolderLookupResult = {
+  hasActivePlan: boolean
+  status: string
+  planHolder: {
+    firstName: string | null
+    lastName: string | null
+  } | null
+  plans: {
+    planTitle: string
+    startDate: string
+    endDate: string
+  }[]
 }
 
-const fadeIn: Variants = {
-  hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: easeOut } },
-  exit: { opacity: 0, y: -8, transition: { duration: 0.2 } },
+type VisitCreateResult = {
+  visitId: string
+  status: string
+  visitedAt: string | null
+  createdAt: string
+  plan: {
+    title: string
+    endDate: string
+  }
+  planHolder: {
+    firstName: string | null
+    lastName: string | null
+  }
 }
 
-// ---------- Component ----------
+function maskNationalCode(value: string) {
+  if (value.length <= 4) return value
+  return `${'*'.repeat(value.length - 4)}${value.slice(-4)}`
+}
+
+function getPlanHolderName(result: PlanHolderLookupResult) {
+  const firstName = result.planHolder?.firstName || ''
+  const lastName = result.planHolder?.lastName || ''
+  return `${firstName} ${lastName}`.trim() || 'ثبت نشده'
+}
+
+function lookupErrorMessage(error: unknown) {
+  return error instanceof Error
+    ? error.message
+    : 'خطا در بررسی وضعیت طرح. لطفاً دوباره تلاش کنید.'
+}
+
+function visitErrorMessage(error: unknown) {
+  return error instanceof Error
+    ? error.message
+    : 'خطا در ثبت ویزیت. لطفاً دوباره تلاش کنید.'
+}
+
+function LookupLoadingState() {
+  return (
+    <Card>
+      <CardContent className="space-y-4 p-6">
+        <Skeleton className="h-5 w-40" />
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <Skeleton className="h-20 rounded-lg" />
+          <Skeleton className="h-20 rounded-lg" />
+          <Skeleton className="h-20 rounded-lg" />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
 export default function DoctorPatientsPage() {
   const [nationalCode, setNationalCode] = useState('')
-  const [searching, setSearching] = useState(false)
-  const [patient, setPatient] = useState<PatientLookupResult | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [selectedPlan, setSelectedPlan] = useState<UserPlanItem | null>(null)
+  const [notes, setNotes] = useState('')
+  const [lookupResult, setLookupResult] = useState<PlanHolderLookupResult | null>(null)
+  const [validationError, setValidationError] = useState<string | null>(null)
+  const [lookupError, setLookupError] = useState<string | null>(null)
+  const [visitMessage, setVisitMessage] = useState<string | null>(null)
+  const [visitError, setVisitError] = useState<string | null>(null)
+  const [isLookingUp, setIsLookingUp] = useState(false)
+  const [isCreatingVisit, setIsCreatingVisit] = useState(false)
+  const [visitRegistered, setVisitRegistered] = useState(false)
 
-  const debouncedCode = useDebounce(nationalCode, 300)
+  const handleNationalCodeChange = (value: string) => {
+    const nextValue = value.replace(/\D/g, '').slice(0, 10)
+    setNationalCode(nextValue)
+    setLookupResult(null)
+    setValidationError(null)
+    setLookupError(null)
+    setVisitMessage(null)
+    setVisitError(null)
+    setVisitRegistered(false)
+  }
 
-  // ---------- Auto-search when 10 digits entered ----------
-
-  useEffect(() => {
-    if (debouncedCode.length === 10 && /^\d{10}$/.test(debouncedCode)) {
-      handleSearch()
+  const validateNationalCode = () => {
+    if (!/^\d{10}$/.test(nationalCode.trim())) {
+      setValidationError('کد ملی باید ۱۰ رقم باشد.')
+      return false
     }
-  }, [debouncedCode])
 
-  // ---------- Search Handler ----------
+    setValidationError(null)
+    return true
+  }
 
-  const handleSearch = useCallback(async () => {
-    const code = nationalCode.trim()
-    if (code.length !== 10 || !/^\d{10}$/.test(code)) {
-      setError('لطفاً کد ملی ۱۰ رقمی معتبر وارد کنید')
-      setPatient(null)
+  const handleLookup = async () => {
+    if (!validateNationalCode()) {
+      setLookupResult(null)
       return
     }
 
-    setSearching(true)
-    setError(null)
-    setPatient(null)
-    setSelectedPlan(null)
+    setIsLookingUp(true)
+    setLookupError(null)
+    setLookupResult(null)
+    setVisitMessage(null)
+    setVisitError(null)
+    setVisitRegistered(false)
 
     try {
-      const res = await patientsService.lookupByNationalCode(code)
-      if (res.success && res.data) {
-        setPatient(res.data as unknown as PatientLookupResult)
-      } else {
-        setError('بیماری با این کد ملی یافت نشد')
+      const res = await apiClient.get<PlanHolderLookupResult>(
+        `/plan-holders/lookup?nationalCode=${encodeURIComponent(nationalCode.trim())}`
+      )
+
+      if (!res.success || !res.data) {
+        throw new Error(res.error?.message || res.message || 'خطا در بررسی وضعیت طرح.')
       }
-    } catch {
-      setError('خطا در جستجو. لطفاً دوباره تلاش کنید')
+
+      setLookupResult(res.data)
+    } catch (error) {
+      setLookupError(lookupErrorMessage(error))
     } finally {
-      setSearching(false)
+      setIsLookingUp(false)
     }
-  }, [nationalCode])
-
-  // ---------- Handle Enter Key ----------
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleSearch()
   }
 
-  // ---------- Create Contract from Plan ----------
+  const handleCreateVisit = async () => {
+    if (isCreatingVisit || !lookupResult?.hasActivePlan || !validateNationalCode()) return
 
-  const handleCreateContract = (plan: UserPlanItem) => {
-    setSelectedPlan(plan)
-    sessionStorage.setItem('contract_patient', JSON.stringify(patient))
-    sessionStorage.setItem('contract_plan', JSON.stringify(plan))
-    window.location.href = '/doctor/contracts'
+    setIsCreatingVisit(true)
+    setVisitError(null)
+    setVisitMessage(null)
+
+    try {
+      await apiClient.post<VisitCreateResult>('/visits', {
+        nationalCode: nationalCode.trim(),
+        ...(notes.trim() ? { notes: notes.trim().slice(0, 1000) } : {}),
+      })
+
+      setVisitMessage('ویزیت با موفقیت ثبت شد.')
+      setVisitRegistered(true)
+    } catch (error) {
+      setVisitError(visitErrorMessage(error))
+    } finally {
+      setIsCreatingVisit(false)
+    }
   }
 
-  // ---------- Derived patient name ----------
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' && !isLookingUp) {
+      handleLookup()
+    }
+  }
 
-  const patientName = patient?.profile
-    ? `${patient.profile.firstName || ''} ${patient.profile.lastName || ''}`.trim()
-    : patient?.mobile || ''
-
-  // ---------- Render ----------
+  const primaryPlan = lookupResult?.plans[0]
+  const canCreateVisit = Boolean(lookupResult?.hasActivePlan)
 
   return (
-    <motion.div
-      className="space-y-6"
-      initial="hidden"
-      animate="show"
-      variants={containerVariants}
-    >
-      {/* Page Header */}
-      <motion.div variants={fadeIn}>
-        <div className="rounded-xl border border-emerald-200 bg-gradient-to-l from-emerald-50 to-transparent p-6 dark:border-emerald-900 dark:from-emerald-950/30 dark:to-transparent">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 shrink-0">
-              <UserSearch className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold">بررسی بیماران</h1>
-              <p className="text-sm text-muted-foreground">
-                با وارد کردن کد ملی بیمار، اطلاعات و طرح‌های فعال او را مشاهده کنید
-              </p>
-            </div>
-          </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="جستجوی بیمار"
+        description="با وارد کردن کد ملی، وضعیت طرح فعال بیمار را بررسی و در صورت اعتبار، ویزیت را ثبت کنید."
+      />
 
-          {/* Search Input */}
-          <div className="flex gap-3 mt-4">
-            <div className="relative flex-1">
-              <Hash className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-              <Input
-                value={nationalCode}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '').slice(0, 10)
-                  setNationalCode(val)
-                  if (error) setError(null)
-                }}
-                onKeyDown={handleKeyDown}
-                placeholder="کد ملی بیمار (۱۰ رقم)"
-                dir="ltr"
-                className="pr-10 text-left font-mono text-lg tracking-widest h-12"
-                maxLength={10}
-              />
-            </div>
-            <Button
-              onClick={handleSearch}
-              disabled={searching || nationalCode.trim().length !== 10}
-              className="h-12 px-6 gap-2 font-medium"
-            >
-              {searching ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Search className="h-4 w-4" />
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <UserSearch className="size-4 text-emerald-600" />
+            بررسی وضعیت طرح
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-end">
+            <div className="flex-1 space-y-2">
+              <Label htmlFor="nationalCode">کد ملی بیمار</Label>
+              <div className="relative">
+                <Hash className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="nationalCode"
+                  value={nationalCode}
+                  onChange={(event) => handleNationalCodeChange(event.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="کد ملی ۱۰ رقمی"
+                  inputMode="numeric"
+                  maxLength={10}
+                  dir="ltr"
+                  className="h-11 pr-10 text-left font-mono text-lg tracking-widest"
+                  aria-invalid={Boolean(validationError)}
+                />
+              </div>
+              {validationError && (
+                <p className="text-sm text-destructive">{validationError}</p>
               )}
-              جستجو
+            </div>
+
+            <Button
+              onClick={handleLookup}
+              disabled={isLookingUp || nationalCode.trim().length !== 10}
+              className="h-11 gap-2 md:min-w-44"
+            >
+              {isLookingUp ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Search className="size-4" />
+              )}
+              بررسی وضعیت طرح
             </Button>
           </div>
+        </CardContent>
+      </Card>
 
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2 mt-3 text-sm text-destructive"
-            >
-              <AlertTriangle className="h-4 w-4 shrink-0" />
-              <span>{error}</span>
-            </motion.div>
-          )}
-        </div>
-      </motion.div>
+      {lookupError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="size-4" />
+          <AlertDescription>{lookupError}</AlertDescription>
+        </Alert>
+      )}
 
-      {/* Patient Result */}
-      <AnimatePresence mode="wait">
-        {patient && (
-          <motion.div
-            key="patient-result"
-            variants={fadeIn}
-            initial="hidden"
-            animate="show"
-            exit="exit"
-            className="space-y-4"
-          >
-            {/* Patient Info Card */}
-            <div className="rounded-xl border border-emerald-200 bg-card shadow-sm dark:border-emerald-800">
-              <div className="p-4 pb-3">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                  <h2 className="text-base font-semibold">اطلاعات بیمار</h2>
+      {visitMessage && (
+        <Alert className="border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300">
+          <CheckCircle2 className="size-4" />
+          <AlertDescription>{visitMessage}</AlertDescription>
+        </Alert>
+      )}
+
+      {visitError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="size-4" />
+          <AlertDescription>{visitError}</AlertDescription>
+        </Alert>
+      )}
+
+      {isLookingUp ? (
+        <LookupLoadingState />
+      ) : lookupResult ? (
+        lookupResult.hasActivePlan ? (
+          <Card className="border-emerald-200 dark:border-emerald-900">
+            <CardHeader>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <ShieldCheck className="size-5 text-emerald-600" />
+                  طرح فعال یافت شد
+                </CardTitle>
+                <Badge className="w-fit bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-300">
+                  {lookupResult.status}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                <div className="rounded-lg border bg-muted/30 p-4">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <User className="size-4" />
+                    بیمار
+                  </div>
+                  <p className="mt-2 text-sm font-semibold">{getPlanHolderName(lookupResult)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground" dir="ltr">
+                    {maskNationalCode(nationalCode)}
+                  </p>
+                </div>
+
+                <div className="rounded-lg border bg-muted/30 p-4">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <FileText className="size-4" />
+                    طرح
+                  </div>
+                  <p className="mt-2 text-sm font-semibold">
+                    {primaryPlan?.planTitle || 'طرح فعال'}
+                  </p>
+                </div>
+
+                <div className="rounded-lg border bg-muted/30 p-4">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <CalendarDays className="size-4" />
+                    اعتبار
+                  </div>
+                  <p className="mt-2 text-sm font-semibold">
+                    {primaryPlan ? `${formatDate(primaryPlan.startDate)} تا ${formatDate(primaryPlan.endDate)}` : 'نامشخص'}
+                  </p>
                 </div>
               </div>
-              <div className="px-4 pb-4">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 shrink-0">
-                      <User className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs text-muted-foreground">نام بیمار</p>
-                      <p className="text-sm font-semibold truncate">{patientName}</p>
-                    </div>
-                  </div>
 
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 shrink-0">
-                      <Hash className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs text-muted-foreground">کد ملی</p>
-                      <p className="text-sm font-semibold font-mono tracking-wider" dir="ltr">
-                        {nationalCode}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400 shrink-0">
-                      <Phone className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs text-muted-foreground">شماره موبایل</p>
-                      <p className="text-sm font-semibold" dir="ltr">
-                        {toPersianNum(patient?.mobile || '—')}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Active Plans */}
-            <div className="rounded-xl border bg-card shadow-sm">
-              <div className="p-4 pb-3">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-5 w-5 text-emerald-600" />
-                  <h2 className="text-base font-semibold">طرح‌های فعال</h2>
-                  <Badge variant="secondary" className="text-xs mr-auto">
-                    {toPersianNum(patient.activePlans.filter(p => p.status === 'ACTIVE').length)} طرح فعال
-                  </Badge>
-                </div>
-              </div>
-              <div className="px-4 pb-4">
-                {patient.activePlans.length > 0 ? (
-                  <div className="space-y-3">
-                    {patient.activePlans.map((plan, index) => (
-                      <motion.div
-                        key={plan.id}
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1, duration: 0.3 }}
-                        className="p-4 rounded-xl border bg-card hover:shadow-md transition-all"
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                          <div className="flex items-center gap-4 flex-1 min-w-0">
-                            {/* Plan icon */}
-                            <div className={`flex h-12 w-12 items-center justify-center rounded-xl shrink-0 ${
-                              plan.plan.discountPercent >= 20
-                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400'
-                                : plan.plan.discountPercent >= 15
-                                ? 'bg-gray-200 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
-                                : 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400'
-                            }`}>
-                              <Percent className="h-5 w-5" />
-                            </div>
-
-                            {/* Plan details */}
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <h3 className="text-sm font-bold">{plan.plan.name}</h3>
-                                <Badge className="text-[10px]">
-                                  {toPersianNum(plan.plan.discountPercent)}% تخفیف
-                                </Badge>
-                                <StatusBadge status={plan.status} className="text-[10px]" />
-                              </div>
-                              <div className="flex items-center gap-4 mt-1.5 text-xs text-muted-foreground flex-wrap">
-                                <span className="flex items-center gap-1">
-                                  <CalendarDays className="h-3 w-3" />
-                                  اعتبار تا {formatDate(plan.endDate)}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <FileText className="h-3 w-3" />
-                                  {plan.remainingUses === -1
-                                    ? 'نامحدود'
-                                    : `${toPersianNum(plan.remainingUses)} استفاده باقی‌مانده`}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Action */}
-                          <Button
-                            onClick={() => handleCreateContract(plan)}
-                            size="sm"
-                            className="shrink-0 gap-1.5"
-                          >
-                            <FileText className="h-3.5 w-3.5" />
-                            ثبت قرارداد جدید
-                            <ArrowLeft className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </motion.div>
+              {lookupResult.plans.length > 1 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">طرح‌های فعال</p>
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                    {lookupResult.plans.map((plan, index) => (
+                      <div key={`${index}-${plan.planTitle}-${plan.endDate}`} className="rounded-lg border p-3 text-sm">
+                        <p className="font-medium">{plan.planTitle}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {formatDate(plan.startDate)} تا {formatDate(plan.endDate)}
+                        </p>
+                      </div>
                     ))}
                   </div>
-                ) : (
-                  <div className="text-center py-10 text-muted-foreground">
-                    <ShieldCheck className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                    <p className="text-sm">بیمار طرح فعالی ندارد</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Not Found State */}
-        {!patient && !searching && error && (
-          <motion.div
-            key="not-found"
-            variants={fadeIn}
-            initial="hidden"
-            animate="show"
-            exit="exit"
-          >
-            <div className="rounded-xl border border-dashed">
-              <div className="p-10 text-center">
-                <div className="flex flex-col items-center gap-3">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
-                    <AlertTriangle className="h-8 w-8 text-destructive" />
-                  </div>
-                  <h3 className="font-semibold text-lg">بیماری یافت نشد</h3>
-                  <p className="text-sm text-muted-foreground max-w-sm">
-                    بیماری با کد ملی <span className="font-mono font-bold text-foreground" dir="ltr">{nationalCode}</span> در سیستم ثبت نشده است
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    لطفاً کد ملی را بررسی کنید یا از بیمار بخواهید ابتدا در سامانه ثبت‌نام کند
-                  </p>
                 </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
+              )}
 
-        {/* Searching State */}
-        {searching && (
-          <motion.div
-            key="searching"
-            variants={fadeIn}
-            initial="hidden"
-            animate="show"
-            exit="exit"
-          >
-            <div className="rounded-xl border bg-card">
-              <div className="p-10 text-center">
-                <Loader2 className="h-8 w-8 animate-spin text-emerald-600 mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">در حال جستجوی بیمار...</p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Empty State (initial) */}
-      {!patient && !searching && !error && (
-        <motion.div variants={fadeIn}>
-          <div className="rounded-xl border border-dashed">
-            <div className="p-10 text-center">
-              <div className="flex flex-col items-center gap-3">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-                  <UserSearch className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h3 className="font-semibold">جستجوی بیمار</h3>
-                <p className="text-sm text-muted-foreground max-w-sm">
-                  کد ملی ۱۰ رقمی بیمار را در بخش بالا وارد کنید تا اطلاعات و طرح‌های فعال او نمایش داده شود
+              <div className="space-y-2">
+                <Label htmlFor="visitNotes">یادداشت ویزیت (اختیاری)</Label>
+                <Textarea
+                  id="visitNotes"
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value.slice(0, 1000))}
+                  placeholder="در صورت نیاز توضیح کوتاهی برای این ویزیت ثبت کنید."
+                  rows={3}
+                  maxLength={1000}
+                />
+                <p className="text-xs text-muted-foreground">
+                  حداکثر ۱۰۰۰ کاراکتر
                 </p>
               </div>
+
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleCreateVisit}
+                  disabled={!canCreateVisit || isCreatingVisit || visitRegistered}
+                  className="min-w-36 gap-2"
+                >
+                  {isCreatingVisit ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      در حال ثبت ویزیت...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="size-4" />
+                      ثبت ویزیت
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="border-amber-200 dark:border-amber-900">
+            <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
+              <div className="flex size-14 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">
+                <AlertTriangle className="size-7" />
+              </div>
+              <h2 className="text-base font-semibold">طرح فعالی برای این کد ملی یافت نشد.</h2>
+              <p className="max-w-sm text-sm text-muted-foreground">
+                وضعیت فعلی: {lookupResult.status || 'نامشخص'}
+              </p>
+            </CardContent>
+          </Card>
+        )
+      ) : (
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
+            <div className="flex size-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
+              <UserSearch className="size-7" />
             </div>
-          </div>
-        </motion.div>
+            <h2 className="text-base font-semibold">جستجوی بیمار</h2>
+            <p className="max-w-sm text-sm text-muted-foreground">
+              کد ملی ۱۰ رقمی بیمار را وارد کنید تا وضعیت طرح فعال او بررسی شود.
+            </p>
+          </CardContent>
+        </Card>
       )}
-    </motion.div>
+    </div>
   )
 }
