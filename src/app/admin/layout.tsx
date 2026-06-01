@@ -179,7 +179,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-48">
-            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={logout}>
+            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => void logout()}>
               <LogOut className="ml-2 size-4" />
               خروج از حساب
             </DropdownMenuItem>
@@ -293,7 +293,7 @@ function AdminTopbar() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={logout} className="text-destructive focus:text-destructive">
+            <DropdownMenuItem onClick={() => void logout()} className="text-destructive focus:text-destructive">
               <LogOut className="ml-2 size-4" />
               خروج
             </DropdownMenuItem>

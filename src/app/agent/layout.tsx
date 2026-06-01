@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { AgentRoute } from '@/components/guards/AgentRoute'
 import { ErrorBoundary } from '@/components/shared'
 import { ThemeToggle } from '@/components/shared/theme-toggle'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { useAuthStore } from '@/stores/auth-store'
-import { agentsService, authService } from '@/services'
+import { agentsService } from '@/services'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -55,18 +55,11 @@ function SidebarContent({
 }) {
   const pathname = usePathname()
   const { user, logout } = useAuthStore()
-  const router = useRouter()
 
   const userInitials = getUserInitials(user)
 
   const handleLogout = async () => {
-    try {
-      await authService.logout()
-    } catch {
-      // Continue logout even if API fails
-    }
-    logout()
-    router.replace('/')
+    await logout()
   }
 
   return (

@@ -11,7 +11,7 @@ interface AuthState {
   setAuth: (user: AuthUser, accessToken: string, refreshToken: string) => void
   setUser: (user: AuthUser) => void
   setTokens: (accessToken: string, refreshToken: string) => void
-  logout: () => void
+  logout: (options?: { redirectTo?: string | null; callApi?: boolean }) => Promise<void>
   setLoading: (loading: boolean) => void
   initialize: () => Promise<void>
   isAdmin: () => boolean
@@ -49,12 +49,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ accessToken, refreshToken })
   },
 
-  logout: () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('accessToken')
-      localStorage.removeItem('refreshToken')
+  logout: async (options = {}) => {
+    const { redirectTo = '/auth/login', callApi = true } = options
+
+    try {
+      if (callApi && typeof window !== 'undefined' && get().accessToken) {
+        await authService.logout()
+      }
+    } catch {
+      /* keep logout silent for the user */
+    } finally {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('accessToken')
+        localStorage.removeItem('refreshToken')
+      }
+      set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false, isLoading: false })
+
+      if (typeof window !== 'undefined' && redirectTo) {
+        window.location.assign(redirectTo)
+      }
     }
-    set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false, isLoading: false })
   },
 
   setLoading: (loading) => {
@@ -96,9 +110,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         } catch { /* refresh failed */ }
       }
 
-      logout()
+      await logout({ callApi: false, redirectTo: null })
     } catch {
-      logout()
+      await logout({ callApi: false, redirectTo: null })
     }
   },
 

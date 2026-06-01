@@ -168,7 +168,6 @@ export default function Home() {
 
 const handleLogout = async () => {
   await logout();
-  window.location.href = '/';
 }
 
   useEffect(() => {
@@ -202,8 +201,7 @@ const getDashboardPath = () => {
     // Restrict user management panel to only normal users by redirecting others away
     if (user?.roles?.includes('DOCTOR')) return '/doctor/dashboard'
     if (user?.roles?.includes('AGENT')) return '/agent/dashboard'
-    if (user?.roles?.includes('NORMAL_USER')) return '/user/dashboard'
-    // If user role is not normal user, redirect to home or no access page
+    if (user?.roles?.includes('USER') || user?.roles?.includes('NORMAL_USER')) return '/user/dashboard'
     return '/no-access'
   }
 

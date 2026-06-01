@@ -2,10 +2,9 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { UserRoute } from '@/components/guards/UserRoute'
 import { useAuthStore } from '@/stores/auth-store'
-import { apiClient } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
 import { ErrorBoundary, ThemeToggle } from '@/components/shared'
 import { Button } from '@/components/ui/button'
@@ -48,7 +47,6 @@ const navItems = [
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname() ?? ''
   const { user, logout } = useAuthStore()
-  const router = useRouter()
 
   const fullName =
     user?.profile?.firstName && user?.profile?.lastName
@@ -60,13 +58,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     : (user?.mobile || '').slice(-2)
 
   const handleLogout = async () => {
-    try {
-      await apiClient.post('/auth/logout')
-    } catch {
-      /* continue logout */
-    }
-    logout()
-    router.replace('/')
+    await logout()
   }
 
   return (

@@ -191,7 +191,6 @@ export default function AdminDoctorsPage() {
 
   const handleLogout = async () => {
     await logout()
-    window.location.href = '/auth/login'
   }
 
   return (

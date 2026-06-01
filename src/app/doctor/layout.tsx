@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { DoctorRoute } from '@/components/guards/DoctorRoute'
 import { ErrorBoundary } from '@/components/shared'
 import { ThemeToggle } from '@/components/shared/theme-toggle'
 import { useAuthStore } from '@/stores/auth-store'
-import { authService, doctorsService } from '@/services'
+import { doctorsService } from '@/services'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -113,17 +113,10 @@ function Topbar({
   doctorData: DoctorItem | null
   onMenuClick: () => void
 }) {
-  const router = useRouter()
   const { user, logout } = useAuthStore()
 
   const handleLogout = async () => {
-    try {
-      await authService.logout()
-    } catch {
-      // Continue logout even if API fails
-    }
-    logout()
-    router.replace('/')
+    await logout()
   }
 
   return (
