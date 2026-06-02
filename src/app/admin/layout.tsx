@@ -17,6 +17,7 @@ import {
   Menu,
   ChevronLeft,
   MessageSquareText,
+  ShoppingBag,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
@@ -71,6 +72,7 @@ const navItems: NavItem[] = [
   { href: '/admin/plans', label: 'طرح‌ها', icon: <CreditCard className="size-5" /> },
   { href: '/admin/financial-management', label: 'مدیریت مالی', icon: <CreditCard className="size-5" /> },
   { href: '/admin/commissions', label: 'مدیریت پورسانت‌ها', icon: <Wallet className="size-5" /> },
+  { href: '/admin/sales-customers', label: 'مشتریان فروش', icon: <ShoppingBag className="size-5" /> },
   { href: '/admin/reviews', label: 'مدیریت نظرات', icon: <MessageSquareText className="size-5" /> },
   { href: '/admin/roles', label: 'نقش‌ها', icon: <Shield className="size-5" /> },
   { href: '/admin/permissions', label: 'دسترسی‌ها', icon: <Shield className="size-5" /> },
@@ -89,6 +91,7 @@ const pageTitles: Record<string, string> = {
   '/admin/permissions': 'مدیریت دسترسی‌ها',
   '/admin/audit-logs': 'گزارش تغییرات',
   '/admin/reviews': 'مدیریت نظرات',
+  '/admin/sales-customers': 'مشتریان فروش',
 }
 
 /* ── Sidebar Content (shared between mobile & desktop) ──── */
