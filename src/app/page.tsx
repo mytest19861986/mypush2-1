@@ -326,7 +326,7 @@ export default function Home() {
                     <Link href="/user/plans">خرید طرح حامی کارت</Link>
                   </Button>
                   <Button asChild variant="ghost" onClick={() => setMobileMenuOpen(false)}>
-                    <Link href="#doctors">مشاهده پزشکان طرف قرارداد</Link>
+                    <Link href="/doctors">مشاهده پزشکان طرف قرارداد</Link>
                   </Button>
                 </div>
               </div>
@@ -376,7 +376,7 @@ export default function Home() {
                     variant="outline"
                     className="h-[52px] w-full rounded-full border-teal-100 bg-white/75 px-7 text-teal-700 shadow-sm hover:bg-teal-50 sm:w-auto"
                   >
-                    <Link href="#doctors">
+                    <Link href="/doctors">
                       مشاهده پزشکان
                       <ChevronLeft className="size-4" />
                     </Link>
