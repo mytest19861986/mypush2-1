@@ -42,6 +42,11 @@ const navItems = [
   { href: '/user/profile', label: 'پروفایل', icon: User },
 ]
 
+function maskNationalCode(value?: string | null) {
+  if (!value) return ''
+  return value.length > 4 ? `${'*'.repeat(value.length - 4)}${value.slice(-4)}` : value
+}
+
 // ---------- Sidebar Content ----------
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
@@ -117,7 +122,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             <span className="truncate text-sm font-medium">{fullName}</span>
             <span className="truncate text-xs text-muted-foreground">
               {user?.profile?.nationalCode
-                ? `کد ملی: ${user.profile.nationalCode}`
+                ? `کد ملی: ${maskNationalCode(user.profile.nationalCode)}`
                 : 'کاربر عادی'}
             </span>
           </div>

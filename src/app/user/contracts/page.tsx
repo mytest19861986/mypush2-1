@@ -36,7 +36,6 @@ type UserVisit = {
   createdAt: string
   doctorName?: string | null
   doctorSpecialty?: string | null
-  notes?: string | null
   plan?: {
     title?: string | null
     endDate?: string | null
@@ -78,10 +77,6 @@ function getDoctorName(visit: UserVisit) {
 
 function getDoctorSpecialty(visit: UserVisit) {
   return visit.doctorSpecialty || visit.doctor?.specialty || 'تخصص ثبت نشده'
-}
-
-function getVisitNote(visit: UserVisit) {
-  return visit.notes || null
 }
 
 function ReviewStatus({ review }: { review: ReviewItem }) {
@@ -326,6 +321,9 @@ export default function UserContractsPage() {
               <p className="mt-2 text-sm text-muted-foreground">
                 پس از استفاده از طرح‌ها، سوابق ویزیت شما در این بخش نمایش داده می‌شود.
               </p>
+              <p className="mt-2 text-sm font-medium text-muted-foreground">
+                برای ثبت نظر، ابتدا باید ویزیتی برای شما ثبت شده باشد.
+              </p>
             </div>
             <Button asChild>
               <Link href="/user/plans">مشاهده طرح‌ها</Link>
@@ -350,15 +348,12 @@ export default function UserContractsPage() {
                     <th className="py-3 text-right font-medium">طرح</th>
                     <th className="py-3 text-right font-medium">وضعیت ویزیت</th>
                     <th className="py-3 text-right font-medium">تاریخ ویزیت</th>
-                    <th className="py-3 text-right font-medium">یادداشت پزشک</th>
                     <th className="py-3 text-right font-medium">نظر شما</th>
                   </tr>
                 </thead>
                 <tbody>
                   {visits.map((visit) => {
                     const review = reviewsByVisit[visit.visitId]
-                    const note = getVisitNote(visit)
-
                     return (
                       <tr key={visit.visitId} className="border-b last:border-0">
                         <td className="py-4">
@@ -382,11 +377,6 @@ export default function UserContractsPage() {
                             </p>
                           </div>
                         </td>
-                        <td className="max-w-[220px] py-4">
-                          <span className="line-clamp-2 text-muted-foreground">
-                            {note || 'ثبت نشده'}
-                          </span>
-                        </td>
                         <td className="py-4">
                           {review ? (
                             <ReviewStatus review={review} />
@@ -406,8 +396,6 @@ export default function UserContractsPage() {
             <div className="space-y-3 md:hidden">
               {visits.map((visit) => {
                 const review = reviewsByVisit[visit.visitId]
-                const note = getVisitNote(visit)
-
                 return (
                   <div key={visit.visitId} className="rounded-lg border p-4">
                     <div className="flex items-start justify-between gap-3">
@@ -434,12 +422,6 @@ export default function UserContractsPage() {
                         <span>ثبت در سامانه: {formatOptionalDate(visit.createdAt)}</span>
                       </div>
                     </div>
-
-                    {note && (
-                      <div className="mt-4 rounded-md bg-muted/50 p-3 text-sm leading-6">
-                        {note}
-                      </div>
-                    )}
 
                     <div className="mt-4 flex justify-end">
                       {review ? (
