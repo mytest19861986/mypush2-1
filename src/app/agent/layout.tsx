@@ -41,7 +41,7 @@ import { getDisplayName, getUserInitials } from '@/utils/formatters'
 const navItems = [
   { href: '/agent/dashboard', label: 'داشبورد', icon: LayoutDashboard },
   { href: '/agent/sales-customers', label: 'مشتریان من', icon: ShoppingBag },
-  { href: '/agent/commissions', label: 'پورسانت‌ها', icon: Wallet },
+  { href: '/agent/commissions', label: 'کیف پول و پورسانت', icon: Wallet },
   { href: '/agent/documents', label: 'مدارک', icon: FileText },
   { href: '/agent/profile', label: 'پروفایل', icon: User },
 ]
