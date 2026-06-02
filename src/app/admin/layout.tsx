@@ -4,23 +4,15 @@ import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  LayoutDashboard,
-  Users,
-  Stethoscope,
-  Briefcase,
-  CreditCard,
-  Wallet,
-  BarChart3,
   Shield,
   LogOut,
   Bell,
   Menu,
   ChevronLeft,
-  MessageSquareText,
-  ShoppingBag,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
+import { adminDashboardNav, adminDashboardPageTitles } from '@/config/dashboard-nav'
 import { AdminRoute } from '@/components/guards/AdminRoute'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -55,46 +47,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 
-/* ── Nav Config ─────────────────────────────────────────── */
-
-interface NavItem {
-  href: string
-  label: string
-  icon: React.ReactNode
-  badge?: string
-}
-
-const navItems: NavItem[] = [
-  { href: '/admin/dashboard', label: 'داشبورد', icon: <LayoutDashboard className="size-5" /> },
-  { href: '/admin/users', label: 'کاربران', icon: <Users className="size-5" /> },
-  { href: '/admin/doctors', label: 'پزشکان', icon: <Stethoscope className="size-5" /> },
-  { href: '/admin/agents', label: 'نمایندگان', icon: <Briefcase className="size-5" /> },
-  { href: '/admin/plans', label: 'طرح‌ها', icon: <CreditCard className="size-5" /> },
-  { href: '/admin/financial-management', label: 'مدیریت مالی', icon: <CreditCard className="size-5" /> },
-  { href: '/admin/commissions', label: 'مدیریت پورسانت‌ها', icon: <Wallet className="size-5" /> },
-  { href: '/admin/sales-customers', label: 'مشتریان فروش', icon: <ShoppingBag className="size-5" /> },
-  { href: '/admin/reviews', label: 'مدیریت نظرات', icon: <MessageSquareText className="size-5" /> },
-  { href: '/admin/roles', label: 'نقش‌ها', icon: <Shield className="size-5" /> },
-  { href: '/admin/permissions', label: 'دسترسی‌ها', icon: <Shield className="size-5" /> },
-  { href: '/admin/audit-logs', label: 'گزارشات', icon: <BarChart3 className="size-5" /> },
-]
-
-/* ── Page title map ─────────────────────────────────────── */
-
-const pageTitles: Record<string, string> = {
-  '/admin/dashboard': 'داشبورد',
-  '/admin/users': 'مدیریت کاربران',
-  '/admin/doctors': 'مدیریت پزشکان',
-  '/admin/agents': 'مدیریت نمایندگان',
-  '/admin/plans': 'طرح‌های تخفیف',
-  '/admin/roles': 'نقش‌ها و دسترسی‌ها',
-  '/admin/permissions': 'مدیریت دسترسی‌ها',
-  '/admin/audit-logs': 'گزارش تغییرات',
-  '/admin/reviews': 'مدیریت نظرات',
-  '/admin/sales-customers': 'مشتریان فروش',
-}
-
-/* ── Sidebar Content (shared between mobile & desktop) ──── */
+/* ---- Sidebar Content (shared between mobile & desktop) ---- */
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname() ?? ''
@@ -122,9 +75,10 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       {/* Navigation */}
       <ScrollArea className="flex-1 px-3 py-3">
         <nav className="flex flex-col gap-1">
-          {navItems.map((item) => {
+          {adminDashboardNav.map((item) => {
             const isActive =
               pathname === item.href || pathname.startsWith(item.href + '/')
+            const Icon = item.icon
             return (
               <Link
                 key={item.href}
@@ -145,7 +99,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                       : 'text-muted-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400'
                   )}
                 >
-                  {item.icon}
+                  <Icon className="size-5" />
                 </span>
                 <span>{item.label}</span>
                 {item.badge && (
@@ -226,7 +180,7 @@ function AdminSidebar() {
 
       {/* Desktop sidebar */}
       <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:z-30">
-        <div className="flex h-full flex-col border-l bg-card">
+        <div className="flex h-full flex-col border-e bg-card">
           <SidebarContent />
         </div>
       </aside>
@@ -240,7 +194,7 @@ function AdminTopbar() {
   const pathname = usePathname() ?? ''
   const { user, logout } = useAuthStore()
 
-  const currentPageTitle = pageTitles[pathname] || 'مدیریت'
+  const currentPageTitle = adminDashboardPageTitles[pathname] || 'مدیریت'
 
   const userInitials = user?.profile
     ? `${(user.profile.firstName || '').charAt(0)}${(user.profile.lastName || '').charAt(0)}`

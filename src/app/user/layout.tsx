@@ -5,13 +5,13 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { UserRoute } from '@/components/guards/UserRoute'
 import { useAuthStore } from '@/stores/auth-store'
+import { userDashboardNav } from '@/config/dashboard-nav'
 import { cn } from '@/lib/utils'
 import { ErrorBoundary, ThemeToggle } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
 import {
   Sheet,
   SheetContent,
@@ -24,23 +24,10 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import {
-  LayoutDashboard,
-  CreditCard,
-  FileText,
-  User,
   LogOut,
   Menu,
   HeartPulse,
 } from 'lucide-react'
-
-// ---------- Nav Items ----------
-
-const navItems = [
-  { href: '/user/dashboard', label: 'داشبورد', icon: LayoutDashboard },
-  { href: '/user/plans', label: 'طرح‌های من', icon: CreditCard },
-  { href: '/user/contracts', label: 'قراردادها', icon: FileText },
-  { href: '/user/profile', label: 'پروفایل', icon: User },
-]
 
 function maskNationalCode(value?: string | null) {
   if (!value) return ''
@@ -83,9 +70,10 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 p-3">
-        {navItems.map((item) => {
+        {userDashboardNav.map((item) => {
           const isActive =
             pathname === item.href || pathname.startsWith(item.href + '/')
+          const Icon = item.icon
           return (
             <Link
               key={item.href}
@@ -98,7 +86,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                   : 'text-muted-foreground hover:bg-accent hover:text-foreground'
               )}
             >
-              <item.icon className="size-4" />
+              <Icon className="size-4" />
               {item.label}
             </Link>
           )
@@ -218,7 +206,7 @@ export default function UserLayout({
       <div className="min-h-screen bg-background" dir="rtl">
         <div className="flex min-h-screen">
           {/* Desktop Sidebar */}
-          <aside className="hidden lg:flex lg:w-60 lg:flex-col lg:border-l bg-card">
+          <aside className="hidden lg:flex lg:w-60 lg:flex-col lg:border-e bg-card">
             <SidebarContent />
           </aside>
 

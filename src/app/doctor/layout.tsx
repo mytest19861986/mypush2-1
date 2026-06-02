@@ -8,6 +8,7 @@ import { ErrorBoundary } from '@/components/shared'
 import { ThemeToggle } from '@/components/shared/theme-toggle'
 import { useAuthStore } from '@/stores/auth-store'
 import { doctorsService } from '@/services'
+import { doctorDashboardNav } from '@/config/dashboard-nav'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -15,25 +16,12 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/s
 import { Skeleton } from '@/components/ui/skeleton'
 import { StatusBadge } from '@/components/shared/status-badge'
 import {
-  LayoutDashboard,
-  UserSearch,
-  FileText,
-  UserCircle,
   LogOut,
   Menu,
   Stethoscope,
 } from 'lucide-react'
 import type { DoctorItem } from '@/types'
-import { getDisplayName, getUserInitials } from '@/utils/formatters'
-
-// ---------- Nav Items ----------
-
-const navItems = [
-  { href: '/doctor/dashboard', label: 'داشبورد', icon: LayoutDashboard },
-  { href: '/doctor/patients', label: 'بررسی بیماران', icon: UserSearch },
-  { href: '/doctor/contracts', label: 'قراردادها', icon: FileText },
-  { href: '/doctor/profile', label: 'پروفایل', icon: UserCircle },
-]
+import { getDisplayName } from '@/utils/formatters'
 
 // ---------- Sidebar ----------
 
@@ -67,8 +55,9 @@ function SidebarContent({
 
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-1">
-        {navItems.map((item) => {
+        {doctorDashboardNav.map((item) => {
           const isActive = pathname === item.href
+          const Icon = item.icon
           return (
             <Link
               key={item.href}
@@ -81,7 +70,7 @@ function SidebarContent({
                   : 'text-muted-foreground hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-950/40 dark:hover:text-emerald-400'
               )}
             >
-              <item.icon className="h-4 w-4" />
+              <Icon className="h-4 w-4" />
               {item.label}
             </Link>
           )
@@ -193,7 +182,7 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
         <div dir="rtl" className="min-h-screen bg-background">
           <div className="flex min-h-screen">
             {/* Desktop Sidebar */}
-            <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:border-l bg-card">
+            <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:border-e bg-card">
               <SidebarContent doctorData={doctorData} />
             </aside>
 

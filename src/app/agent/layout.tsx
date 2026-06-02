@@ -9,6 +9,7 @@ import { ThemeToggle } from '@/components/shared/theme-toggle'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { useAuthStore } from '@/stores/auth-store'
 import { agentsService } from '@/services'
+import { agentDashboardNav } from '@/config/dashboard-nav'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -23,28 +24,12 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import {
-  LayoutDashboard,
-  User,
-  FileText,
   LogOut,
   Menu,
   Briefcase,
-  Wallet,
-  Shield,
-  ShoppingBag,
 } from 'lucide-react'
 import type { AgentItem } from '@/types'
 import { getDisplayName, getUserInitials } from '@/utils/formatters'
-
-// ---------- Nav Items ----------
-
-const navItems = [
-  { href: '/agent/dashboard', label: 'داشبورد', icon: LayoutDashboard },
-  { href: '/agent/sales-customers', label: 'مشتریان من', icon: ShoppingBag },
-  { href: '/agent/commissions', label: 'کیف پول و پورسانت', icon: Wallet },
-  { href: '/agent/documents', label: 'مدارک', icon: FileText },
-  { href: '/agent/profile', label: 'پروفایل', icon: User },
-]
 
 // ---------- Sidebar Content ----------
 
@@ -86,8 +71,9 @@ function SidebarContent({
       {/* Navigation */}
       <ScrollArea className="flex-1 px-3 py-2">
         <nav className="flex flex-col gap-1">
-          {navItems.map((item) => {
+          {agentDashboardNav.map((item) => {
             const isActive = pathname === item.href
+            const Icon = item.icon
             return (
               <Link
                 key={item.href}
@@ -100,7 +86,7 @@ function SidebarContent({
                     : 'text-muted-foreground hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-950/40 dark:hover:text-emerald-400'
                 )}
               >
-                <item.icon className="size-5" />
+                <Icon className="size-5" />
                 <span>{item.label}</span>
               </Link>
             )
@@ -207,7 +193,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
 
           {/* Desktop sidebar */}
           <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:z-30">
-            <div className="flex h-full flex-col border-l bg-card">
+            <div className="flex h-full flex-col border-e bg-card">
               <SidebarContent agentData={agentData} />
             </div>
           </aside>
