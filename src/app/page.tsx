@@ -5,13 +5,10 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores/auth-store'
 import { ErrorBoundary } from '@/components/shared'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import {
-  Activity,
-  ArrowLeft,
   BadgePercent,
   Briefcase,
   CheckCircle2,
@@ -36,16 +33,10 @@ const navigationLinks = [
 ]
 
 const heroBadges = [
-  { label: 'سلامت', icon: HeartPulse, className: 'right-0 top-8 md:right-2' },
-  { label: 'تخفیف فعال', icon: BadgePercent, className: 'left-0 top-28 md:left-4' },
-  { label: 'پشتیبانی', icon: ShieldCheck, className: 'bottom-24 right-3 md:right-10' },
-  { label: 'اعتبار', icon: CheckCircle2, className: 'bottom-10 left-4 md:left-12' },
-]
-
-const coinAccents = [
-  { label: '٪', className: 'left-14 top-10 size-11 text-sm [animation-delay:0.35s]' },
-  { label: '٪', className: 'right-16 bottom-20 size-9 text-xs [animation-delay:1.15s]' },
-  { label: '+', className: 'left-24 bottom-16 size-7 text-xs [animation-delay:1.8s]' },
+  { label: 'سلامت', icon: HeartPulse, className: 'right-2 top-16 md:right-10', iconClassName: 'bg-rose-50 text-rose-500' },
+  { label: 'تخفیف', icon: BadgePercent, className: 'left-4 top-20 md:left-12', iconClassName: 'bg-teal-500 text-white', coinClassName: 'size-9 text-[9px]' },
+  { label: 'پشتیبانی', icon: ShieldCheck, className: 'bottom-20 right-5 md:right-16', iconClassName: 'bg-indigo-50 text-indigo-500', coinClassName: 'size-8 text-[8px]' },
+  { label: 'اعتبار', icon: CheckCircle2, className: 'bottom-14 left-8 md:left-20', iconClassName: 'bg-emerald-50 text-emerald-500' },
 ]
 
 const mobileMenuLinks = [
@@ -62,10 +53,10 @@ const footerLinks = [
 const brandName = 'حامی‌کارت'
 
 const heroSafeCopy =
-  'با تهیه طرح عضویت حامی کارت، از تخفیف‌های مشخص‌شده برای هر پزشک طرف قرارداد استفاده کنید. درصد تخفیف برای هر پزشک متفاوت است و در پروفایل پزشک نمایش داده می‌شود.'
+  'با تهیه طرح عضویت حامی‌کارت، از تخفیف‌های مشخص‌شده نزد پزشکان طرف قرارداد استفاده کنید. درصد تخفیف برای هر پزشک متفاوت است.'
 
 const legalClarityText =
-  'حامی کارت بیمه درمانی نیست؛ یک سامانه عضویت و تخفیف خدمات پزشکی نزد پزشکان طرف قرارداد است.'
+  'حامی‌کارت بیمه درمانی نیست؛ سامانه عضویت و تخفیف خدمات پزشکی نزد پزشکان طرف قرارداد است.'
 
 const features = [
   {
@@ -127,41 +118,47 @@ const audiences = [
   },
 ]
 
-const cardDetails = [
-  { label: 'تخفیف فعال', value: 'نمایش در پروفایل پزشک' },
-  { label: 'اعتبار', value: 'عضویت قابل پیگیری' },
-  { label: 'سلامت', value: 'شبکه طرف قرارداد' },
-  { label: 'پشتیبانی', value: 'راهنمای عضویت' },
-]
-
 function FloatingBadge({
   label,
   icon,
   className,
+  iconClassName,
+  coinClassName,
   style,
 }: {
   label: string
   icon: ReactNode
   className: string
+  iconClassName: string
+  coinClassName?: string
   style?: CSSProperties
 }) {
   return (
     <div
-      className={`hami-glass animate-hami-float absolute z-20 flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-black text-slate-700 shadow-2xl shadow-sky-900/10 sm:px-4 sm:py-3 sm:text-sm ${className}`}
+      className={`hami-float absolute z-20 ${className}`}
       style={style}
     >
-      {icon}
-      <span>{label}</span>
+      {coinClassName ? (
+        <span
+          className={`pointer-events-none absolute left-1/2 top-0 z-0 flex -translate-x-1/2 -translate-y-[70%] items-center justify-center rounded-full bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 font-black text-white shadow-lg shadow-amber-500/30 ring-2 ring-amber-200/80 ${coinClassName}`}
+        >
+          تومان
+        </span>
+      ) : null}
+      <div className="hami-glass relative z-10 flex items-center gap-2 rounded-full py-1.5 pe-3 ps-1.5 text-xs font-black text-slate-700 shadow-xl shadow-sky-900/10">
+        <span className={`grid size-6 place-items-center rounded-full ${iconClassName}`}>{icon}</span>
+        <span>{label}</span>
+      </div>
     </div>
   )
 }
 
 function HeroVisual() {
   return (
-    <div className="relative mx-auto h-[420px] w-full max-w-[560px] sm:h-[520px] lg:h-[580px]" aria-hidden="true">
-      <div className="absolute left-10 top-8 h-44 w-44 rounded-full bg-orange-300/20 blur-3xl" />
-      <div className="absolute right-6 top-20 h-64 w-64 rounded-full bg-cyan-300/25 blur-3xl" />
-      <div className="absolute bottom-10 left-14 h-48 w-48 rounded-full bg-teal-300/20 blur-3xl" />
+    <div className="relative mx-auto h-[320px] w-full max-w-[540px] sm:h-[390px] lg:h-[430px]" aria-hidden="true">
+      <div className="hami-glow absolute left-1/2 top-1/2 h-[300px] w-[360px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle_at_center,_rgba(251,146,60,0.42),_rgba(250,204,21,0.18)_45%,_transparent_72%)] blur-2xl" />
+      <div className="absolute left-1/2 top-[54%] h-56 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-yellow-200/20 blur-3xl" />
+      <div className="absolute right-14 top-20 h-40 w-40 rounded-full bg-cyan-200/20 blur-3xl" />
 
       {heroBadges.map((badge, index) => {
         const Icon = badge.icon
@@ -169,23 +166,29 @@ function HeroVisual() {
           <FloatingBadge
             key={badge.label}
             label={badge.label}
-            icon={<Icon className="size-4 text-teal-600" />}
+            icon={<Icon className="size-3.5" />}
             className={badge.className}
+            iconClassName={badge.iconClassName}
+            coinClassName={badge.coinClassName}
             style={{ animationDelay: `${index * 0.45}s` }}
           />
         )
       })}
 
-      <div className="hami-card-tilt absolute left-1/2 top-1/2 z-10 w-[84%] max-w-[430px] -translate-x-1/2 -translate-y-1/2">
-        <div className="relative overflow-hidden rounded-[30px] border border-white/45 bg-[linear-gradient(135deg,#047985_0%,#0d9dad_46%,#9eeef0_130%)] p-6 text-white shadow-2xl shadow-cyan-950/30 sm:p-7">
-          <div className="absolute -left-20 -top-20 size-56 rounded-full bg-white/20 blur-2xl" />
-          <div className="absolute -bottom-24 right-6 size-64 rounded-full bg-sky-100/20 blur-3xl" />
-          <div className="absolute inset-x-0 top-0 h-28 bg-white/15 blur-2xl" />
-          <div className="absolute right-8 top-24 h-1 w-32 rounded-full bg-white/45" />
-          <div className="absolute right-8 top-28 h-1 w-20 rounded-full bg-orange-300/90" />
+      <div className="hami-float-sm absolute bottom-20 left-32 z-20 flex size-7 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 text-[7px] font-black text-white shadow-lg shadow-amber-500/30 ring-2 ring-amber-200/80 [animation-delay:1.8s]">
+        تومان
+      </div>
+
+      <div className="absolute left-1/2 top-1/2 z-10 h-[190px] w-[86%] max-w-[430px] antialiased [backface-visibility:hidden] [transform-style:preserve-3d] [transform:perspective(1200px)_translate(-50%,-50%)_rotateX(8deg)_rotateY(-8deg)_rotate(-8deg)] sm:h-[220px]">
+        <div className="relative h-full overflow-hidden rounded-[28px] border border-white/45 bg-[linear-gradient(135deg,#077f8c_0%,#10a3ad_58%,#71dce0_130%)] p-5 text-white shadow-[0_34px_80px_-30px_rgba(6,78,88,0.72)] sm:p-6">
+          <div className="absolute -left-16 -top-20 size-52 rounded-full bg-white/20 blur-2xl" />
+          <div className="absolute -bottom-20 right-8 size-56 rounded-full bg-cyan-100/22 blur-3xl" />
+          <div className="absolute inset-x-0 top-0 h-24 bg-white/14 blur-2xl" />
+          <div className="absolute left-4 top-[76px] h-2 w-20 rounded-full bg-white/25" />
+          <div className="absolute left-4 top-[88px] h-2 w-12 rounded-full bg-yellow-300/80" />
 
           <div className="relative flex items-start justify-between gap-4">
-            <div className="flex size-16 items-center justify-center rounded-2xl bg-white/18 text-2xl font-black shadow-inner sm:size-20 sm:text-3xl">
+            <div className="flex size-14 items-center justify-center rounded-2xl bg-white/18 text-xl font-black shadow-inner sm:size-16 sm:text-2xl">
               H+
             </div>
             <div className="text-left">
@@ -194,37 +197,19 @@ function HeroVisual() {
             </div>
           </div>
 
-          <div className="relative mt-20 sm:mt-24">
+          <div className="relative mt-8 sm:mt-10">
             <p className="text-3xl font-black sm:text-4xl">{brandName}</p>
-            <p className="mt-3 text-sm font-semibold text-white/75">مدیریت عضویت و تخفیف خدمات پزشکی</p>
+            <p className="mt-2 text-sm font-semibold text-white/75">عضویت تخفیف خدمات پزشکی</p>
           </div>
 
-          <div className="relative mt-8 grid grid-cols-2 gap-3">
-            {cardDetails.map((detail) => (
-              <div key={detail.label} className="rounded-2xl bg-white/14 p-3 shadow-inner shadow-white/5">
-                <p className="text-sm font-black text-white">{detail.label}</p>
-                <p className="mt-1 text-[11px] leading-5 text-white/70">{detail.value}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="relative mt-8 flex items-center justify-between border-t border-white/25 pt-5">
+          <div className="relative mt-6 flex items-center justify-between border-t border-white/25 pt-4">
             <span className="text-sm font-semibold text-white/75">نزد پزشکان طرف قرارداد</span>
-            <span className="rounded-xl bg-white px-4 py-2 text-sm font-black text-teal-700 shadow-lg shadow-cyan-950/10">
-              تخفیف فعال
+            <span className="rounded-full bg-white px-4 py-1.5 text-sm font-black text-teal-700 shadow-lg shadow-cyan-950/10">
+              اعتبار فعال
             </span>
           </div>
         </div>
       </div>
-
-      {coinAccents.map((coin) => (
-        <div
-          key={`${coin.label}-${coin.className}`}
-          className={`animate-hami-float absolute flex items-center justify-center rounded-full bg-yellow-300 font-black text-orange-700 shadow-lg shadow-yellow-500/20 ring-4 ring-white/70 ${coin.className}`}
-        >
-          {coin.label}
-        </div>
-      ))}
     </div>
   )
 }
@@ -262,17 +247,17 @@ export default function Home() {
   }
 
   return (
-    <div dir="rtl" className="hami-landing min-h-screen overflow-x-hidden bg-medical-mesh text-slate-900">
-      <header className="sticky top-0 z-50 border-b border-sky-100/80 bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <div dir="rtl" className="hami-landing min-h-screen overflow-x-hidden bg-[#fbfeff] text-slate-900">
+      <header className="sticky top-0 z-50 border-b border-sky-100/70 bg-white/85 backdrop-blur-xl">
+        <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-3" aria-label={brandName}>
-            <span className="flex size-10 items-center justify-center rounded-xl bg-teal-600 text-white shadow-lg shadow-teal-600/20">
-              <HeartPulse className="size-5" />
+            <span className="flex size-9 items-center justify-center rounded-xl bg-teal-600 text-white shadow-md shadow-teal-600/15">
+              <HeartPulse className="size-4" />
             </span>
             <span className="text-lg font-black text-slate-950">{brandName}</span>
           </Link>
 
-          <nav className="hidden items-center gap-7 text-sm font-bold text-slate-600 md:flex">
+          <nav className="hidden items-center gap-7 text-[15px] font-medium text-slate-800 md:flex">
             {navigationLinks.map((link) => (
               <a key={link.href} href={link.href} className="transition hover:text-teal-700">
                 {link.label}
@@ -285,22 +270,16 @@ export default function Home() {
               <Button
                 type="button"
                 variant="outline"
-                className="rounded-xl border-teal-200 bg-white text-teal-700 hover:bg-teal-50"
+                className="h-9 rounded-full border-teal-200 bg-white px-5 text-teal-700 hover:bg-teal-50"
                 onClick={goToDashboard}
               >
                 داشبورد من
               </Button>
             ) : (
-              <Button asChild variant="ghost" className="rounded-xl text-slate-700 hover:bg-sky-50 hover:text-teal-700">
+              <Button asChild variant="outline" className="h-9 rounded-full border-teal-200 bg-white px-5 text-teal-700 hover:bg-teal-50">
                 <Link href="/auth/login">ورود</Link>
               </Button>
             )}
-            <Button asChild className="rounded-xl bg-orange-500 text-white shadow-lg shadow-orange-500/25 hover:bg-orange-600">
-              <Link href="/user/plans">
-                خرید طرح
-                <ArrowLeft className="size-4" />
-              </Link>
-            </Button>
           </div>
 
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -360,23 +339,23 @@ export default function Home() {
         <main>
           <section id="home" className="relative overflow-hidden">
             <div className="pointer-events-none absolute inset-0">
-              <div className="absolute right-[8%] top-24 h-72 w-72 rounded-full bg-teal-200/30 blur-3xl" />
-              <div className="absolute left-[8%] top-40 h-80 w-80 rounded-full bg-sky-200/30 blur-3xl" />
-              <div className="absolute bottom-16 right-[45%] h-64 w-64 rounded-full bg-orange-100/60 blur-3xl" />
+              <div className="absolute right-[10%] top-24 h-64 w-64 rounded-full bg-teal-100/45 blur-3xl" />
+              <div className="absolute left-[12%] top-28 h-72 w-72 rounded-full bg-sky-100/45 blur-3xl" />
+              <div className="absolute bottom-20 right-[45%] h-60 w-60 rounded-full bg-orange-50/80 blur-3xl" />
             </div>
 
-            <div className="relative mx-auto grid min-h-[calc(100svh-4rem)] w-full max-w-7xl items-center gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1fr_0.95fr] lg:min-h-[calc(100vh-4rem)] lg:gap-14 lg:px-8 lg:py-14">
+            <div className="relative mx-auto grid min-h-[calc(100svh-56px)] w-full max-w-7xl items-center gap-8 px-4 pb-20 pt-12 sm:px-6 md:grid-cols-[1fr_0.92fr] lg:min-h-[calc(100vh-80px)] lg:gap-14 lg:px-8 lg:pb-24 lg:pt-14">
               <div className="order-1 max-w-2xl text-right">
-                <Badge className="mb-5 gap-2 border-teal-100 bg-white/75 px-3 py-1.5 text-teal-700 shadow-sm hover:bg-white/75">
-                  <Activity className="size-4" />
-                  کارت تخفیف پزشکی
-                </Badge>
-                <h1 className="text-4xl font-black leading-tight text-slate-950 sm:text-5xl lg:text-6xl">
-                  مدیریت هوشمند هزینه‌های درمان با عضویت در حامی کارت
-                </h1>
-                <p className="mt-5 inline-flex rounded-2xl bg-white/80 px-4 py-2 text-xl font-black leading-8 text-teal-700 shadow-sm shadow-sky-900/5 sm:text-2xl">
-                  تا ۲۵٪ تخفیف نزد پزشکان طرف قرارداد
+                <span className="inline-flex rounded-full bg-orange-50 px-4 py-2 text-sm font-black text-orange-500 shadow-sm shadow-orange-500/5">
+                  پیشنهاد ویژه
+                </span>
+                <p className="mt-6 flex items-baseline justify-start gap-3 text-orange-500 drop-shadow-sm">
+                  <span className="text-4xl font-black leading-none sm:text-5xl lg:text-6xl">تا</span>
+                  <span className="text-7xl font-black leading-none sm:text-8xl lg:text-9xl">۲۵٪</span>
                 </p>
+                <h1 className="mt-4 text-4xl font-black leading-tight text-slate-950 sm:text-5xl lg:text-6xl">
+                  تخفیف خدمات پزشکی با {brandName}
+                </h1>
                 <p className="mt-6 max-w-xl text-base leading-8 text-slate-600 sm:text-lg">
                   {heroSafeCopy}
                 </p>
@@ -384,32 +363,24 @@ export default function Home() {
                   <Button
                     asChild
                     size="lg"
-                    className="h-12 w-full rounded-2xl bg-orange-500 px-7 text-white shadow-xl shadow-orange-500/25 hover:bg-orange-600 sm:w-auto"
+                    className="h-[52px] w-full rounded-full bg-orange-500 px-8 text-base font-black text-white shadow-xl shadow-orange-500/30 hover:bg-orange-600 sm:w-auto"
                   >
                     <Link href="/user/plans">
-                      خرید طرح حامی کارت
-                      <ArrowLeft className="size-4" />
+                      خرید حامی‌کارت
+                      <ChevronLeft className="size-4" />
                     </Link>
                   </Button>
                   <Button
                     asChild
                     size="lg"
                     variant="outline"
-                    className="h-12 w-full rounded-2xl border-teal-200 bg-white/85 px-7 text-teal-700 shadow-sm hover:bg-teal-50 sm:w-auto"
+                    className="h-[52px] w-full rounded-full border-teal-100 bg-white/75 px-7 text-teal-700 shadow-sm hover:bg-teal-50 sm:w-auto"
                   >
                     <Link href="#doctors">
-                      مشاهده پزشکان طرف قرارداد
+                      مشاهده پزشکان
                       <ChevronLeft className="size-4" />
                     </Link>
                   </Button>
-                </div>
-                <div className="mt-6 flex flex-wrap items-center gap-3 text-sm font-bold text-slate-600">
-                  <Link href="/auth/login" className="inline-flex items-center gap-1 text-teal-700 hover:text-teal-800">
-                    ورود
-                    <ArrowLeft className="size-4" />
-                  </Link>
-                  <span className="h-1 w-1 rounded-full bg-slate-300" />
-                  <span>نمایش درصد تخفیف در پروفایل هر پزشک</span>
                 </div>
               </div>
 
@@ -493,7 +464,7 @@ export default function Home() {
                       <Button asChild variant="outline" className="mt-6 rounded-xl border-teal-200 bg-white text-teal-700 hover:bg-teal-50">
                         <Link href={audience.href}>
                           {audience.cta}
-                          <ArrowLeft className="size-4" />
+                          <ChevronLeft className="size-4" />
                         </Link>
                       </Button>
                     </CardContent>

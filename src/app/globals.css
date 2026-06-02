@@ -193,8 +193,38 @@ input[type="number"] {
   will-change: transform;
 }
 
+.hami-float {
+  animation: hami-float-y 6s ease-in-out infinite;
+  will-change: transform;
+}
+
+.hami-float-sm {
+  animation: hami-float-y 4.5s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes hami-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.78;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+}
+
+.hami-glow {
+  animation: hami-glow-pulse 5.5s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .animate-hami-float {
+  .animate-hami-float,
+  .hami-float,
+  .hami-float-sm,
+  .hami-glow {
     animation: none;
   }
 
