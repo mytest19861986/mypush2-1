@@ -12,8 +12,19 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Stethoscope, Save, Loader2, Phone, MapPin, Building2 } from 'lucide-react'
+import { getCitiesByProvince, getProvinceNames } from '@/constants/iran-locations'
 import type { DoctorItem } from '@/types'
+
+const locationNoneValue = '__none__'
+const provinceNames = getProvinceNames()
 
 export default function DoctorProfilePage() {
   const { toast } = useToast()
@@ -30,6 +41,15 @@ export default function DoctorProfilePage() {
     phone: '',
     bio: '',
   })
+  const cityOptions = getCitiesByProvince(form.province)
+
+  const handleProvinceChange = (value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      province: value === locationNoneValue ? '' : value,
+      city: '',
+    }))
+  }
 
   const loadProfile = async (options?: { showPageLoader?: boolean }) => {
     if (options?.showPageLoader) setIsLoading(true)
@@ -152,22 +172,45 @@ export default function DoctorProfilePage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="city">شهر</Label>
-                <Input
-                  id="city"
-                  value={form.city}
-                  onChange={(e) => setForm({ ...form, city: e.target.value })}
-                  placeholder="شهر"
-                />
+                <Label htmlFor="province">استان</Label>
+                <Select
+                  value={form.province || locationNoneValue}
+                  onValueChange={handleProvinceChange}
+                >
+                  <SelectTrigger id="province">
+                    <SelectValue placeholder="انتخاب استان" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={locationNoneValue}>انتخاب نشده</SelectItem>
+                    {provinceNames.map((province) => (
+                      <SelectItem key={province} value={province}>
+                        {province}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="province">استان</Label>
-                <Input
-                  id="province"
-                  value={form.province}
-                  onChange={(e) => setForm({ ...form, province: e.target.value })}
-                  placeholder="استان"
-                />
+                <Label htmlFor="city">شهر</Label>
+                <Select
+                  value={form.city || locationNoneValue}
+                  onValueChange={(value) =>
+                    setForm({ ...form, city: value === locationNoneValue ? '' : value })
+                  }
+                  disabled={!form.province}
+                >
+                  <SelectTrigger id="city">
+                    <SelectValue placeholder="انتخاب شهر" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={locationNoneValue}>انتخاب نشده</SelectItem>
+                    {cityOptions.map((city) => (
+                      <SelectItem key={city} value={city}>
+                        {city}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="space-y-2">

@@ -11,6 +11,7 @@ import {
 import { db } from '@/lib/db'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { IRAN_PROVINCES, getCitiesByProvince } from '@/constants/iran-locations'
 import { DoctorsFilterSidebar } from './doctors-filter-sidebar'
 
 export const dynamic = 'force-dynamic'
@@ -33,6 +34,7 @@ type DoctorFilters = {
 type PublicDoctor = {
   id: string
   fullName: string
+  profileImageUrl: string | null
   specialty: string | null
   city: string | null
   province: string | null
@@ -41,40 +43,6 @@ type PublicDoctor = {
 }
 
 const allValue = 'all'
-
-const iranProvinceCities = {
-  تهران: ['تهران', 'ری', 'شمیرانات', 'اسلامشهر', 'شهریار', 'ورامین', 'پردیس'],
-  البرز: ['کرج', 'فردیس', 'ساوجبلاغ', 'نظرآباد'],
-  اصفهان: ['اصفهان', 'کاشان', 'نجف‌آباد', 'شاهین‌شهر', 'خمینی‌شهر'],
-  'خراسان رضوی': ['مشهد', 'نیشابور', 'سبزوار', 'تربت حیدریه'],
-  فارس: ['شیراز', 'مرودشت', 'کازرون', 'فسا'],
-  'آذربایجان شرقی': ['تبریز', 'مراغه', 'مرند', 'اهر'],
-  'آذربایجان غربی': ['ارومیه', 'خوی', 'مهاباد', 'میاندوآب'],
-  گیلان: ['رشت', 'بندر انزلی', 'لاهیجان', 'لنگرود'],
-  مازندران: ['ساری', 'بابل', 'آمل', 'قائم‌شهر', 'نوشهر'],
-  خوزستان: ['اهواز', 'آبادان', 'دزفول', 'ماهشهر'],
-  کرمان: ['کرمان', 'رفسنجان', 'سیرجان', 'بم'],
-  یزد: ['یزد', 'میبد', 'اردکان'],
-  قم: ['قم'],
-  قزوین: ['قزوین', 'تاکستان', 'آبیک'],
-  مرکزی: ['اراک', 'ساوه', 'خمین'],
-  همدان: ['همدان', 'ملایر', 'نهاوند'],
-  کرمانشاه: ['کرمانشاه', 'اسلام‌آباد غرب', 'پاوه'],
-  کردستان: ['سنندج', 'سقز', 'مریوان'],
-  لرستان: ['خرم‌آباد', 'بروجرد', 'دورود'],
-  هرمزگان: ['بندرعباس', 'قشم', 'کیش', 'میناب'],
-  بوشهر: ['بوشهر', 'برازجان', 'کنگان'],
-  گلستان: ['گرگان', 'گنبدکاووس', 'علی‌آباد کتول'],
-  اردبیل: ['اردبیل', 'پارس‌آباد', 'مشگین‌شهر'],
-  زنجان: ['زنجان', 'ابهر', 'خرمدره'],
-  سمنان: ['سمنان', 'شاهرود', 'دامغان'],
-  'سیستان و بلوچستان': ['زاهدان', 'چابهار', 'ایرانشهر'],
-  ایلام: ['ایلام', 'دهلران', 'آبدانان'],
-  'چهارمحال و بختیاری': ['شهرکرد', 'بروجن', 'لردگان'],
-  'کهگیلویه و بویراحمد': ['یاسوج', 'گچساران', 'دهدشت'],
-  'خراسان شمالی': ['بجنورد', 'شیروان', 'اسفراین'],
-  'خراسان جنوبی': ['بیرجند', 'قائن', 'طبس'],
-} satisfies Record<string, string[]>
 
 function getParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value
@@ -98,7 +66,7 @@ function buildFilters(searchParams?: Record<string, string | string[] | undefine
   const province = cleanFilterValue(getParam(searchParams?.province))
   const city = cleanFilterValue(getParam(searchParams?.city))
   const cityBelongsToProvince = province
-    ? (iranProvinceCities[province as keyof typeof iranProvinceCities] || []).includes(city)
+    ? getCitiesByProvince(province).includes(city)
     : false
 
   return {
@@ -123,6 +91,32 @@ function buildDoctorsHref(filters: DoctorFilters, overrides: Partial<DoctorFilte
   return `/doctors${params.toString() ? `?${params.toString()}` : ''}`
 }
 
+function getSafePublicImageUrl(value?: string | null) {
+  const url = normalize(value)
+  if (!url) return null
+
+  if (url.startsWith('/') && !url.startsWith('//')) {
+    const lowerUrl = url.toLowerCase()
+    if (
+      lowerUrl.startsWith('/api/') ||
+      lowerUrl.startsWith('/api/v1/') ||
+      lowerUrl.startsWith('/private-uploads/') ||
+      lowerUrl.startsWith('/uploads/')
+    ) {
+      return null
+    }
+
+    return url
+  }
+
+  try {
+    const parsedUrl = new URL(url)
+    return ['http:', 'https:'].includes(parsedUrl.protocol) ? url : null
+  } catch {
+    return null
+  }
+}
+
 async function getPublicDoctors(): Promise<PublicDoctor[]> {
   const doctors = await db.doctor.findMany({
     where: {
@@ -144,6 +138,7 @@ async function getPublicDoctors(): Promise<PublicDoctor[]> {
             select: {
               firstName: true,
               lastName: true,
+              avatar: true,
             },
           },
         },
@@ -163,6 +158,7 @@ async function getPublicDoctors(): Promise<PublicDoctor[]> {
     return {
       id: doctor.id,
       fullName: fullName || 'پزشک طرف قرارداد',
+      profileImageUrl: getSafePublicImageUrl(doctor.user.profile?.avatar),
       specialty: doctor.specialty,
       city: doctor.city,
       province: doctor.province,
@@ -220,11 +216,19 @@ function DoctorCard({ doctor }: { doctor: PublicDoctor }) {
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
       <div className="flex flex-row items-start gap-4">
-        <div className="grid size-14 shrink-0 place-items-center rounded-2xl bg-teal-50 text-teal-700 ring-1 ring-teal-100">
-          <div className="relative">
-            <UserRound className="size-7" />
-            <Stethoscope className="absolute -bottom-1 -left-2 size-4 rounded-full bg-teal-50 text-teal-700" />
-          </div>
+        <div className="grid size-14 shrink-0 place-items-center overflow-hidden rounded-2xl bg-teal-50 text-teal-700 ring-1 ring-teal-100">
+          {doctor.profileImageUrl ? (
+            <img
+              src={doctor.profileImageUrl}
+              alt={`تصویر پزشک ${doctor.fullName}`}
+              className="size-full object-cover"
+            />
+          ) : (
+            <div className="relative">
+              <UserRound className="size-7" />
+              <Stethoscope className="absolute -bottom-1 -left-2 size-4 rounded-full bg-teal-50 text-teal-700" />
+            </div>
+          )}
         </div>
 
         <div className="min-w-0 flex-1">
@@ -356,7 +360,7 @@ async function DirectoryContent({ filters }: { filters: DoctorFilters }) {
           key={JSON.stringify(filters)}
           filters={filters}
           specialties={[]}
-          provinceCities={iranProvinceCities}
+          provinceCities={IRAN_PROVINCES}
         />
         <DirectoryErrorState filters={filters} />
       </div>
@@ -372,7 +376,7 @@ async function DirectoryContent({ filters }: { filters: DoctorFilters }) {
         key={JSON.stringify(filters)}
         filters={filters}
         specialties={specialties}
-        provinceCities={iranProvinceCities}
+        provinceCities={IRAN_PROVINCES}
       />
 
       <section>

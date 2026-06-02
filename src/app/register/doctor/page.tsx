@@ -32,6 +32,7 @@ import {
   ShieldCheck,
   CheckCircle2,
 } from 'lucide-react'
+import { getCitiesByProvince, getProvinceNames } from '@/constants/iran-locations'
 
 const specialties = [
   { value: 'عمومی', label: 'عمومی' },
@@ -53,6 +54,8 @@ const specialties = [
 ]
 
 const easeOut = [0, 0, 0.2, 1] as const
+const locationNoneValue = '__none__'
+const provinceNames = getProvinceNames()
 
 const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 20 },
@@ -79,6 +82,20 @@ export default function RegisterDoctorPage() {
   const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
+
+  const handleProvinceChange = (value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      province: value === locationNoneValue ? '' : value,
+      city: '',
+    }))
+  }
+
+  const handleCityChange = (value: string) => {
+    handleChange('city', value === locationNoneValue ? '' : value)
+  }
+
+  const cityOptions = getCitiesByProvince(form.province)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -255,24 +272,45 @@ export default function RegisterDoctorPage() {
                         <MapPin className="h-3.5 w-3.5" />
                         استان
                       </Label>
-                      <Input
-                        id="province"
-                        placeholder="مثلاً: تهران"
-                        value={form.province}
-                        onChange={(e) => handleChange('province', e.target.value)}
-                      />
+                      <Select
+                        value={form.province || locationNoneValue}
+                        onValueChange={handleProvinceChange}
+                      >
+                        <SelectTrigger id="province">
+                          <SelectValue placeholder="انتخاب استان" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={locationNoneValue}>انتخاب نشده</SelectItem>
+                          {provinceNames.map((province) => (
+                            <SelectItem key={province} value={province}>
+                              {province}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="city" className="flex items-center gap-1.5">
                         <MapPin className="h-3.5 w-3.5" />
                         شهر
                       </Label>
-                      <Input
-                        id="city"
-                        placeholder="مثلاً: تهران"
-                        value={form.city}
-                        onChange={(e) => handleChange('city', e.target.value)}
-                      />
+                      <Select
+                        value={form.city || locationNoneValue}
+                        onValueChange={handleCityChange}
+                        disabled={!form.province}
+                      >
+                        <SelectTrigger id="city">
+                          <SelectValue placeholder="انتخاب شهر" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={locationNoneValue}>انتخاب نشده</SelectItem>
+                          {cityOptions.map((city) => (
+                            <SelectItem key={city} value={city}>
+                              {city}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                   <div className="space-y-2">
