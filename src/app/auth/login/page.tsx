@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, type Variants } from 'framer-motion'
 import { toast } from 'sonner'
@@ -39,6 +39,14 @@ const OTP_LENGTH = 5
 const COUNTDOWN_SECONDS = 120
 const MAX_MOBILE_LENGTH = 11
 
+function getRedirectPathForUser(user: AuthUser) {
+  const roles = user.roles || []
+  if (roles.includes('SUPER_ADMIN') || roles.includes('ADMIN')) return '/admin/dashboard'
+  if (roles.includes('DOCTOR')) return '/doctor/dashboard'
+  if (roles.includes('AGENT')) return '/agent/dashboard'
+  return '/user/dashboard'
+}
+
 // ─── Animation Variants ──────────────────────────────────────────────────────
 
 const containerVariants: Variants = {
@@ -71,7 +79,14 @@ const brandingVariants: Variants = {
 
 export default function LoginPage() {
   const router = useRouter()
-  const { setAuth, getRedirectPath } = useAuthStore()
+  const {
+    user,
+    isAuthenticated,
+    isLoading,
+    setAuth,
+    clearAuth,
+    initialize,
+  } = useAuthStore()
 
   // ─── OTP State ──────────────────────────────────────────────────────────
 
@@ -91,6 +106,51 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loginLoading, setLoginLoading] = useState(false)
+  const [checkingAuth, setCheckingAuth] = useState(false)
+  const [redirectingAfterAuth, setRedirectingAfterAuth] = useState(false)
+  const redirectFallbackTimeoutRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (redirectFallbackTimeoutRef.current) {
+        window.clearTimeout(redirectFallbackTimeoutRef.current)
+        redirectFallbackTimeoutRef.current = null
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    const hasStoredToken =
+      typeof window !== 'undefined' && Boolean(localStorage.getItem('accessToken'))
+
+    if (!hasStoredToken) {
+      clearAuth()
+      setCheckingAuth(false)
+      return
+    }
+
+    setCheckingAuth(true)
+    initialize()
+      .catch(() => {
+        clearAuth()
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setCheckingAuth(false)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [clearAuth, initialize])
+
+  useEffect(() => {
+    if (!redirectingAfterAuth && !checkingAuth && !isLoading && isAuthenticated && user) {
+      router.replace(getRedirectPathForUser(user))
+    }
+  }, [checkingAuth, isAuthenticated, isLoading, redirectingAfterAuth, router, user])
 
   // ─── Helpers ───────────────────────────────────────────────────────────
 
@@ -107,13 +167,28 @@ export default function LoginPage() {
       userData.permissions = []
     }
 
+    setRedirectingAfterAuth(true)
     setAuth(userData, data.accessToken, data.refreshToken)
     toast.success('ورود با موفقیت انجام شد')
 
-    const redirectPath = getRedirectPath()
-    setTimeout(() => {
-      router.replace(redirectPath)
-    }, 300)
+    const redirectPath = getRedirectPathForUser(userData)
+    if (redirectFallbackTimeoutRef.current) {
+      window.clearTimeout(redirectFallbackTimeoutRef.current)
+    }
+
+    router.replace(redirectPath)
+    redirectFallbackTimeoutRef.current = window.setTimeout(() => {
+      redirectFallbackTimeoutRef.current = null
+
+      if (typeof window !== 'undefined') {
+        if (window.location.pathname === '/auth/login') {
+          window.location.replace(redirectPath)
+          return
+        }
+
+        setRedirectingAfterAuth(false)
+      }
+    }, 800)
   }
 
   // ─── OTP Handlers ───────────────────────────────────────────────────────
@@ -148,6 +223,10 @@ export default function LoginPage() {
   }
 
   const handleVerifyOtp = async () => {
+    if (verifyLoading) {
+      return
+    }
+
     const mobile = otpMobile.trim()
     const code = otpCode.trim()
 
@@ -194,6 +273,10 @@ export default function LoginPage() {
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    if (loginLoading) {
+      return
+    }
+
     const mobile = passwordMobile.trim()
 
     if (!mobile || !isValidIranianMobile(mobile)) {
@@ -218,6 +301,14 @@ export default function LoginPage() {
   }
 
   // ─── Render ─────────────────────────────────────────────────────────────
+
+  if (checkingAuth || redirectingAfterAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen flex md:grid md:grid-cols-5">

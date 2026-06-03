@@ -10,6 +10,10 @@ import { ShieldX, AlertCircle } from 'lucide-react'
 export function AdminRoute({ children }: { children: React.ReactNode }) {
   const { isAdmin, user } = useAuthStore()
 
+  if (!user) {
+    return <ProtectedRoute>{children}</ProtectedRoute>
+  }
+
   if (!isAdmin()) {
     return (
       <ProtectedRoute>

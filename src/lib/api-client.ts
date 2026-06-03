@@ -1,4 +1,3 @@
-import { useAuthStore } from '@/stores/auth-store'
 import type { ApiErrorBody, ApiResponse, PaginatedResponse } from '@/types'
 
 export class ApiError extends Error {
@@ -16,11 +15,16 @@ export class ApiError extends Error {
 class ApiClient {
   private baseUrl = '/api/v1'
 
+  private getAccessToken(): string | null {
+    if (typeof window === 'undefined') return null
+    return localStorage.getItem('accessToken')
+  }
+
   private getHeaders(): HeadersInit {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     }
-    const token = useAuthStore.getState().accessToken
+    const token = this.getAccessToken()
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
     }
@@ -112,7 +116,7 @@ class ApiClient {
     formData: FormData,
     onProgress?: (progress: number) => void
   ): Promise<ApiResponse<T>> {
-    const token = useAuthStore.getState().accessToken
+    const token = this.getAccessToken()
     const headers: HeadersInit = {}
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
@@ -165,7 +169,7 @@ class ApiClient {
    * Authorization header for downloads.
    */
   getDownloadUrl(path: string): string {
-    const token = useAuthStore.getState().accessToken
+    const token = this.getAccessToken()
     return `${this.baseUrl}${path}${path.includes('?') ? '&' : '?'}token=${token}`
   }
 }

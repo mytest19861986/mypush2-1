@@ -23,7 +23,7 @@ export default function RegisterLayout({
     }
   }, [isLoading, isAuthenticated, router])
 
-  if (isLoading) {
+  if (isLoading || !isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -32,10 +32,6 @@ export default function RegisterLayout({
         </div>
       </div>
     )
-  }
-
-  if (!isAuthenticated) {
-    return null
   }
 
   return (

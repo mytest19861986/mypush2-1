@@ -8,6 +8,11 @@ import { Users, AlertCircle } from 'lucide-react'
 
 export function UserRoute({ children }: { children: React.ReactNode }) {
   const { user } = useAuthStore()
+
+  if (!user) {
+    return <ProtectedRoute>{children}</ProtectedRoute>
+  }
+
   // A normal user is someone who is NOT an admin, doctor, or agent.
   // They may have the 'USER' role explicitly, or no roles at all.
   const specialRoles = ['SUPER_ADMIN', 'ADMIN', 'DOCTOR', 'AGENT']

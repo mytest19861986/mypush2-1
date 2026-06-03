@@ -10,6 +10,10 @@ import { Stethoscope, AlertCircle } from 'lucide-react'
 export function DoctorRoute({ children }: { children: React.ReactNode }) {
   const { user, isDoctor } = useAuthStore()
 
+  if (!user) {
+    return <ProtectedRoute>{children}</ProtectedRoute>
+  }
+
   if (!isDoctor()) {
     return (
       <ProtectedRoute>

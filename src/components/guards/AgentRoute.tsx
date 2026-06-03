@@ -10,6 +10,10 @@ import { Briefcase, AlertCircle } from 'lucide-react'
 export function AgentRoute({ children }: { children: React.ReactNode }) {
   const { user, isAgent } = useAuthStore()
 
+  if (!user) {
+    return <ProtectedRoute>{children}</ProtectedRoute>
+  }
+
   if (!isAgent()) {
     return (
       <ProtectedRoute>
