@@ -12,7 +12,7 @@ import {
   Tag,
   Loader2,
 } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -203,7 +203,7 @@ export default function AdminPlansPage() {
           </>
         }
         action={
-          <Button onClick={openCreateDialog} className="bg-emerald-600 hover:bg-emerald-700">
+          <Button onClick={openCreateDialog} className="shrink-0 bg-emerald-600 hover:bg-emerald-700">
             <Plus className="ml-2 size-4" />
             ایجاد طرح جدید
           </Button>
@@ -214,8 +214,8 @@ export default function AdminPlansPage() {
       {isLoading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} className="border-0 shadow-sm">
-              <CardContent className="p-6 space-y-4">
+            <Card key={i} className="rounded-2xl border border-border/50 bg-card shadow-sm">
+              <CardContent className="space-y-4 p-5">
                 <Skeleton className="h-6 w-24" />
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-4 w-2/3" />
@@ -242,33 +242,35 @@ export default function AdminPlansPage() {
           {plans.map((plan) => (
             <Card
               key={plan.id}
-              className="border-0 shadow-sm transition-shadow hover:shadow-md group"
+              className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm transition-shadow hover:shadow-md"
             >
-              <CardContent className="p-5">
+              <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 p-5 pb-3">
                 {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
-                      <CreditCard className="size-4" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-sm">{plan.name}</h3>
-                      <StatusBadge status={plan.status} className="text-[10px]" />
+                <div className="flex min-w-0 items-start gap-3">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                    <CreditCard className="size-4" />
+                  </div>
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="truncate text-sm font-bold">{plan.name}</h3>
+                      <StatusBadge status={plan.status} className="shrink-0 text-[10px]" />
                     </div>
                   </div>
                 </div>
+              </CardHeader>
 
+              <CardContent className="flex flex-1 flex-col p-5 pt-0">
                 {/* Description */}
                 {plan.description && (
-                  <p className="text-xs text-muted-foreground mb-4 line-clamp-2 leading-5">
+                  <p className="mb-4 line-clamp-2 text-xs leading-5 text-muted-foreground">
                     {plan.description}
                   </p>
                 )}
 
                 {/* Details */}
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="rounded-lg bg-muted/50 p-2.5 text-center">
-                    <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+                <div className="mb-4 grid grid-cols-2 gap-3 rounded-xl bg-muted/30 p-4">
+                  <div className="rounded-lg bg-card/70 p-2.5 text-center ring-1 ring-border/40">
+                    <div className="mb-1 flex items-center justify-center gap-1 text-muted-foreground">
                       <Tag className="size-3" />
                       <span className="text-[10px]">قیمت</span>
                     </div>
@@ -279,8 +281,8 @@ export default function AdminPlansPage() {
                       </span>
                     </span>
                   </div>
-                  <div className="rounded-lg bg-muted/50 p-2.5 text-center">
-                    <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+                  <div className="rounded-lg bg-card/70 p-2.5 text-center ring-1 ring-border/40">
+                    <div className="mb-1 flex items-center justify-center gap-1 text-muted-foreground">
                       <Percent className="size-3" />
                       <span className="text-[10px]">تخفیف</span>
                     </div>
@@ -288,8 +290,8 @@ export default function AdminPlansPage() {
                       {toPersianNum(plan.discountPercent)}٪
                     </span>
                   </div>
-                  <div className="rounded-lg bg-muted/50 p-2.5 text-center">
-                    <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+                  <div className="rounded-lg bg-card/70 p-2.5 text-center ring-1 ring-border/40">
+                    <div className="mb-1 flex items-center justify-center gap-1 text-muted-foreground">
                       <CalendarDays className="size-3" />
                       <span className="text-[10px]">مدت</span>
                     </div>
@@ -297,8 +299,8 @@ export default function AdminPlansPage() {
                       {toPersianNum(plan.durationDays)} روز
                     </span>
                   </div>
-                  <div className="rounded-lg bg-muted/50 p-2.5 text-center">
-                    <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+                  <div className="rounded-lg bg-card/70 p-2.5 text-center ring-1 ring-border/40">
+                    <div className="mb-1 flex items-center justify-center gap-1 text-muted-foreground">
                       <Users className="size-3" />
                       <span className="text-[10px]">استفاده</span>
                     </div>
@@ -309,7 +311,7 @@ export default function AdminPlansPage() {
                 </div>
 
                 {/* Footer actions */}
-                <div className="flex items-center justify-between pt-3 border-t">
+                <div className="mt-auto flex items-center justify-between border-t pt-3">
                   <div className="flex items-center gap-2">
                     <Switch
                       checked={plan.status === 'ACTIVE'}
@@ -325,7 +327,7 @@ export default function AdminPlansPage() {
                           : 'غیرفعال'}
                     </Label>
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                     <Button
                       variant="ghost"
                       size="icon"

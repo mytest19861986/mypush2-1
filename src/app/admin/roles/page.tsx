@@ -58,12 +58,12 @@ export default function AdminRolesPage() {
       {isLoading ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i}>
-              <CardHeader className="pb-3">
+            <Card key={i} className="rounded-2xl border border-border/50 bg-card shadow-sm">
+              <CardHeader className="p-5 pb-3">
                 <Skeleton className="h-5 w-32" />
                 <Skeleton className="h-4 w-20" />
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-5 pt-0">
                 <div className="space-y-2">
                   <Skeleton className="h-4 w-24" />
                   <Skeleton className="h-4 w-24" />
@@ -80,22 +80,23 @@ export default function AdminRolesPage() {
             const isExpanded = expandedRole === role.id
             const permGroups = groupPermissions(role.permissions)
             return (
-              <Card key={role.id} className="overflow-hidden">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="rounded-lg bg-primary/10 p-1.5 text-primary">
-                        <Shield className="size-4" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-base">{role.title}</CardTitle>
-                        <p className="text-xs text-muted-foreground mt-0.5">{role.name}</p>
-                      </div>
+              <Card
+                key={role.id}
+                className="flex h-full flex-col overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm"
+              >
+                <CardHeader className="p-5 pb-3">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <Shield className="size-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <CardTitle className="truncate text-base">{role.title}</CardTitle>
+                      <p className="mt-1 truncate text-xs text-muted-foreground">{role.name}</p>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <CardContent className="flex flex-1 flex-col space-y-3 p-5 pt-0">
+                  <div className="flex flex-wrap items-center gap-3 rounded-xl bg-muted/30 p-3 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <Users className="size-3.5" />
                       <span>{role.userCount ?? 0} کاربر</span>
@@ -111,28 +112,28 @@ export default function AdminRolesPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="w-full justify-center text-xs"
+                    className="h-9 w-full justify-between rounded-xl px-3 text-xs text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                     onClick={() => setExpandedRole(isExpanded ? null : role.id)}
                   >
                     {isExpanded ? (
                       <>
-                        <ChevronUp className="ml-1 size-3.5" />
-                        بستن دسترسی‌ها
+                        <span>بستن دسترسی‌ها</span>
+                        <ChevronUp className="size-3.5" />
                       </>
                     ) : (
                       <>
-                        <ChevronDown className="ml-1 size-3.5" />
-                        مشاهده دسترسی‌ها
+                        <span>مشاهده دسترسی‌ها</span>
+                        <ChevronDown className="size-3.5" />
                       </>
                     )}
                   </Button>
                   {isExpanded && (
-                    <div className="space-y-3 border-t pt-3">
+                    <div className="space-y-3 rounded-xl border border-border/50 bg-muted/20 p-3">
                       {Object.keys(permGroups).length === 0 ? (
                         <p className="text-xs text-muted-foreground text-center py-2">بدون دسترسی</p>
                       ) : (
                         Object.entries(permGroups).map(([module, perms]) => (
-                          <div key={module}>
+                          <div key={module} className="space-y-2">
                             <p className="mb-1.5 text-xs font-medium text-muted-foreground">
                               {PERMISSION_MODULES[module] || module}
                             </p>
