@@ -3,8 +3,8 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Check,
-  CheckCircle2,
   Loader2,
+  MoreHorizontal,
   Plus,
   Receipt,
   RefreshCw,
@@ -25,6 +25,12 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   Select,
   SelectContent,
@@ -153,7 +159,7 @@ const statusClasses: Record<SalesCustomerStatus, string> = {
   DELIVERED: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
   PAID: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
   CONFIRMED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-  RETURNED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  RETURNED: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
 }
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -478,62 +484,65 @@ export default function AdminSalesCustomersPage() {
     const canConfirm = customer.status === 'PAID'
     const canReturn = customer.status !== 'CONFIRMED' && customer.status !== 'RETURNED'
 
-    if (!canMarkPaid && !canConfirm && !canReturn) {
-      return <span className="text-sm text-muted-foreground">-</span>
-    }
-
     return (
-      <div className="flex flex-wrap justify-end gap-2">
-        {canMarkPaid && (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={!!processing}
-            onClick={() => void handleMarkPaid(customer)}
-          >
-            {isMarkingPaid ? (
-              <Loader2 className="ml-1 size-3.5 animate-spin" />
-            ) : (
-              <Receipt className="ml-1 size-3.5" />
-            )}
-            ثبت پرداخت
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="size-8" aria-label="عملیات مشتری فروش">
+            <MoreHorizontal className="size-4" />
           </Button>
-        )}
-        {canConfirm && (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={!!processing}
-            onClick={() => void handleConfirm(customer)}
-          >
-            {isConfirming ? (
-              <Loader2 className="ml-1 size-3.5 animate-spin" />
-            ) : (
-              <Check className="ml-1 size-3.5" />
-            )}
-            تأیید نهایی
-          </Button>
-        )}
-        {canReturn && (
-          <Button
-            size="sm"
-            variant="ghost"
-            disabled={!!processing}
-            className="text-destructive hover:text-destructive"
-            onClick={() => {
-              setReturnTarget(customer)
-              setReturnReason('')
-            }}
-          >
-            {isReturning ? (
-              <Loader2 className="ml-1 size-3.5 animate-spin" />
-            ) : (
-              <RotateCcw className="ml-1 size-3.5" />
-            )}
-            برگشتی
-          </Button>
-        )}
-      </div>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          {!canMarkPaid && !canConfirm && !canReturn ? (
+            <DropdownMenuItem disabled>عملیاتی تعریف نشده</DropdownMenuItem>
+          ) : (
+            <>
+              {canMarkPaid && (
+                <DropdownMenuItem
+                  disabled={!!processing}
+                  onClick={() => void handleMarkPaid(customer)}
+                >
+                  {isMarkingPaid ? (
+                    <Loader2 className="ml-2 size-4 animate-spin" />
+                  ) : (
+                    <Receipt className="ml-2 size-4" />
+                  )}
+                  ثبت پرداخت
+                </DropdownMenuItem>
+              )}
+              {canConfirm && (
+                <DropdownMenuItem
+                  disabled={!!processing}
+                  onClick={() => void handleConfirm(customer)}
+                >
+                  {isConfirming ? (
+                    <Loader2 className="ml-2 size-4 animate-spin" />
+                  ) : (
+                    <Check className="ml-2 size-4" />
+                  )}
+                  تأیید نهایی
+                </DropdownMenuItem>
+              )}
+              {canReturn && (
+                <DropdownMenuItem
+                  disabled={!!processing}
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => {
+                    setReturnTarget(customer)
+                    setReturnReason('')
+                  }}
+                >
+                  {isReturning ? (
+                    <Loader2 className="ml-2 size-4 animate-spin" />
+                  ) : (
+                    <RotateCcw className="ml-2 size-4" />
+                  )}
+                  برگشتی
+                </DropdownMenuItem>
+              )}
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
     )
   }
 
@@ -707,18 +716,20 @@ export default function AdminSalesCustomersPage() {
         }
       />
 
-      <div className="flex flex-wrap gap-2">
-        {statusFilters.map((filter) => (
-          <Button
-            key={filter.value}
-            type="button"
-            variant={statusFilter === filter.value ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setStatusFilter(filter.value)}
-          >
-            {filter.label}
-          </Button>
-        ))}
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-wrap gap-2">
+          {statusFilters.map((filter) => (
+            <Button
+              key={filter.value}
+              type="button"
+              variant={statusFilter === filter.value ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusFilter(filter.value)}
+            >
+              {filter.label}
+            </Button>
+          ))}
+        </div>
       </div>
 
       {isLoading ? (

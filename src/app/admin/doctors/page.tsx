@@ -195,16 +195,6 @@ export default function AdminDoctorsPage() {
 
   return (
     <div className="space-y-6">
-      {/* دکمه خروج واضح */}
-      <div className="flex justify-end">
-        <Button
-          variant="destructive"
-          onClick={handleLogout}
-          className="mb-2"
-        >
-          خروج
-        </Button>
-      </div>
       <PageHeader
         title="مدیریت پزشکان"
         description={
@@ -213,6 +203,11 @@ export default function AdminDoctorsPage() {
             <span className="font-semibold text-emerald-600">{toPersianNum(total)}</span>{' '}
             پزشک
           </>
+        }
+        action={
+          <Button variant="destructive" onClick={handleLogout} className="w-full sm:w-auto">
+            خروج
+          </Button>
         }
       />
 
@@ -239,7 +234,7 @@ export default function AdminDoctorsPage() {
               <th className="px-4 py-3 text-right font-semibold text-sm">موبایل</th>
               <th className="px-4 py-3 text-right font-semibold text-sm">درصد تخفیف</th>
               <th className="px-4 py-3 text-right font-semibold text-sm">وضعیت</th>
-              <th className="px-4 py-3 text-right font-semibold text-sm">عملیات</th>
+              <th className="px-4 py-3 text-left font-semibold text-sm">عملیات</th>
             </tr>
           </thead>
           <tbody>
@@ -283,13 +278,14 @@ export default function AdminDoctorsPage() {
                   <td className="px-4 py-3 text-sm">
                     <StatusBadge status={doctor.status} />
                   </td>
-                  <td className="px-4 py-3 text-sm">
+                  <td className="px-4 py-3 text-left text-sm">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="size-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="size-8"
+                          aria-label="عملیات پزشک"
                         >
                           <MoreHorizontal className="size-4" />
                         </Button>

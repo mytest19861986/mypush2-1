@@ -173,7 +173,7 @@ export default function AdminAgentsPage() {
               <th className="px-4 py-3 text-right font-semibold text-sm">وضعیت</th>
               <th className="px-4 py-3 text-right font-semibold text-sm">مدارک</th>
               <th className="px-4 py-3 text-right font-semibold text-sm">تاریخ</th>
-              <th className="px-4 py-3 text-right font-semibold text-sm">عملیات</th>
+              <th className="px-4 py-3 text-left font-semibold text-sm">عملیات</th>
             </tr>
           </thead>
           <tbody>
@@ -205,13 +205,14 @@ export default function AdminAgentsPage() {
                     </Badge>
                   </td>
                   <td className="px-4 py-3 text-sm text-muted-foreground">{formatDate(agent.createdAt)}</td>
-                  <td className="px-4 py-3 text-sm">
+                  <td className="px-4 py-3 text-left text-sm">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="size-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="size-8"
+                          aria-label="عملیات نماینده"
                         >
                           <MoreHorizontal className="size-4" />
                         </Button>
