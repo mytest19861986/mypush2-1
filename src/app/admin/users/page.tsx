@@ -8,7 +8,6 @@ import {
   UserCheck,
   UserX,
   Ban,
-  Users,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -39,11 +38,13 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { useToast } from '@/hooks/use-toast'
-import { PageHeader, StatusBadge } from '@/components/shared'
+import { StatusBadge } from '@/components/shared'
 import { usersService } from '@/services'
 import type { UserItem } from '@/types'
 import { toPersianNum, formatDate, getDisplayName } from '@/utils/formatters'
 import { USER_STATUS_LABELS } from '@/constants'
+
+const PAGE_SIZE = 20
 
 export default function AdminUsersPage() {
   const { toast } = useToast()
@@ -64,7 +65,7 @@ export default function AdminUsersPage() {
     try {
       const params: { page: number; limit: number; search?: string; status?: string } = {
         page,
-        limit: 20,
+        limit: PAGE_SIZE,
       }
       if (search) params.search = search
       if (statusFilter !== 'ALL') params.status = statusFilter
@@ -134,41 +135,39 @@ export default function AdminUsersPage() {
     }
   }
 
+  const visibleStart = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1
+  const visibleEnd = Math.min(page * PAGE_SIZE, total)
+
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="مدیریت کاربران"
-        description="مشاهده، جستجو و مدیریت وضعیت کاربران سامانه"
-      />
-
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-2xl border border-border/50 bg-card p-5 shadow-sm">
-          <div className="flex items-start justify-between gap-3">
-            <p className="text-sm font-medium text-muted-foreground">تعداد کاربران</p>
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <Users className="size-5" />
-            </div>
+      <div className="flex flex-col gap-4 text-right sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight">مدیریت کاربران</h1>
+            <Badge variant="secondary">{toPersianNum(total)}</Badge>
           </div>
-          <p className="mt-4 text-3xl font-bold tracking-tight text-foreground">{toPersianNum(total)}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            مشاهده، جستجو و مدیریت وضعیت کاربران سامانه
+          </p>
         </div>
       </div>
 
       <div className="rounded-2xl border border-border/50 bg-card p-4 shadow-sm sm:p-5">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex w-full gap-2 md:max-w-sm">
-            <div className="relative min-w-0 flex-1">
-              <Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="جستجو بر اساس شماره موبایل، نام یا ایمیل..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch(searchInput)}
-                className="pr-10"
-              />
-            </div>
-            <Button onClick={() => handleSearch(searchInput)} variant="secondary" className="shrink-0">
-              جستجو
-            </Button>
+        <form
+          className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+          onSubmit={(e) => {
+            e.preventDefault()
+            handleSearch(searchInput)
+          }}
+        >
+          <div className="relative w-full sm:max-w-md">
+            <Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="جستجو بر اساس شماره موبایل، نام یا ایمیل..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="w-full border border-input bg-background pr-10 shadow-sm focus-visible:ring-1 focus-visible:ring-primary"
+            />
           </div>
           <Select
             value={statusFilter}
@@ -177,7 +176,7 @@ export default function AdminUsersPage() {
               setPage(1)
             }}
           >
-            <SelectTrigger className="w-full md:w-48">
+            <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="همه وضعیت‌ها" />
             </SelectTrigger>
             <SelectContent>
@@ -187,13 +186,13 @@ export default function AdminUsersPage() {
               <SelectItem value="BLOCKED">مسدود</SelectItem>
             </SelectContent>
           </Select>
-        </div>
+        </form>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm">
         <div className="w-full overflow-x-auto">
           <table className="w-full min-w-[760px]">
-            <thead className="border-b bg-muted/70">
+            <thead className="bg-transparent border-b">
               <tr>
                 <th className="px-4 py-4 text-right text-sm font-semibold text-foreground">موبایل</th>
                 <th className="px-4 py-4 text-right text-sm font-semibold text-foreground">نام</th>
@@ -284,6 +283,34 @@ export default function AdminUsersPage() {
               )}
             </tbody>
           </table>
+        </div>
+        <div className="flex flex-col gap-3 border-t px-4 py-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            نمایش {toPersianNum(visibleStart)} تا {toPersianNum(visibleEnd)} از {toPersianNum(total)} کاربر
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isLoading || page <= 1}
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+            >
+              قبلی
+            </Button>
+            <span className="min-w-16 text-center">
+              {toPersianNum(page)} / {toPersianNum(totalPages)}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isLoading || page >= totalPages}
+              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+            >
+              بعدی
+            </Button>
+          </div>
         </div>
       </div>
 
