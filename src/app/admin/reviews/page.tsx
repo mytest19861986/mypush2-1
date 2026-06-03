@@ -154,7 +154,7 @@ function ReviewRating({ rating }: { rating: number }) {
 function LoadingReviews() {
   return (
     <>
-      <Card className="hidden border-0 shadow-sm md:block">
+      <Card className="hidden overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm md:block">
         <CardContent className="p-0">
           <div className="p-4">
             <Skeleton className="h-9 w-full" />
@@ -169,7 +169,7 @@ function LoadingReviews() {
 
       <div className="space-y-3 md:hidden">
         {Array.from({ length: 4 }).map((_, index) => (
-          <Card key={index} className="border-0 shadow-sm">
+          <Card key={index} className="rounded-2xl border border-border/50 bg-card shadow-sm">
             <CardContent className="space-y-3 p-4">
               <Skeleton className="h-5 w-40" />
               <Skeleton className="h-4 w-28" />
@@ -335,7 +335,7 @@ export default function AdminReviewsPage() {
   }
 
   const renderReviewCard = (review: AdminReview) => (
-    <Card key={review.reviewId} className="border-0 shadow-sm">
+    <Card key={review.reviewId} className="rounded-2xl border border-border/50 bg-card shadow-sm">
       <CardContent className="space-y-4 p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -371,7 +371,7 @@ export default function AdminReviewsPage() {
         title="مدیریت نظرات"
         description={
           <>
-            نظرات ثبت‌شده توسط کاربران را بررسی، تأیید یا رد کنید.
+            بررسی، تأیید یا رد نظرات ثبت‌شده کاربران را انجام دهید.
             {(statusFilter === 'all' || statusFilter === 'PENDING') && pendingCount > 0 && (
               <span className="mr-1 font-semibold text-amber-600">
                 {toPersianNum(pendingCount)} نظر در انتظار بررسی است.
@@ -381,24 +381,34 @@ export default function AdminReviewsPage() {
         }
       />
 
-      <div className="flex flex-wrap gap-2">
-        {statusFilters.map((filter) => (
-          <Button
-            key={filter.value}
-            type="button"
-            variant={statusFilter === filter.value ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setStatusFilter(filter.value)}
-          >
-            {filter.label}
-          </Button>
-        ))}
+      <div className="rounded-2xl border border-border/50 bg-card p-4 shadow-sm">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1 text-right">
+            <p className="text-sm font-medium">فیلتر وضعیت</p>
+            <p className="text-xs text-muted-foreground">
+              نمایش نظرات بر اساس وضعیت بررسی
+            </p>
+          </div>
+          <div className="flex w-full flex-wrap gap-2 md:w-auto md:justify-end">
+            {statusFilters.map((filter) => (
+              <Button
+                key={filter.value}
+                type="button"
+                variant={statusFilter === filter.value ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter(filter.value)}
+              >
+                {filter.label}
+              </Button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {isLoading ? (
         <LoadingReviews />
       ) : errorMessage ? (
-        <Card className="border-0 shadow-sm">
+        <Card className="rounded-2xl border border-border/50 bg-card shadow-sm">
           <CardContent className="flex flex-col items-center justify-center gap-4 py-14 text-center">
             <div className="flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
               <XCircle className="size-6" />
@@ -414,7 +424,7 @@ export default function AdminReviewsPage() {
           </CardContent>
         </Card>
       ) : reviews.length === 0 ? (
-        <Card className="border-0 shadow-sm">
+        <Card className="rounded-2xl border border-border/50 bg-card shadow-sm">
           <CardContent className="flex flex-col items-center justify-center gap-3 py-16 text-center">
             <div className="flex size-14 items-center justify-center rounded-full bg-muted">
               <MessageSquareText className="size-7 text-muted-foreground" />
@@ -424,29 +434,29 @@ export default function AdminReviewsPage() {
         </Card>
       ) : (
         <>
-          <Card className="hidden border-0 shadow-sm md:block">
+          <Card className="hidden overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm md:block">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <Table>
+                <Table className="min-w-[1040px]">
                   <TableHeader>
-                    <TableRow className="bg-muted/50 hover:bg-muted/50">
-                      <TableHead>کاربر</TableHead>
-                      <TableHead>پزشک</TableHead>
-                      <TableHead>طرح / ویزیت</TableHead>
-                      <TableHead>امتیاز</TableHead>
-                      <TableHead className="min-w-[260px]">نظر</TableHead>
-                      <TableHead>وضعیت</TableHead>
-                      <TableHead>تاریخ ثبت</TableHead>
-                      <TableHead className="text-left">عملیات</TableHead>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">کاربر</TableHead>
+                      <TableHead className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">پزشک</TableHead>
+                      <TableHead className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">طرح / ویزیت</TableHead>
+                      <TableHead className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">امتیاز</TableHead>
+                      <TableHead className="min-w-[260px] px-4 py-3 text-right text-sm font-semibold text-muted-foreground">نظر</TableHead>
+                      <TableHead className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">وضعیت</TableHead>
+                      <TableHead className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">تاریخ ثبت</TableHead>
+                      <TableHead className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">عملیات</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {reviews.map((review) => (
-                      <TableRow key={review.reviewId}>
-                        <TableCell>
+                      <TableRow key={review.reviewId} className="transition-colors hover:bg-muted/40">
+                        <TableCell className="px-4 py-4">
                           <span className="text-sm font-medium">{getUserName(review)}</span>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-4 py-4">
                           <div className="flex min-w-32 flex-col">
                             <span className="text-sm font-medium">{getDoctorName(review)}</span>
                             {review.doctor?.specialty && (
@@ -456,30 +466,30 @@ export default function AdminReviewsPage() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-4 py-4">
                           <span className="text-sm text-muted-foreground">{getPlanInfo(review)}</span>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-4 py-4">
                           <ReviewRating rating={review.rating} />
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-4 py-4">
                           <p className="max-w-md whitespace-pre-wrap text-sm leading-7">
                             {review.comment?.trim() || 'بدون متن نظر'}
                           </p>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-4 py-4">
                           <StatusBadge
                             status={review.status}
                             label={statusLabels[review.status]}
                             className="text-xs"
                           />
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-4 py-4">
                           <span className="whitespace-nowrap text-sm text-muted-foreground">
                             {formatDateTime(review.createdAt)}
                           </span>
                         </TableCell>
-                        <TableCell className="text-left">
+                        <TableCell className="px-4 py-4 text-left">
                           {renderActions(review)}
                         </TableCell>
                       </TableRow>
