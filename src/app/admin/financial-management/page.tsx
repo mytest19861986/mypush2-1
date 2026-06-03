@@ -6,6 +6,7 @@ import {
   Check,
   Clock,
   Loader2,
+  MoreHorizontal,
   RefreshCw,
   Wallet,
   XCircle,
@@ -20,6 +21,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -31,6 +38,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { PageHeader, StatusBadge } from '@/components/shared'
 import { useToast } from '@/hooks/use-toast'
@@ -119,10 +127,10 @@ const walletStatusLabels: Record<string, string> = {
 const statusClasses: Record<string, string> = {
   ACTIVE: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
   PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-  APPROVED: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
-  PAID: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-  REJECTED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-  CANCELLED: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
+  APPROVED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  PAID: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
+  REJECTED: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
+  CANCELLED: 'bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300',
   SUSPENDED: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
   CLOSED: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
 }
@@ -339,60 +347,83 @@ export default function FinancialManagementPage() {
 
   const renderSettlementActions = (settlement: SettlementItem) => {
     const isProcessing = processing?.id === settlement.id
+    const isApproveProcessing = isProcessing && processing.action === 'approve'
+    const isRejectProcessing = isProcessing && processing.action === 'reject'
+    const isPaidProcessing = isProcessing && processing.action === 'paid'
 
     if (settlement.status === 'PENDING') {
       return (
-        <div className="flex flex-wrap justify-end gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={isProcessing}
-            onClick={() => void handleApprove(settlement)}
-          >
-            {isProcessing && processing.action === 'approve' ? (
-              <Loader2 className="ml-1 size-3.5 animate-spin" />
-            ) : (
-              <Check className="ml-1 size-3.5" />
-            )}
-            تأیید
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-destructive hover:text-destructive"
-            disabled={isProcessing}
-            onClick={() => openRejectDialog(settlement)}
-          >
-            {isProcessing && processing.action === 'reject' ? (
-              <Loader2 className="ml-1 size-3.5 animate-spin" />
-            ) : (
-              <XCircle className="ml-1 size-3.5" />
-            )}
-            رد
-          </Button>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              aria-label="عملیات تسویه"
+            >
+              <MoreHorizontal className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem
+              className="text-emerald-700 focus:text-emerald-700"
+              disabled={isProcessing}
+              onClick={() => void handleApprove(settlement)}
+            >
+              {isApproveProcessing ? (
+                <Loader2 className="ml-2 size-4 animate-spin" />
+              ) : (
+                <Check className="ml-2 size-4" />
+              )}
+              تایید تسویه
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              variant="destructive"
+              disabled={isProcessing}
+              onClick={() => openRejectDialog(settlement)}
+            >
+              {isRejectProcessing ? (
+                <Loader2 className="ml-2 size-4 animate-spin" />
+              ) : (
+                <XCircle className="ml-2 size-4" />
+              )}
+              رد تسویه
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       )
     }
 
     if (settlement.status === 'APPROVED') {
       return (
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={isProcessing}
-          onClick={() => openPaidDialog(settlement)}
-        >
-          {isProcessing && processing.action === 'paid' ? (
-            <Loader2 className="ml-1 size-3.5 animate-spin" />
-          ) : (
-            <Banknote className="ml-1 size-3.5" />
-          )}
-          ثبت پرداخت
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              aria-label="عملیات تسویه"
+            >
+              <MoreHorizontal className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem disabled={isProcessing} onClick={() => openPaidDialog(settlement)}>
+              {isPaidProcessing ? (
+                <Loader2 className="ml-2 size-4 animate-spin" />
+              ) : (
+                <Banknote className="ml-2 size-4" />
+              )}
+              ثبت پرداخت
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       )
     }
 
-    return <span className="text-sm text-muted-foreground">-</span>
+    return <span className="text-sm text-muted-foreground">—</span>
   }
 
   const summaryCards = [
@@ -420,13 +451,13 @@ export default function FinancialManagementPage() {
     <div className="space-y-6">
       <PageHeader
         title="مدیریت مالی"
-        description="کیف پول‌ها و درخواست‌های تسویه همکاران فروش را مدیریت کنید."
+        description="مدیریت کیف پول‌ها، درخواست‌های تسویه و وضعیت‌های مالی سامانه"
       />
 
       {isLoading ? (
         <LoadingState />
       ) : errorMessage ? (
-        <Card className="border-0 shadow-sm">
+        <Card className="rounded-2xl border border-border/50 bg-card shadow-sm">
           <CardContent className="flex flex-col items-center justify-center gap-4 py-14 text-center">
             <div className="flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
               <XCircle className="size-6" />
@@ -445,7 +476,7 @@ export default function FinancialManagementPage() {
         <>
           <div className="grid gap-3 md:grid-cols-3">
             {summaryCards.map((card) => (
-              <Card key={card.title} className="border-0 shadow-sm">
+              <Card key={card.title} className="rounded-2xl border border-border/50 bg-card shadow-sm">
                 <CardContent className="flex items-center gap-3 p-4">
                   <div className={cn('flex size-11 items-center justify-center rounded-lg', card.tone)}>
                     <card.icon className="size-5" />
@@ -459,8 +490,14 @@ export default function FinancialManagementPage() {
             ))}
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-2">
-            <Card className="border-0 shadow-sm">
+          <Tabs defaultValue="settlements" className="gap-4" dir="rtl">
+            <TabsList className="w-full justify-start sm:w-fit">
+              <TabsTrigger value="settlements">درخواست‌های تسویه</TabsTrigger>
+              <TabsTrigger value="wallets">کیف پول‌ها</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="wallets" className="mt-0">
+              <Card className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">کیف پول‌ها</CardTitle>
               </CardHeader>
@@ -473,40 +510,48 @@ export default function FinancialManagementPage() {
                 ) : (
                   <>
                     <div className="hidden overflow-x-auto md:block">
-                      <Table>
+                      <Table className="min-w-[860px] table-fixed w-full">
+                        <colgroup>
+                          <col className="w-[26%]" />
+                          <col className="w-[18%]" />
+                          <col className="w-[16%]" />
+                          <col className="w-[10%]" />
+                          <col className="w-[16%]" />
+                          <col className="w-[14%]" />
+                        </colgroup>
                         <TableHeader>
-                          <TableRow className="bg-muted/50 hover:bg-muted/50">
-                            <TableHead>مالک</TableHead>
-                            <TableHead>موجودی</TableHead>
-                            <TableHead>در انتظار</TableHead>
-                            <TableHead>واحد</TableHead>
-                            <TableHead>وضعیت</TableHead>
-                            <TableHead>آخرین به‌روزرسانی</TableHead>
+                          <TableRow className="border-b bg-transparent hover:bg-transparent">
+                            <TableHead className="px-4 py-3 text-right">مالک</TableHead>
+                            <TableHead className="px-4 py-3 text-right">موجودی</TableHead>
+                            <TableHead className="px-4 py-3 text-right">در انتظار</TableHead>
+                            <TableHead className="px-4 py-3 text-right">واحد</TableHead>
+                            <TableHead className="px-4 py-3 text-right">وضعیت</TableHead>
+                            <TableHead className="px-4 py-3 text-right">آخرین به‌روزرسانی</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {wallets.map((wallet) => (
                             <TableRow key={wallet.id}>
-                              <TableCell>
-                                <span className="whitespace-nowrap text-sm font-medium">
+                              <TableCell className="px-4 py-3 text-right">
+                                <span className="block truncate text-sm font-medium">
                                   {getPersonName(wallet)}
                                 </span>
                               </TableCell>
-                              <TableCell>
-                                <span className="whitespace-nowrap text-sm font-semibold">
+                              <TableCell className="px-4 py-3 text-right">
+                                <span className="whitespace-nowrap text-sm font-semibold tabular-nums">
                                   {formatPriceWithUnit(wallet.balance)}
                                 </span>
                               </TableCell>
-                              <TableCell>
-                                <span className="whitespace-nowrap text-sm">
+                              <TableCell className="px-4 py-3 text-right">
+                                <span className="whitespace-nowrap text-sm tabular-nums">
                                   {formatPriceWithUnit(wallet.pendingBalance)}
                                 </span>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3 text-right">
                                 <span className="whitespace-nowrap text-sm">{wallet.currency}</span>
                               </TableCell>
-                              <TableCell>{renderWalletStatus(wallet.status)}</TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3 text-right">{renderWalletStatus(wallet.status)}</TableCell>
+                              <TableCell className="px-4 py-3 text-right">
                                 <span className="whitespace-nowrap text-sm text-muted-foreground">
                                   {getDateOrDash(wallet.updatedAt || wallet.createdAt)}
                                 </span>
@@ -545,25 +590,30 @@ export default function FinancialManagementPage() {
                   </>
                 )}
               </CardContent>
-            </Card>
+              </Card>
+            </TabsContent>
 
-            <Card className="border-0 shadow-sm">
-              <CardHeader className="gap-3 pb-3 sm:flex-row sm:items-center sm:justify-between">
+            <TabsContent value="settlements" className="mt-0">
+              <Card className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm">
+              <CardHeader className="pb-0">
                 <CardTitle className="text-base">درخواست‌های تسویه</CardTitle>
-                <div className="flex flex-wrap gap-2">
-                  {settlementFilters.map((filter) => (
-                    <Button
-                      key={filter.value}
-                      size="sm"
-                      variant={settlementFilter === filter.value ? 'default' : 'outline'}
-                      onClick={() => setSettlementFilter(filter.value)}
-                    >
-                      {filter.label}
-                    </Button>
-                  ))}
-                </div>
               </CardHeader>
               <CardContent className="p-0">
+                <div className="flex flex-col gap-3 border-b px-6 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-sm text-muted-foreground">{settlements.length} درخواست</span>
+                  <div className="flex flex-wrap gap-2">
+                    {settlementFilters.map((filter) => (
+                      <Button
+                        key={filter.value}
+                        size="sm"
+                        variant={settlementFilter === filter.value ? 'default' : 'outline'}
+                        onClick={() => setSettlementFilter(filter.value)}
+                      >
+                        {filter.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
                 {settlements.length === 0 ? (
                   <div className="flex flex-col items-center justify-center gap-3 px-4 py-14 text-center">
                     <Banknote className="size-10 text-muted-foreground" />
@@ -572,60 +622,50 @@ export default function FinancialManagementPage() {
                 ) : (
                   <>
                     <div className="hidden overflow-x-auto md:block">
-                      <Table>
+                      <Table className="min-w-[900px] table-fixed w-full">
+                        <colgroup>
+                          <col className="w-[26%]" />
+                          <col className="w-[18%]" />
+                          <col className="w-[16%]" />
+                          <col className="w-[18%]" />
+                          <col className="w-[14%]" />
+                          <col className="w-[8%]" />
+                        </colgroup>
                         <TableHeader>
-                          <TableRow className="bg-muted/50 hover:bg-muted/50">
-                            <TableHead>درخواست‌دهنده</TableHead>
-                            <TableHead>مبلغ</TableHead>
-                            <TableHead>وضعیت</TableHead>
-                            <TableHead>درخواست</TableHead>
-                            <TableHead>تأیید</TableHead>
-                            <TableHead>پرداخت</TableHead>
-                            <TableHead>رد</TableHead>
-                            <TableHead>کد پیگیری</TableHead>
-                            <TableHead className="text-left">عملیات</TableHead>
+                          <TableRow className="border-b bg-transparent hover:bg-transparent">
+                            <TableHead className="px-4 py-3 text-right">درخواست‌دهنده</TableHead>
+                            <TableHead className="px-4 py-3 text-right">مبلغ</TableHead>
+                            <TableHead className="px-4 py-3 text-right">وضعیت</TableHead>
+                            <TableHead className="px-4 py-3 text-right">تاریخ درخواست</TableHead>
+                            <TableHead className="px-4 py-3 text-right">کد پیگیری</TableHead>
+                            <TableHead className="w-[80px] px-4 py-3 text-left">عملیات</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {settlements.map((settlement) => (
                             <TableRow key={settlement.id}>
-                              <TableCell>
-                                <span className="whitespace-nowrap text-sm font-medium">
+                              <TableCell className="px-4 py-3 text-right">
+                                <span className="block truncate text-sm font-medium">
                                   {getPersonName(settlement)}
                                 </span>
                               </TableCell>
-                              <TableCell>
-                                <span className="whitespace-nowrap text-sm font-semibold">
+                              <TableCell className="px-4 py-3 text-right">
+                                <span className="whitespace-nowrap text-sm font-semibold tabular-nums">
                                   {formatPriceWithUnit(settlement.amount)}
                                 </span>
                               </TableCell>
-                              <TableCell>{renderSettlementStatus(settlement.status)}</TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3 text-right">{renderSettlementStatus(settlement.status)}</TableCell>
+                              <TableCell className="px-4 py-3 text-right">
                                 <span className="whitespace-nowrap text-sm text-muted-foreground">
                                   {getDateOrDash(settlement.requestedAt || settlement.createdAt)}
                                 </span>
                               </TableCell>
-                              <TableCell>
-                                <span className="whitespace-nowrap text-sm text-muted-foreground">
-                                  {getDateOrDash(settlement.approvedAt)}
-                                </span>
-                              </TableCell>
-                              <TableCell>
-                                <span className="whitespace-nowrap text-sm text-muted-foreground">
-                                  {getDateOrDash(settlement.paidAt || settlement.settledAt)}
-                                </span>
-                              </TableCell>
-                              <TableCell>
-                                <span className="whitespace-nowrap text-sm text-muted-foreground">
-                                  {getDateOrDash(settlement.rejectedAt)}
-                                </span>
-                              </TableCell>
-                              <TableCell>
-                                <span className="whitespace-nowrap text-sm text-muted-foreground">
+                              <TableCell className="px-4 py-3 text-right">
+                                <span dir="ltr" className="inline-block max-w-full truncate text-sm text-muted-foreground">
                                   {settlement.trackingCode || '-'}
                                 </span>
                               </TableCell>
-                              <TableCell className="text-left">
+                              <TableCell className="w-[80px] px-4 py-3 text-left">
                                 {renderSettlementActions(settlement)}
                               </TableCell>
                             </TableRow>
@@ -675,8 +715,9 @@ export default function FinancialManagementPage() {
                   </>
                 )}
               </CardContent>
-            </Card>
-          </div>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </>
       )}
 

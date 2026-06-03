@@ -1,11 +1,20 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Banknote, Check, Filter, Loader2, XCircle } from 'lucide-react'
+import { Banknote, Check, Filter, Inbox, Loader2, MoreHorizontal, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import {
   Select,
   SelectContent,
@@ -13,6 +22,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog,
@@ -23,7 +38,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
-import { PageHeader, DataTable, StatusBadge } from '@/components/shared'
+import { PageHeader, StatusBadge } from '@/components/shared'
 import { commissionsService } from '@/services'
 import type { Column } from '@/components/shared'
 import type { CommissionItem, CommissionStatus, UserProfile } from '@/types'
@@ -57,6 +72,13 @@ const statusOptions: { value: StatusFilter; label: string }[] = [
   { value: 'PAID', label: 'پرداخت شده' },
   { value: 'CANCELLED', label: 'لغو شده' },
 ]
+
+const commissionStatusClasses: Record<CommissionStatus, string> = {
+  PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+  APPROVED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  PAID: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
+  CANCELLED: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
+}
 
 export default function AdminCommissionsPage() {
   const { toast } = useToast()
@@ -192,58 +214,95 @@ export default function AdminCommissionsPage() {
 
   const renderActions = (row: AdminCommissionItem) => {
     const isProcessing = processingId === row.id
+    const isApproveProcessing = isProcessing && processingAction === 'approve'
     const isPayProcessing = isProcessing && processingAction === 'pay'
     const isCancelProcessing = isProcessing && processingAction === 'cancel'
 
     if (row.status === 'PENDING') {
       return (
-        <div className="flex justify-end gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={isProcessing}
-            onClick={() => handleApprove(row)}
-          >
-            {isProcessing ? <Loader2 className="ml-1 size-3.5 animate-spin" /> : <Check className="ml-1 size-3.5" />}
-            تایید
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            disabled={isProcessing}
-            className="text-destructive hover:text-destructive"
-            onClick={() => openCancelDialog(row)}
-          >
-            <XCircle className="ml-1 size-3.5" />
-            لغو
-          </Button>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              aria-label="عملیات پورسانت"
+            >
+              <MoreHorizontal className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              className="text-emerald-700 focus:text-emerald-700"
+              disabled={isProcessing}
+              onClick={() => handleApprove(row)}
+            >
+              {isApproveProcessing ? (
+                <Loader2 className="ml-2 size-4 animate-spin" />
+              ) : (
+                <Check className="ml-2 size-4" />
+              )}
+              تایید پورسانت
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              disabled={isProcessing}
+              onClick={() => openCancelDialog(row)}
+            >
+              {isCancelProcessing ? (
+                <Loader2 className="ml-2 size-4 animate-spin" />
+              ) : (
+                <XCircle className="ml-2 size-4" />
+              )}
+              لغو پورسانت
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       )
     }
 
     if (row.status === 'APPROVED') {
       return (
-        <div className="flex justify-end gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={isProcessing}
-            onClick={() => openPayDialog(row)}
-          >
-            {isPayProcessing ? <Loader2 className="ml-1 size-3.5 animate-spin" /> : <Banknote className="ml-1 size-3.5" />}
-            پرداخت
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            disabled={isProcessing}
-            className="text-destructive hover:text-destructive"
-            onClick={() => openCancelDialog(row)}
-          >
-            {isCancelProcessing ? <Loader2 className="ml-1 size-3.5 animate-spin" /> : <XCircle className="ml-1 size-3.5" />}
-            لغو
-          </Button>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              aria-label="عملیات پورسانت"
+            >
+              <MoreHorizontal className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              className="text-primary focus:text-primary"
+              disabled={isProcessing}
+              onClick={() => openPayDialog(row)}
+            >
+              {isPayProcessing ? (
+                <Loader2 className="ml-2 size-4 animate-spin" />
+              ) : (
+                <Banknote className="ml-2 size-4" />
+              )}
+              ثبت پرداخت
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              disabled={isProcessing}
+              onClick={() => openCancelDialog(row)}
+            >
+              {isCancelProcessing ? (
+                <Loader2 className="ml-2 size-4 animate-spin" />
+              ) : (
+                <XCircle className="ml-2 size-4" />
+              )}
+              لغو پورسانت
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       )
     }
 
@@ -254,8 +313,9 @@ export default function AdminCommissionsPage() {
     {
       key: 'amount',
       header: 'مبلغ',
+      className: 'px-4 py-3 text-right',
       render: (row) => (
-        <span className="whitespace-nowrap text-sm font-medium">
+        <span className="whitespace-nowrap text-sm font-medium tabular-nums">
           {formatPriceWithUnit(row.amount)}
         </span>
       ),
@@ -263,8 +323,9 @@ export default function AdminCommissionsPage() {
     {
       key: 'percent',
       header: 'درصد',
+      className: 'px-4 py-3 text-right',
       render: (row) => (
-        <span className="whitespace-nowrap text-sm">
+        <span className="whitespace-nowrap text-sm tabular-nums">
           {toPersianNum(row.percent)}٪
         </span>
       ),
@@ -272,21 +333,28 @@ export default function AdminCommissionsPage() {
     {
       key: 'status',
       header: 'وضعیت',
-      render: (row) => <StatusBadge status={row.status} className="text-xs" />,
+      className: 'px-4 py-3 text-right',
+      render: (row) => (
+        <StatusBadge
+          status={row.status}
+          className={`text-xs ${commissionStatusClasses[row.status] ?? ''}`}
+        />
+      ),
     },
     {
       key: 'agent',
       header: 'نماینده',
+      className: 'px-4 py-3 text-right',
       render: (row) => (
-        <div className="flex min-w-[150px] flex-col">
-          <span className="text-sm font-medium">
+        <div className="flex min-w-0 flex-col">
+          <span className="truncate text-sm font-medium">
             {row.agent ? getDisplayName(row.agent) : 'نامشخص'}
           </span>
           {row.agent?.mobile && (
-            <span className="font-mono text-xs text-muted-foreground">{row.agent.mobile}</span>
+            <span dir="ltr" className="truncate font-mono text-xs text-muted-foreground">{row.agent.mobile}</span>
           )}
           {row.agent?.agent?.businessName && (
-            <span className="text-xs text-muted-foreground">{row.agent.agent.businessName}</span>
+            <span className="truncate text-xs text-muted-foreground">{row.agent.agent.businessName}</span>
           )}
         </div>
       ),
@@ -294,13 +362,14 @@ export default function AdminCommissionsPage() {
     {
       key: 'buyer',
       header: 'خریدار',
+      className: 'px-4 py-3 text-right',
       render: (row) => (
-        <div className="flex min-w-[150px] flex-col">
-          <span className="text-sm font-medium">
+        <div className="flex min-w-0 flex-col">
+          <span className="truncate text-sm font-medium">
             {row.userPlan?.user ? getDisplayName(row.userPlan.user) : 'نامشخص'}
           </span>
           {row.userPlan?.user?.mobile && (
-            <span className="font-mono text-xs text-muted-foreground">
+            <span dir="ltr" className="truncate font-mono text-xs text-muted-foreground">
               {row.userPlan.user.mobile}
             </span>
           )}
@@ -310,8 +379,9 @@ export default function AdminCommissionsPage() {
     {
       key: 'plan',
       header: 'طرح',
+      className: 'px-4 py-3 text-right',
       render: (row) => (
-        <span className="text-sm">
+        <span className="block truncate text-sm">
           {row.userPlan?.plan?.name || '—'}
         </span>
       ),
@@ -319,6 +389,7 @@ export default function AdminCommissionsPage() {
     {
       key: 'createdAt',
       header: 'تاریخ ایجاد',
+      className: 'px-4 py-3 text-right',
       render: (row) => (
         <span className="whitespace-nowrap text-sm text-muted-foreground">
           {formatDateTime(row.createdAt)}
@@ -328,6 +399,7 @@ export default function AdminCommissionsPage() {
     {
       key: 'paidAt',
       header: 'تاریخ پرداخت',
+      className: 'px-4 py-3 text-right',
       render: (row) => (
         <span className="whitespace-nowrap text-sm text-muted-foreground">
           {row.paidAt ? formatDateTime(row.paidAt) : '—'}
@@ -335,6 +407,118 @@ export default function AdminCommissionsPage() {
       ),
     },
   ]
+
+  const commissionColumnWidths = [
+    'w-[140px]',
+    'w-[90px]',
+    'w-[130px]',
+    'w-[190px]',
+    'w-[190px]',
+    'w-[160px]',
+    'w-[170px]',
+    'w-[170px]',
+  ]
+
+  const getCommissionColumnClassName = (col: Column<AdminCommissionItem>) =>
+    col.hiddenOn ? `hidden ${col.hiddenOn}:table-cell ${col.className ?? ''}` : col.className
+
+  const renderCommissionsTable = () => {
+    if (isLoading) {
+      return (
+        <div className="space-y-3 rounded-2xl bg-card p-4 shadow-sm">
+          <Skeleton className="h-10 w-full" />
+          {Array.from({ length: 5 }).map((_, index) => (
+            <Skeleton key={index} className="h-14 w-full" />
+          ))}
+        </div>
+      )
+    }
+
+    if (commissions.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center rounded-2xl bg-card py-16 shadow-sm">
+          <Inbox className="mb-3 size-12 text-muted-foreground/50" />
+          <p className="text-sm text-muted-foreground">کمیسیونی یافت نشد</p>
+        </div>
+      )
+    }
+
+    return (
+      <div className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm">
+        <Table className="min-w-[1320px] table-fixed w-full">
+          <colgroup>
+            {commissionColumnWidths.map((width, index) => (
+              <col key={`${width}-${index}`} className={width} />
+            ))}
+            <col className="w-[80px]" />
+          </colgroup>
+          <TableHeader>
+            <TableRow className="border-b bg-transparent hover:bg-transparent">
+              {columns.map((col) => (
+                <TableHead
+                  key={col.key}
+                  className={getCommissionColumnClassName(col)}
+                >
+                  {col.header}
+                </TableHead>
+              ))}
+              <TableHead className="w-[80px] px-4 py-3 text-left">عملیات</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {commissions.map((row, index) => (
+              <TableRow key={row.id} className="group">
+                {columns.map((col) => (
+                  <TableCell
+                    key={col.key}
+                    className={getCommissionColumnClassName(col)}
+                  >
+                    {col.render
+                      ? col.render(row, index)
+                      : (row as unknown as Record<string, unknown>)[col.key] != null
+                        ? String((row as unknown as Record<string, unknown>)[col.key])
+                        : '—'}
+                  </TableCell>
+                ))}
+                <TableCell className="w-[80px] px-4 py-3 text-left">
+                  {renderActions(row)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+
+        {totalPages > 1 && (
+          <div className="flex flex-col gap-3 border-t px-4 py-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+            <span>{toPersianNum(total)} مورد</span>
+            <div className="flex items-center gap-2">
+              <span>
+                صفحه {toPersianNum(page)} از {toPersianNum(totalPages)}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage(page - 1)}
+              >
+                قبلی
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={page >= totalPages}
+                onClick={() => setPage(page + 1)}
+              >
+                بعدی
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -349,7 +533,7 @@ export default function AdminCommissionsPage() {
         }
       />
 
-      <Card className="border-0 shadow-sm">
+      <Card className="rounded-2xl border border-border/50 bg-card shadow-sm">
         <CardContent className="pt-6">
           <div className="mb-3 flex items-center gap-2 text-sm font-medium">
             <Filter className="size-4" />
@@ -381,19 +565,7 @@ export default function AdminCommissionsPage() {
         </CardContent>
       </Card>
 
-      <DataTable<AdminCommissionItem>
-        columns={columns}
-        data={commissions}
-        isLoading={isLoading}
-        emptyMessage="کمیسیونی یافت نشد"
-        page={page}
-        totalPages={totalPages}
-        total={total}
-        onPageChange={setPage}
-        rowKey={(row) => row.id}
-        actions={renderActions}
-        actionsHeader="عملیات"
-      />
+      {renderCommissionsTable()}
 
       <Dialog
         open={!!cancelTarget}
