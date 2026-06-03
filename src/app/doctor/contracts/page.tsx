@@ -3,13 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { apiClient } from '@/lib/api-client'
-import { PageHeader, StatusBadge, StatCard } from '@/components/shared'
+import { EmptyState, PageHeader, StatusBadge } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
-import { formatDate, toPersianNum } from '@/utils/formatters'
+import { formatDate, formatPrice, toPersianNum } from '@/utils/formatters'
 import {
   CalendarDays,
   ClipboardList,
@@ -19,14 +19,14 @@ import {
   Stethoscope,
   User,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
 type DoctorVisit = {
   visitId: string
   status: string
   visitedAt: string | null
   createdAt: string
-  doctorNote?: string | null
-  notes?: string | null
+  discountAmount?: number | null
   plan?: {
     title?: string | null
     endDate?: string | null
@@ -34,6 +34,7 @@ type DoctorVisit = {
   planHolder?: {
     firstName?: string | null
     lastName?: string | null
+    nationalCode?: string | null
   } | null
 }
 
@@ -48,10 +49,6 @@ function normalizePersianDigits(value: string) {
     .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
     .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
     .trim()
-}
-
-function padDatePart(value: number) {
-  return String(value).padStart(2, '0')
 }
 
 function jalaliToGregorian(jy: number, jm: number, jd: number) {
@@ -176,18 +173,91 @@ function formatOptionalDate(date?: string | null) {
   return date ? formatDate(date) : 'ثبت نشده'
 }
 
+function maskNationalCode(value?: string | null) {
+  if (!value) return 'ثبت نشده'
+  return value.length > 4 ? `${'*'.repeat(value.length - 4)}${value.slice(-4)}` : value
+}
+
+function formatDiscountAmount(value?: number | null) {
+  return typeof value === 'number' ? `${formatPrice(value)} تومان` : 'ثبت نشده'
+}
+
 function getPatientName(visit: DoctorVisit) {
   const name = `${visit.planHolder?.firstName || ''} ${visit.planHolder?.lastName || ''}`.trim()
   return name || 'بیمار'
 }
 
-function getVisitNote(visit: DoctorVisit) {
-  return visit.doctorNote || visit.notes || null
+function getVisitDate(visit: DoctorVisit) {
+  return visit.visitedAt || visit.createdAt
+}
+
+function matchesVisitSearch(visit: DoctorVisit, query: string) {
+  if (!query) return true
+
+  const normalizedQuery = normalizePersianDigits(query).toLowerCase()
+  const patientName = normalizePersianDigits(getPatientName(visit)).toLowerCase()
+  const nationalCode = normalizePersianDigits(visit.planHolder?.nationalCode || '')
+
+  return patientName.includes(normalizedQuery) || nationalCode.includes(normalizedQuery)
+}
+
+function getVisitStatusMeta(status: string) {
+  const successClass = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+  const warningClass = 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+  const mutedDestructiveClass = 'bg-red-100 text-red-700 dark:bg-red-900/25 dark:text-red-300'
+
+  const map: Record<string, { label: string; className: string }> = {
+    ACTIVE: { label: 'فعال', className: successClass },
+    COMPLETED: { label: 'ثبت‌شده', className: successClass },
+    SUCCESS: { label: 'موفق', className: successClass },
+    APPROVED: { label: 'ثبت‌شده', className: successClass },
+    PENDING: { label: 'در انتظار', className: warningClass },
+    CANCELLED: { label: 'لغو شده', className: mutedDestructiveClass },
+    CANCELED: { label: 'لغو شده', className: mutedDestructiveClass },
+    FAILED: { label: 'ناموفق', className: mutedDestructiveClass },
+    REJECTED: { label: 'ناموفق', className: mutedDestructiveClass },
+  }
+
+  return map[status]
+}
+
+function VisitStatusBadge({ status }: { status: string }) {
+  const meta = getVisitStatusMeta(status)
+
+  return (
+    <StatusBadge
+      status={status}
+      label={meta?.label}
+      className={meta?.className}
+    />
+  )
+}
+
+function DoctorKpiCard({
+  title,
+  value,
+  icon: Icon,
+}: {
+  title: string
+  value: string
+  icon: LucideIcon
+}) {
+  return (
+    <Card className="rounded-2xl border border-slate-100/60 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-slate-800/60">
+      <CardContent className="flex min-h-28 flex-col justify-between p-5">
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <Icon className="size-4 shrink-0 text-muted-foreground" />
+        </div>
+        <p className="mt-4 truncate text-3xl font-bold text-card-foreground">{value}</p>
+      </CardContent>
+    </Card>
+  )
 }
 
 function VisitSkeleton() {
   return (
-    <Card>
+    <Card className="rounded-2xl border border-slate-100/60 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-slate-800/60">
       <CardContent className="space-y-4 p-4">
         {Array.from({ length: 5 }).map((_, index) => (
           <div key={index} className="flex items-center gap-4">
@@ -212,6 +282,7 @@ export default function DoctorContractsPage() {
   const [toDate, setToDate] = useState('')
   const [appliedFromDate, setAppliedFromDate] = useState('')
   const [appliedToDate, setAppliedToDate] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
 
   const parsedFromDate = fromDate ? parseJalaliDateInput(fromDate) : null
   const parsedToDate = toDate ? parseJalaliDateInput(toDate) : null
@@ -270,6 +341,11 @@ export default function DoctorContractsPage() {
     }
   }, [visits])
 
+  const filteredVisits = useMemo(
+    () => visits.filter((visit) => matchesVisitSearch(visit, searchQuery)),
+    [visits, searchQuery]
+  )
+
   const resetFilters = () => {
     setFromDate('')
     setToDate('')
@@ -287,39 +363,51 @@ export default function DoctorContractsPage() {
     <div className="space-y-6" dir="rtl">
       <PageHeader
         title="سوابق ویزیت‌ها"
-        description="لیست ویزیت‌های ثبت‌شده توسط شما در سامانه حامی کارت."
+        description="مشاهده و پیگیری ویزیت‌های ثبت‌شده برای بیماران حامی‌کارت"
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard
+        <DoctorKpiCard
           title="کل ویزیت‌ها"
           value={toPersianNum(stats.total)}
           icon={ClipboardList}
-          iconClassName="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
         />
-        <StatCard
+        <DoctorKpiCard
           title="ویزیت‌های تکمیل‌شده"
           value={toPersianNum(stats.completed)}
           icon={Stethoscope}
-          iconClassName="bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400"
         />
-        <StatCard
+        <DoctorKpiCard
           title="در انتظار"
           value={toPersianNum(stats.pending)}
           icon={CalendarDays}
-          iconClassName="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
         />
       </div>
 
-      <Card>
+      <Card className="rounded-2xl border border-slate-100/60 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-slate-800/60">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <Search className="size-4 text-primary" />
-            فیلتر تاریخ ویزیت
+            جستجو و فیلتر
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_1fr_auto_auto] sm:items-end">
+        <CardContent className="space-y-4">
+          <div className="max-w-xl space-y-2">
+            <Label htmlFor="visitSearch">جستجو</Label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="visitSearch"
+                type="search"
+                placeholder="جستجو بر اساس نام بیمار یا کد ملی"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                className="h-11 rounded-xl pr-10"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,220px)_minmax(0,220px)_auto_auto] sm:items-end">
             <div className="space-y-2">
               <Label htmlFor="fromDate">از تاریخ</Label>
               <Input
@@ -330,6 +418,7 @@ export default function DoctorContractsPage() {
                 value={fromDate}
                 onChange={(event) => setFromDate(event.target.value)}
                 dir="ltr"
+                className="h-11 rounded-xl"
               />
             </div>
             <div className="space-y-2">
@@ -342,15 +431,17 @@ export default function DoctorContractsPage() {
                 value={toDate}
                 onChange={(event) => setToDate(event.target.value)}
                 dir="ltr"
+                className="h-11 rounded-xl"
               />
             </div>
-            <Button onClick={applyFilters} disabled={Boolean(filterError)}>
+            <Button onClick={applyFilters} disabled={Boolean(filterError)} className="h-11 rounded-xl">
               اعمال فیلتر
             </Button>
             <Button
               variant="outline"
               onClick={resetFilters}
               disabled={!fromDate && !toDate && !appliedFromDate && !appliedToDate}
+              className="h-11 rounded-xl"
             >
               پاک کردن فیلتر
             </Button>
@@ -367,7 +458,7 @@ export default function DoctorContractsPage() {
       {isLoading ? (
         <VisitSkeleton />
       ) : error ? (
-        <Card className="border-destructive/40">
+        <Card className="rounded-2xl border border-destructive/30 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
           <CardContent className="p-6 text-center">
             <FileText className="mx-auto mb-3 size-12 text-destructive" />
             <p className="font-medium text-destructive">{error}</p>
@@ -378,24 +469,26 @@ export default function DoctorContractsPage() {
           </CardContent>
         </Card>
       ) : visits.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-4 p-8 text-center">
-            <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <ClipboardList className="size-7" />
-            </div>
-            <div>
-              <h2 className="font-semibold">هنوز ویزیتی ثبت نکرده‌اید.</h2>
-              <p className="mt-2 text-sm text-muted-foreground">
-                برای ثبت ویزیت، ابتدا بیمار را از صفحه جستجوی بیمار بررسی کنید.
-              </p>
-            </div>
+        <EmptyState
+          icon={<ClipboardList />}
+          title="هنوز ویزیتی ثبت نشده است"
+          description="برای ثبت ویزیت، ابتدا بیمار را از صفحه جستجوی بیمار بررسی کنید."
+          action={
             <Button asChild>
               <Link href="/doctor/patients">جستجوی بیمار و ثبت ویزیت</Link>
             </Button>
-          </CardContent>
-        </Card>
+          }
+          className="border-dashed py-12 shadow-none"
+        />
+      ) : filteredVisits.length === 0 ? (
+        <EmptyState
+          icon={<Search />}
+          title="نتیجه‌ای یافت نشد"
+          description="عبارت جستجو را تغییر دهید یا فیلترهای تاریخ را پاک کنید."
+          className="border-dashed py-12 shadow-none"
+        />
       ) : (
-        <Card>
+        <Card className="overflow-hidden rounded-2xl border border-slate-100/60 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-slate-800/60">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <ClipboardList className="size-4 text-primary" />
@@ -403,91 +496,67 @@ export default function DoctorContractsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="hidden overflow-x-auto md:block">
-              <table className="w-full text-sm">
+            <div className="hidden overflow-hidden rounded-2xl border border-slate-100/70 bg-background dark:border-slate-800/70 md:block">
+              <table className="w-full table-fixed text-sm">
                 <thead>
-                  <tr className="border-b text-muted-foreground">
-                    <th className="py-3 text-right font-medium">بیمار</th>
-                    <th className="py-3 text-right font-medium">طرح</th>
-                    <th className="py-3 text-right font-medium">وضعیت</th>
-                    <th className="py-3 text-right font-medium">تاریخ ویزیت</th>
-                    <th className="py-3 text-right font-medium">ثبت در سامانه</th>
-                    <th className="py-3 text-right font-medium">پایان طرح</th>
-                    <th className="py-3 text-right font-medium">یادداشت پزشک</th>
+                  <tr className="border-b border-slate-100/70 bg-muted/20 text-muted-foreground dark:border-slate-800/70">
+                    <th className="w-[26%] px-4 py-3 text-right font-medium">نام بیمار</th>
+                    <th className="w-[17%] px-4 py-3 text-right font-medium">کد ملی</th>
+                    <th className="w-[22%] px-4 py-3 text-right font-medium">تاریخ ویزیت</th>
+                    <th className="w-[19%] px-4 py-3 text-right font-medium">تخفیف اعمال‌شده</th>
+                    <th className="w-[16%] px-4 py-3 text-right font-medium">وضعیت</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {visits.map((visit) => {
-                    const note = getVisitNote(visit)
-
-                    return (
-                      <tr key={visit.visitId} className="border-b last:border-0">
-                        <td className="py-4">
-                          <div className="flex items-center gap-2">
-                            <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                              <User className="size-4" />
-                            </div>
-                            <span className="font-medium">{getPatientName(visit)}</span>
+                  {filteredVisits.map((visit) => (
+                    <tr key={visit.visitId} className="border-b border-slate-100/70 last:border-0 dark:border-slate-800/70">
+                      <td className="px-4 py-4">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                            <User className="size-4" />
                           </div>
-                        </td>
-                        <td className="py-4">{visit.plan?.title || 'ثبت نشده'}</td>
-                        <td className="py-4">
-                          <StatusBadge status={visit.status} />
-                        </td>
-                        <td className="py-4">{formatOptionalDate(visit.visitedAt)}</td>
-                        <td className="py-4">{formatOptionalDate(visit.createdAt)}</td>
-                        <td className="py-4">{formatOptionalDate(visit.plan?.endDate)}</td>
-                        <td className="max-w-[220px] py-4">
-                          <span className="line-clamp-2 text-muted-foreground">
-                            {note || 'ثبت نشده'}
-                          </span>
-                        </td>
-                      </tr>
-                    )
-                  })}
+                          <span className="truncate font-medium">{getPatientName(visit)}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-muted-foreground" dir="ltr">
+                        {maskNationalCode(visit.planHolder?.nationalCode)}
+                      </td>
+                      <td className="px-4 py-4">{formatOptionalDate(getVisitDate(visit))}</td>
+                      <td className="px-4 py-4">{formatDiscountAmount(visit.discountAmount)}</td>
+                      <td className="px-4 py-4">
+                        <VisitStatusBadge status={visit.status} />
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
 
             <div className="space-y-3 md:hidden">
-              {visits.map((visit) => {
-                const note = getVisitNote(visit)
-
-                return (
-                  <div key={visit.visitId} className="rounded-lg border p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-semibold">{getPatientName(visit)}</p>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {visit.plan?.title || 'طرح ثبت نشده'}
-                        </p>
-                      </div>
-                      <StatusBadge status={visit.status} />
+              {filteredVisits.map((visit) => (
+                <div key={visit.visitId} className="rounded-2xl border border-slate-100/70 bg-background/70 p-4 dark:border-slate-800/70">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold">{getPatientName(visit)}</p>
+                      <p className="mt-1 text-xs text-muted-foreground" dir="ltr">
+                        {maskNationalCode(visit.planHolder?.nationalCode)}
+                      </p>
                     </div>
-
-                    <div className="mt-4 grid grid-cols-1 gap-2 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <CalendarDays className="size-4" />
-                        <span>تاریخ ویزیت: {formatOptionalDate(visit.visitedAt)}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <CalendarDays className="size-4" />
-                        <span>ثبت در سامانه: {formatOptionalDate(visit.createdAt)}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <CalendarDays className="size-4" />
-                        <span>پایان طرح: {formatOptionalDate(visit.plan?.endDate)}</span>
-                      </div>
-                    </div>
-
-                    {note && (
-                      <div className="mt-4 rounded-md bg-muted/50 p-3 text-sm leading-6">
-                        {note}
-                      </div>
-                    )}
+                    <VisitStatusBadge status={visit.status} />
                   </div>
-                )
-              })}
+
+                  <div className="mt-4 grid grid-cols-1 gap-3 text-sm text-muted-foreground">
+                    <div className="flex items-center justify-between gap-3">
+                      <span>تاریخ ویزیت</span>
+                      <span className="font-medium text-foreground">{formatOptionalDate(getVisitDate(visit))}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span>تخفیف اعمال‌شده</span>
+                      <span className="font-medium text-foreground">{formatDiscountAmount(visit.discountAmount)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
