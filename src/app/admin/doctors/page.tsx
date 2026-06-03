@@ -7,17 +7,23 @@ import {
   CheckCircle,
   XCircle,
   Ban,
-  Stethoscope,
   Percent,
   Save,
   Loader2,
+  Search,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,13 +38,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
-import { PageHeader, SearchFilterBar, StatusBadge } from '@/components/shared'
+import { PageHeader, StatusBadge } from '@/components/shared'
 import { doctorsService } from '@/services'
 import type { DoctorItem } from '@/types'
-import { toPersianNum, getDisplayName, formatDate } from '@/utils/formatters'
+import { toPersianNum, getDisplayName } from '@/utils/formatters'
 import { DOCTOR_STATUS_LABELS } from '@/constants'
 import { useAuthStore } from '@/stores/auth-store' // اضافه کنید اگر قبلاً اضافه نشده
-import { useRouter } from 'next/navigation'
 
 /* ── Specialty filter options ─────────────────────────────── */
 
@@ -61,12 +66,12 @@ const SPECIALTY_FILTERS = [
 
 export default function AdminDoctorsPage() {
   const { toast } = useToast()
-  const router = useRouter()
   const [doctors, setDoctors] = useState<DoctorItem[]>([])
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
+  const [searchInput, setSearchInput] = useState('')
   const [specialtyFilter, setSpecialtyFilter] = useState<string>('ALL')
   const [isLoading, setIsLoading] = useState(true)
   const [changingId, setChangingId] = useState<string | null>(null)
@@ -109,6 +114,10 @@ export default function AdminDoctorsPage() {
   const handleSearch = (value: string) => {
     setSearch(value)
     setPage(1)
+  }
+
+  const handleSearchSubmit = () => {
+    handleSearch(searchInput)
   }
 
   const handleStatusChange = async (doctorId: string, newStatus: string) => {
@@ -199,7 +208,7 @@ export default function AdminDoctorsPage() {
         title="مدیریت پزشکان"
         description={
           <>
-            مشاهده و مدیریت پزشکان سامانه —{' '}
+            بررسی، تأیید و مدیریت پزشکان طرف قرارداد —{' '}
             <span className="font-semibold text-emerald-600">{toPersianNum(total)}</span>{' '}
             پزشک
           </>
@@ -211,37 +220,65 @@ export default function AdminDoctorsPage() {
         }
       />
 
-      <SearchFilterBar
-        searchPlaceholder="جستجو بر اساس نام، تخصص یا کد نظام..."
-        onSearch={handleSearch}
-        filterOptions={SPECIALTY_FILTERS}
-        filterValue={specialtyFilter}
-        onFilterChange={(v) => {
-          setSpecialtyFilter(v)
-          setPage(1)
-        }}
-      />
+      <div className="rounded-2xl border border-border/50 bg-card p-4 shadow-sm">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex w-full flex-col gap-2 sm:flex-row md:max-w-sm">
+            <div className="relative flex-1">
+              <Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="جستجو بر اساس نام، تخصص یا کد نظام..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit()}
+                className="w-full border border-input bg-background pr-10 shadow-sm focus-visible:ring-1 focus-visible:ring-primary"
+              />
+            </div>
+            <Button onClick={handleSearchSubmit} variant="secondary" className="shrink-0">
+              جستجو
+            </Button>
+          </div>
+          <Select
+            value={specialtyFilter}
+            onValueChange={(v) => {
+              setSpecialtyFilter(v)
+              setPage(1)
+            }}
+          >
+            <SelectTrigger className="w-full border border-input bg-background shadow-sm focus:ring-1 focus:ring-primary md:w-56">
+              <SelectValue placeholder="همه" />
+            </SelectTrigger>
+            <SelectContent>
+              {SPECIALTY_FILTERS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
       {/* Manual Table */}
-      <div className="rounded-lg border overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-muted/50 border-b">
+      <div className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[920px]">
+          <thead className="border-b">
             <tr>
-              <th className="px-4 py-3 text-right font-semibold text-sm">نام پزشک</th>
-              <th className="px-4 py-3 text-right font-semibold text-sm">تخصص</th>
-              <th className="px-4 py-3 text-right font-semibold text-sm">کد نظام</th>
-              <th className="px-4 py-3 text-right font-semibold text-sm">شهر</th>
-              <th className="px-4 py-3 text-right font-semibold text-sm">موبایل</th>
-              <th className="px-4 py-3 text-right font-semibold text-sm">درصد تخفیف</th>
-              <th className="px-4 py-3 text-right font-semibold text-sm">وضعیت</th>
-              <th className="px-4 py-3 text-left font-semibold text-sm">عملیات</th>
+              <th className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">نام پزشک</th>
+              <th className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">تخصص</th>
+              <th className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">کد نظام</th>
+              <th className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">شهر</th>
+              <th className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">موبایل</th>
+              <th className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">درصد تخفیف</th>
+              <th className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">وضعیت</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">عملیات</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i} className="border-b hover:bg-muted/30">
-                  <td colSpan={8} className="px-4 py-3">
+                <tr key={i} className="border-b last:border-0">
+                  <td colSpan={8} className="px-4 py-4">
                     <Skeleton className="h-6 w-full" />
                   </td>
                 </tr>
@@ -254,31 +291,31 @@ export default function AdminDoctorsPage() {
               </tr>
             ) : (
               doctors.map((doctor) => (
-                <tr key={doctor.id} className="border-b hover:bg-muted/30 group transition-colors">
-                  <td className="px-4 py-3 text-sm font-medium">
+                <tr key={doctor.id} className="group border-b transition-colors last:border-0 hover:bg-muted/40">
+                  <td className="px-4 py-4 text-sm font-medium">
                     {doctor.user?.profile?.firstName || ''} {doctor.user?.profile?.lastName || ''}
                   </td>
-                  <td className="px-4 py-3 text-sm">
+                  <td className="px-4 py-4 text-sm">
                     {doctor.specialty || '—'}
                   </td>
-                  <td className="px-4 py-3 text-sm font-mono text-muted-foreground">
+                  <td className="px-4 py-4 text-sm font-mono text-muted-foreground">
                     {doctor.medicalCode || '—'}
                   </td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">
+                  <td className="px-4 py-4 text-sm text-muted-foreground">
                     {doctor.city || '—'}
                   </td>
-                  <td className="px-4 py-3 text-sm font-mono">
+                  <td className="px-4 py-4 text-sm font-mono">
                     {doctor.user?.mobile || '—'}
                   </td>
-                  <td className="px-4 py-3 text-sm font-medium text-emerald-600">
+                  <td className="px-4 py-4 text-sm font-medium text-emerald-600">
                     {(doctor.discountPercent ?? 0) > 0
                       ? `${toPersianNum(doctor.discountPercent ?? 0)}٪`
                       : 'طرح بیمار'}
                   </td>
-                  <td className="px-4 py-3 text-sm">
-                    <StatusBadge status={doctor.status} />
+                  <td className="px-4 py-4 text-sm">
+                    <StatusBadge status={doctor.status} className="font-medium" />
                   </td>
-                  <td className="px-4 py-3 text-left text-sm">
+                  <td className="px-4 py-4 text-left text-sm">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -330,7 +367,8 @@ export default function AdminDoctorsPage() {
               ))
             )}
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
 
       {/* Pagination */}

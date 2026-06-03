@@ -9,11 +9,20 @@ import {
   Ban,
   ShieldCheck,
   FileSearch,
+  Search,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,7 +37,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
-import { PageHeader, SearchFilterBar, StatusBadge } from '@/components/shared'
+import { PageHeader, StatusBadge } from '@/components/shared'
 import { agentsService } from '@/services'
 import type { AgentItem } from '@/types'
 import { toPersianNum, getDisplayName, formatDate } from '@/utils/formatters'
@@ -54,6 +63,7 @@ export default function AdminAgentsPage() {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
+  const [searchInput, setSearchInput] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
   const [isLoading, setIsLoading] = useState(true)
   const [changingId, setChangingId] = useState<string | null>(null)
@@ -94,6 +104,10 @@ export default function AdminAgentsPage() {
   const handleSearch = (value: string) => {
     setSearch(value)
     setPage(1)
+  }
+
+  const handleSearchSubmit = () => {
+    handleSearch(searchInput)
   }
 
   const handleStatusChange = async (agentId: string, newStatus: string) => {
@@ -140,47 +154,75 @@ export default function AdminAgentsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="مدیریت نمایندگان"
+        title="مدیریت همکاران فروش"
         description={
           <>
-            مشاهده و مدیریت درخواست‌های نمایندگی —{' '}
+            بررسی، تأیید و مدیریت همکاران فروش و وضعیت فعالیت آن‌ها —{' '}
             <span className="font-semibold text-emerald-600">{toPersianNum(total)}</span>{' '}
             نماینده
           </>
         }
       />
 
-      <SearchFilterBar
-        searchPlaceholder="جستجو بر اساس نام کسب‌وکار یا شماره موبایل..."
-        onSearch={handleSearch}
-        filterOptions={STATUS_FILTERS}
-        filterValue={statusFilter}
-        onFilterChange={(v) => {
-          setStatusFilter(v)
-          setPage(1)
-        }}
-      />
+      <div className="rounded-2xl border border-border/50 bg-card p-4 shadow-sm">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex w-full flex-col gap-2 sm:flex-row md:max-w-sm">
+            <div className="relative flex-1">
+              <Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="جستجو بر اساس نام کسب‌وکار یا شماره موبایل..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit()}
+                className="w-full border border-input bg-background pr-10 shadow-sm focus-visible:ring-1 focus-visible:ring-primary"
+              />
+            </div>
+            <Button onClick={handleSearchSubmit} variant="secondary" className="shrink-0">
+              جستجو
+            </Button>
+          </div>
+          <Select
+            value={statusFilter}
+            onValueChange={(v) => {
+              setStatusFilter(v)
+              setPage(1)
+            }}
+          >
+            <SelectTrigger className="w-full border border-input bg-background shadow-sm focus:ring-1 focus:ring-primary md:w-56">
+              <SelectValue placeholder="همه" />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_FILTERS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
 
       {/* Manual Table */}
-      <div className="rounded-lg border overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-muted/50 border-b">
+      <div className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[840px]">
+          <thead className="border-b">
             <tr>
-              <th className="px-4 py-3 text-right font-semibold text-sm">نام</th>
-              <th className="px-4 py-3 text-right font-semibold text-sm">موبایل</th>
-              <th className="px-4 py-3 text-right font-semibold text-sm">کسب‌وکار</th>
-              <th className="px-4 py-3 text-right font-semibold text-sm">وضعیت</th>
-              <th className="px-4 py-3 text-right font-semibold text-sm">مدارک</th>
-              <th className="px-4 py-3 text-right font-semibold text-sm">تاریخ</th>
-              <th className="px-4 py-3 text-left font-semibold text-sm">عملیات</th>
+              <th className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">نام</th>
+              <th className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">موبایل</th>
+              <th className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">کسب‌وکار</th>
+              <th className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">وضعیت</th>
+              <th className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">مدارک</th>
+              <th className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">تاریخ</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">عملیات</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i} className="border-b hover:bg-muted/30">
-                  <td colSpan={7} className="px-4 py-3">
+                <tr key={i} className="border-b last:border-0">
+                  <td colSpan={7} className="px-4 py-4">
                     <Skeleton className="h-6 w-full" />
                   </td>
                 </tr>
@@ -193,19 +235,19 @@ export default function AdminAgentsPage() {
               </tr>
             ) : (
               agents.map((agent) => (
-                <tr key={agent.id} className="border-b hover:bg-muted/30 group transition-colors">
-                  <td className="px-4 py-3 font-medium text-sm">{getDisplayName(agent.user)}</td>
-                  <td className="px-4 py-3 font-mono text-sm">{agent.user?.mobile || '—'}</td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">{agent.businessName || '—'}</td>
-                  <td className="px-4 py-3 text-sm"><StatusBadge status={agent.status} /></td>
-                  <td className="px-4 py-3 text-sm">
+                <tr key={agent.id} className="group border-b transition-colors last:border-0 hover:bg-muted/40">
+                  <td className="px-4 py-4 text-sm font-medium">{getDisplayName(agent.user)}</td>
+                  <td className="px-4 py-4 text-sm font-mono">{agent.user?.mobile || '—'}</td>
+                  <td className="px-4 py-4 text-sm text-muted-foreground">{agent.businessName || '—'}</td>
+                  <td className="px-4 py-4 text-sm"><StatusBadge status={agent.status} className="font-medium" /></td>
+                  <td className="px-4 py-4 text-sm">
                     <Badge variant="outline">
                       <FileSearch className="ml-1 size-3" />
                       {toPersianNum(agent.documentCount ?? agent.documents?.length ?? 0)}
                     </Badge>
                   </td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">{formatDate(agent.createdAt)}</td>
-                  <td className="px-4 py-3 text-left text-sm">
+                  <td className="px-4 py-4 text-sm text-muted-foreground">{formatDate(agent.createdAt)}</td>
+                  <td className="px-4 py-4 text-left text-sm">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -257,7 +299,8 @@ export default function AdminAgentsPage() {
               ))
             )}
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
 
       {/* Agent detail dialog */}
