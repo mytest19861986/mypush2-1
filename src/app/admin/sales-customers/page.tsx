@@ -157,7 +157,7 @@ const statusClasses: Record<SalesCustomerStatus, string> = {
   CARD_ISSUED: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
   SHIPPED: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
   DELIVERED: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
-  PAID: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  PAID: 'bg-lime-100 text-lime-700 dark:bg-lime-900/30 dark:text-lime-400',
   CONFIRMED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
   RETURNED: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
 }
@@ -205,7 +205,7 @@ function isFinalStatus(status: SalesCustomerStatus) {
 function LoadingCustomers() {
   return (
     <>
-      <Card className="hidden border-0 shadow-sm md:block">
+      <Card className="hidden overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm md:block">
         <CardContent className="p-0">
           <div className="p-4">
             <Skeleton className="h-9 w-full" />
@@ -220,7 +220,7 @@ function LoadingCustomers() {
 
       <div className="space-y-3 md:hidden">
         {Array.from({ length: 4 }).map((_, index) => (
-          <Card key={index} className="border-0 shadow-sm">
+          <Card key={index} className="rounded-2xl border border-border/50 bg-card shadow-sm">
             <CardContent className="space-y-3 p-4">
               <Skeleton className="h-5 w-40" />
               <Skeleton className="h-4 w-28" />
@@ -547,7 +547,7 @@ export default function AdminSalesCustomersPage() {
   }
 
   const renderCustomerCard = (customer: SalesCustomer) => (
-    <Card key={customer.id} className="border-0 shadow-sm">
+    <Card key={customer.id} className="rounded-2xl border border-border/50 bg-card shadow-sm">
       <CardContent className="space-y-4 p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -588,8 +588,8 @@ export default function AdminSalesCustomersPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="مدیریت مشتریان فروش"
-        description="مشتریان ثبت‌شده توسط همکاران فروش را بررسی و وضعیت آن‌ها را مدیریت کنید."
+        title="مشتریان فروش"
+        description="پیگیری وضعیت مشتریان ثبت‌شده توسط همکاران فروش"
         action={
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
@@ -716,26 +716,34 @@ export default function AdminSalesCustomersPage() {
         }
       />
 
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="flex flex-wrap gap-2">
-          {statusFilters.map((filter) => (
-            <Button
-              key={filter.value}
-              type="button"
-              variant={statusFilter === filter.value ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setStatusFilter(filter.value)}
-            >
-              {filter.label}
-            </Button>
-          ))}
+      <div className="rounded-2xl border border-border/50 bg-card p-4 shadow-sm">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1 text-right">
+            <p className="text-sm font-medium">فیلتر وضعیت</p>
+            <p className="text-xs text-muted-foreground">
+              نمایش مشتریان فروش بر اساس مرحله پیگیری
+            </p>
+          </div>
+          <div className="flex w-full flex-wrap gap-2 md:w-auto md:justify-end">
+            {statusFilters.map((filter) => (
+              <Button
+                key={filter.value}
+                type="button"
+                variant={statusFilter === filter.value ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter(filter.value)}
+              >
+                {filter.label}
+              </Button>
+            ))}
+          </div>
         </div>
       </div>
 
       {isLoading ? (
         <LoadingCustomers />
       ) : errorMessage ? (
-        <Card className="border-0 shadow-sm">
+        <Card className="rounded-2xl border border-border/50 bg-card shadow-sm">
           <CardContent className="flex flex-col items-center justify-center gap-4 py-14 text-center">
             <div className="flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
               <XCircle className="size-6" />
@@ -751,7 +759,7 @@ export default function AdminSalesCustomersPage() {
           </CardContent>
         </Card>
       ) : customers.length === 0 ? (
-        <Card className="border-0 shadow-sm">
+        <Card className="rounded-2xl border border-border/50 bg-card shadow-sm">
           <CardContent className="flex flex-col items-center justify-center gap-3 py-16 text-center">
             <div className="flex size-14 items-center justify-center rounded-full bg-muted">
               <ShoppingBag className="size-7 text-muted-foreground" />
@@ -761,73 +769,73 @@ export default function AdminSalesCustomersPage() {
         </Card>
       ) : (
         <>
-          <Card className="hidden border-0 shadow-sm md:block">
+          <Card className="hidden overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm md:block">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <Table>
+                <Table className="min-w-[1180px]">
                   <TableHeader>
-                    <TableRow className="bg-muted/50 hover:bg-muted/50">
-                      <TableHead>مشتری</TableHead>
-                      <TableHead>موبایل</TableHead>
-                      <TableHead>کد ملی</TableHead>
-                      <TableHead>طرح</TableHead>
-                      <TableHead>همکار فروش</TableHead>
-                      <TableHead>وضعیت</TableHead>
-                      <TableHead>ثبت</TableHead>
-                      <TableHead>پرداخت</TableHead>
-                      <TableHead>تأیید</TableHead>
-                      <TableHead>برگشتی</TableHead>
-                      <TableHead className="text-left">عملیات</TableHead>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">مشتری</TableHead>
+                      <TableHead className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">موبایل</TableHead>
+                      <TableHead className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">کد ملی</TableHead>
+                      <TableHead className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">طرح</TableHead>
+                      <TableHead className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">همکار فروش</TableHead>
+                      <TableHead className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">وضعیت</TableHead>
+                      <TableHead className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">ثبت</TableHead>
+                      <TableHead className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">پرداخت</TableHead>
+                      <TableHead className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">تأیید</TableHead>
+                      <TableHead className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">برگشتی</TableHead>
+                      <TableHead className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">عملیات</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {customers.map((customer) => (
-                      <TableRow key={customer.id}>
-                        <TableCell>
+                      <TableRow key={customer.id} className="transition-colors hover:bg-muted/40">
+                        <TableCell className="px-4 py-4">
                           <span className="whitespace-nowrap text-sm font-medium">
                             {getFullName(customer)}
                           </span>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-4 py-4">
                           <span className="whitespace-nowrap text-sm" dir="ltr">
                             {customer.mobile || '-'}
                           </span>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-4 py-4">
                           <span className="whitespace-nowrap text-sm" dir="ltr">
                             {getMaskedNationalCode(customer.nationalCode)}
                           </span>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-4 py-4">
                           <span className="whitespace-nowrap text-sm">{getPlanName(customer)}</span>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-4 py-4">
                           <span className="whitespace-nowrap text-sm">
                             {customer.salesPartnerId ? agentNames[customer.salesPartnerId] || 'همکار فروش' : 'همکار فروش'}
                           </span>
                         </TableCell>
-                        <TableCell>{renderStatus(customer.status)}</TableCell>
-                        <TableCell>
+                        <TableCell className="px-4 py-4">{renderStatus(customer.status)}</TableCell>
+                        <TableCell className="px-4 py-4">
                           <span className="whitespace-nowrap text-sm text-muted-foreground">
                             {formatDateTime(customer.createdAt)}
                           </span>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-4 py-4">
                           <span className="whitespace-nowrap text-sm text-muted-foreground">
                             {getDateOrDash(customer.paidAt)}
                           </span>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-4 py-4">
                           <span className="whitespace-nowrap text-sm text-muted-foreground">
                             {getDateOrDash(customer.confirmedAt)}
                           </span>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-4 py-4">
                           <span className="whitespace-nowrap text-sm text-muted-foreground">
                             {getDateOrDash(customer.returnedAt)}
                           </span>
                         </TableCell>
-                        <TableCell className="text-left">{renderActions(customer)}</TableCell>
+                        <TableCell className="px-4 py-4 text-left">{renderActions(customer)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

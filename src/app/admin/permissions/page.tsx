@@ -9,6 +9,7 @@ import { PageHeader, EmptyState } from '@/components/shared'
 import { apiClient } from '@/lib/api-client'
 import { PERMISSION_MODULES } from '@/constants'
 import type { PermissionItem } from '@/types'
+import { toPersianNum } from '@/utils/formatters'
 
 interface PermissionsGroup { [module: string]: PermissionItem[] }
 
@@ -41,7 +42,13 @@ export default function AdminPermissionsPage() {
         title="مدیریت دسترسی‌ها"
         description={
           <>
-            مشاهده تمامی دسترسی‌های سامانه — {allPermissions.length} دسترسی در {Object.keys(groupedPermissions).length} ماژول
+            مشاهده و مدیریت مجوزهای قابل تخصیص به نقش‌های سامانه
+            {!isLoading && (
+              <span className="mr-1 font-semibold text-emerald-600">
+                {toPersianNum(allPermissions.length)} دسترسی در{' '}
+                {toPersianNum(Object.keys(groupedPermissions).length)} ماژول
+              </span>
+            )}
           </>
         }
       />
@@ -49,14 +56,14 @@ export default function AdminPermissionsPage() {
       {isLoading ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i}>
-              <CardHeader className="pb-3">
+            <Card key={i} className="rounded-2xl border border-border/50 bg-card shadow-sm">
+              <CardHeader className="border-b border-border/60 pb-4">
                 <Skeleton className="h-6 w-32" />
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4">
                 <div className="space-y-2">
                   {Array.from({ length: 4 }).map((_, j) => (
-                    <Skeleton key={j} className="h-5 w-full" />
+                    <Skeleton key={j} className="h-12 w-full" />
                   ))}
                 </div>
               </CardContent>
@@ -64,31 +71,49 @@ export default function AdminPermissionsPage() {
           ))}
         </div>
       ) : Object.keys(groupedPermissions).length === 0 ? (
-        <EmptyState icon={FileText} title="داده‌ای یافت نشد" />
+        <Card className="rounded-2xl border border-border/50 bg-card shadow-sm">
+          <CardContent className="py-12">
+            <EmptyState icon={FileText} title="داده‌ای یافت نشد" />
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {Object.entries(groupedPermissions).map(([module, permissions]) => (
-            <Card key={module}>
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+            <Card
+              key={module}
+              className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm"
+            >
+              <CardHeader className="border-b border-border/60 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
                     <Key className="size-4" />
                   </div>
-                  <div>
-                    <CardTitle className="text-base">{PERMISSION_MODULES[module] || module}</CardTitle>
-                    <p className="text-xs text-muted-foreground mt-0.5">{permissions.length} دسترسی</p>
+                  <div className="min-w-0">
+                    <CardTitle className="truncate text-base">
+                      {PERMISSION_MODULES[module] || module}
+                    </CardTitle>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {toPersianNum(permissions.length)} دسترسی
+                    </p>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4">
                 <div className="space-y-2">
                   {permissions.map((perm) => (
-                    <div key={perm.id} className="flex items-center justify-between rounded-lg border p-2.5 text-sm">
-                      <div className="flex items-center gap-2">
-                        <Key className="size-3.5 text-muted-foreground" />
-                        <div>
-                          <span className="font-medium">{perm.title || perm.name}</span>
-                          <p className="text-xs text-muted-foreground font-mono">{perm.name}</p>
+                    <div
+                      key={perm.id}
+                      className="rounded-xl border border-border/60 bg-background/60 p-3 text-sm"
+                    >
+                      <div className="flex min-w-0 items-start gap-2.5">
+                        <Key className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+                        <div className="min-w-0">
+                          <span className="block truncate font-medium">
+                            {perm.title || perm.name}
+                          </span>
+                          <p className="mt-1 truncate font-mono text-xs text-muted-foreground" dir="ltr">
+                            {perm.name}
+                          </p>
                         </div>
                       </div>
                     </div>
