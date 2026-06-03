@@ -5,8 +5,9 @@ import Link from 'next/link'
 import { useAuthStore } from '@/stores/auth-store'
 import { agentsService } from '@/services/agents.service'
 import { commissionsService } from '@/services/commissions.service'
-import { StatCard, StatusBadge } from '@/components/shared'
+import { StatusBadge } from '@/components/shared'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -25,8 +26,8 @@ import {
   Clock,
   ArrowLeft,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { formatPrice, toPersianNum, formatDate, getDisplayName } from '@/utils/formatters'
-import { COMMISSION_STATUS_LABELS } from '@/constants'
 import type { AgentItem, CommissionItem } from '@/types'
 
 // ---------- Types ----------
@@ -43,10 +44,36 @@ interface CommissionStats {
 // ---------- Status Color Map ----------
 
 const statusColorMap: Record<string, string> = {
-  PENDING: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
-  APPROVED: 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300',
-  PAID: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
-  CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300',
+  PENDING: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  APPROVED: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+  PAID: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+  CONFIRMED: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+  CANCELLED: 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
+  REJECTED: 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
+}
+
+function AgentStatCard({
+  title,
+  value,
+  icon: Icon,
+}: {
+  title: string
+  value: string
+  icon: LucideIcon
+}) {
+  return (
+    <Card className="rounded-2xl border border-slate-100/60 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-slate-800/60">
+      <CardContent className="min-h-28 p-5">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary/70">
+            <Icon className="size-4" />
+          </div>
+        </div>
+        <p className="mt-2 truncate text-3xl font-bold text-foreground">{value}</p>
+      </CardContent>
+    </Card>
+  )
 }
 
 // ---------- Dashboard Page ----------
@@ -133,7 +160,12 @@ export default function AgentDashboardPage() {
                 <h1 className="text-xl font-bold">
                   خوش آمدید، {fullName}
                 </h1>
-                {agentData && <StatusBadge status={agentData.status} />}
+                {agentData && (
+                  <StatusBadge
+                    status={agentData.status}
+                    className={statusColorMap[agentData.status]}
+                  />
+                )}
               </div>
               <p className="text-sm text-muted-foreground mt-0.5">
                 {agentData?.businessName || 'نام کسب‌وکار ثبت نشده'}
@@ -157,25 +189,22 @@ export default function AgentDashboardPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard
+        <AgentStatCard
           title="کل پورسانت"
           value={stats ? `${formatPrice(stats.totalCommission)} ت` : '—'}
           icon={Wallet}
-          iconClassName="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
         />
 
-        <StatCard
+        <AgentStatCard
           title="افراد معرفی شده"
           value={stats ? toPersianNum(stats.totalReferrals) : '—'}
           icon={Users}
-          iconClassName="bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400"
         />
 
-        <StatCard
+        <AgentStatCard
           title="طرح‌های فعال"
           value={stats ? toPersianNum(stats.activePlans) : '—'}
           icon={Layers}
-          iconClassName="bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400"
         />
       </div>
 
@@ -218,7 +247,7 @@ export default function AgentDashboardPage() {
                         <TableCell className="font-medium">{getCommissionUserName(c)}</TableCell>
                         <TableCell className="text-sm font-medium">{formatPrice(c.amount)} ت</TableCell>
                         <TableCell>
-                          <StatusBadge status={c.status} />
+                          <StatusBadge status={c.status} className={statusColorMap[c.status]} />
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {formatDate(c.createdAt)}
@@ -239,7 +268,10 @@ export default function AgentDashboardPage() {
                     </div>
                     <div className="text-left mr-3">
                       <p className="text-sm font-bold">{formatPrice(c.amount)} ت</p>
-                      <StatusBadge status={c.status} className="text-[10px]" />
+                      <StatusBadge
+                        status={c.status}
+                        className={`text-[10px] ${statusColorMap[c.status] || ''}`}
+                      />
                     </div>
                   </div>
                 ))}

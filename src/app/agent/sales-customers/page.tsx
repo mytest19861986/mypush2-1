@@ -113,14 +113,14 @@ const statusLabels: Record<SalesCustomerStatus, string> = {
 }
 
 const statusClasses: Record<SalesCustomerStatus, string> = {
-  PENDING_REVIEW: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-  APPROVED: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
+  PENDING_REVIEW: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  APPROVED: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
   CARD_ISSUED: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
   SHIPPED: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
   DELIVERED: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
-  PAID: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-  CONFIRMED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-  RETURNED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  PAID: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+  CONFIRMED: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+  RETURNED: 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
 }
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -354,7 +354,7 @@ export default function AgentSalesCustomersPage() {
         action={
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="bg-primary text-primary-foreground shadow-md transition-all hover:shadow-lg">
                 <Plus className="ml-2 size-4" />
                 ثبت مشتری
               </Button>
@@ -453,17 +453,27 @@ export default function AgentSalesCustomersPage() {
         }
       />
 
-      <div className="flex flex-wrap gap-2">
+      <div
+        role="tablist"
+        aria-label="فیلتر وضعیت مشتریان"
+        className="flex w-full max-w-full gap-1 overflow-x-auto rounded-xl bg-muted p-1 sm:w-fit"
+      >
         {statusFilters.map((filter) => (
-          <Button
+          <button
             key={filter.value}
             type="button"
-            variant={statusFilter === filter.value ? 'default' : 'outline'}
-            size="sm"
+            role="tab"
+            aria-selected={statusFilter === filter.value}
+            className={cn(
+              'h-9 shrink-0 rounded-lg px-3 text-sm font-medium transition-colors',
+              statusFilter === filter.value
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
             onClick={() => setStatusFilter(filter.value)}
           >
             {filter.label}
-          </Button>
+          </button>
         ))}
       </div>
 

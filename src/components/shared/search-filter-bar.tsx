@@ -46,8 +46,8 @@ export function SearchFilterBar({
   return (
     <Card className="border-0 shadow-sm">
       <CardContent className="pt-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-          <div className="flex flex-1 gap-2">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex w-full gap-2 md:max-w-sm">
             <div className="relative flex-1">
               <Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -62,21 +62,23 @@ export function SearchFilterBar({
               جستجو
             </Button>
           </div>
-          {filterOptions && onFilterChange && (
-            <Select value={filterValue} onValueChange={onFilterChange}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder={filterPlaceholder} />
-              </SelectTrigger>
-              <SelectContent>
-                {filterOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-          {children}
+          <div className="flex w-full flex-col gap-3 md:w-auto md:flex-row md:items-center md:justify-end">
+            {filterOptions && onFilterChange && (
+              <Select value={filterValue} onValueChange={onFilterChange}>
+                <SelectTrigger className="w-full md:w-48">
+                  <SelectValue placeholder={filterPlaceholder} />
+                </SelectTrigger>
+                <SelectContent>
+                  {filterOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {children}
+          </div>
         </div>
       </CardContent>
     </Card>

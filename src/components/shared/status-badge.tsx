@@ -14,17 +14,17 @@ export function StatusBadge({ status, label, className }: StatusBadgeProps) {
   const colorMap: Record<string, string> = {
     ACTIVE: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
     INACTIVE: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-    BLOCKED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    BLOCKED: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
     PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
     UNDER_REVIEW: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
     APPROVED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-    REJECTED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-    SUSPENDED: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-    CONFIRMED: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
+    REJECTED: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
+    SUSPENDED: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
+    CONFIRMED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
     COMPLETED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-    CANCELLED: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
+    CANCELLED: 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400',
     PAID: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-    EXPIRED: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
+    EXPIRED: 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400',
   }
 
   // Label mapping
@@ -47,7 +47,10 @@ export function StatusBadge({ status, label, className }: StatusBadgeProps) {
   return (
     <Badge
       variant="secondary"
-      className={cn(colorMap[status] || 'bg-muted text-muted-foreground', className)}
+      className={cn(
+        colorMap[status] || 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400',
+        className
+      )}
     >
       {label || labelMap[status] || status}
     </Badge>

@@ -131,11 +131,12 @@ const settlementStatusLabels: Record<SettlementStatus, string> = {
 }
 
 const statusClasses: Record<string, string> = {
-  PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-  APPROVED: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
-  PAID: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-  CANCELLED: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
-  REJECTED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  PENDING: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  APPROVED: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+  PAID: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+  CONFIRMED: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+  CANCELLED: 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
+  REJECTED: 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
 }
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -449,15 +450,15 @@ export default function AgentCommissionsPage() {
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {walletCards.map((card) => (
-                <Card key={card.title} className="border-0 shadow-sm">
-                  <CardContent className="flex items-center gap-3 p-4">
-                    <div className={cn('flex size-11 items-center justify-center rounded-lg', card.tone)}>
-                      <card.icon className="size-5" />
+                <Card key={card.title} className="rounded-2xl border border-slate-100/60 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-slate-800/60">
+                  <CardContent className="min-h-28 p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-medium text-muted-foreground">{card.title}</p>
+                      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary/70">
+                        <card.icon className="size-4" />
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">{card.title}</p>
-                      <p className="mt-1 text-base font-bold">{card.value}</p>
-                    </div>
+                    <p className="mt-2 truncate text-3xl font-bold text-foreground">{card.value}</p>
                   </CardContent>
                 </Card>
               ))}

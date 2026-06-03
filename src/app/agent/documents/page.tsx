@@ -45,6 +45,15 @@ const docTypeIconMap: Record<string, React.ReactNode> = {
   OTHER: <FileText className="size-4" />,
 }
 
+const documentStatusClasses: Record<string, string> = {
+  PENDING: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  WAITING: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  APPROVED: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+  CONFIRMED: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+  REJECTED: 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
+  FAILED: 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
+}
+
 // ---------- Upload Form ----------
 
 function UploadForm({ onUploaded }: { onUploaded: () => void }) {
@@ -157,7 +166,7 @@ function UploadForm({ onUploaded }: { onUploaded: () => void }) {
   }
 
   return (
-    <Card>
+    <Card className="rounded-2xl border bg-card shadow-sm">
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <Upload className="size-4 text-emerald-600" />
@@ -191,12 +200,12 @@ function UploadForm({ onUploaded }: { onUploaded: () => void }) {
             onDragLeave={handleDragLeave}
             onClick={() => fileInputRef.current?.click()}
             className={`
-              border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
+              rounded-xl border-2 border-dashed p-8 text-center cursor-pointer transition-colors
               ${dragActive
-                ? 'border-emerald-400 bg-emerald-50/50 dark:border-emerald-600 dark:bg-emerald-950/20'
+                ? 'border-primary/50 bg-primary/5'
                 : file
-                  ? 'border-emerald-300 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/20'
-                  : 'border-muted-foreground/25 hover:border-emerald-400/50 hover:bg-accent/50'
+                  ? 'border-primary/50 bg-primary/5'
+                  : 'border-muted-foreground/30 hover:border-primary/50 hover:bg-primary/5'
               }
             `}
           >
@@ -247,7 +256,7 @@ function UploadForm({ onUploaded }: { onUploaded: () => void }) {
         <Button
           onClick={handleUpload}
           disabled={uploading || !docType || !file}
-          className="w-full bg-emerald-600 hover:bg-emerald-700"
+          className="w-full bg-primary text-primary-foreground shadow-md transition-all hover:shadow-lg"
         >
           {uploading ? (
             <>
@@ -338,7 +347,7 @@ function DocumentList({ documents }: { documents: AgentDocumentItem[] }) {
     {
       key: 'status',
       header: 'وضعیت',
-      render: (row) => <StatusBadge status={row.status} />,
+      render: (row) => <StatusBadge status={row.status} className={documentStatusClasses[row.status]} />,
     },
     {
       key: 'reviewedAt',
@@ -361,7 +370,7 @@ function DocumentList({ documents }: { documents: AgentDocumentItem[] }) {
   }
 
   return (
-    <Card>
+    <Card className="rounded-2xl border bg-card shadow-sm">
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <FileText className="size-4 text-emerald-600" />

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useAuthStore } from '@/stores/auth-store'
 import { agentsService } from '@/services/agents.service'
-import { StatusBadge, PageHeader } from '@/components/shared'
+import { PageHeader } from '@/components/shared'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -135,7 +135,7 @@ export default function AgentProfilePage() {
     return (
       <div className="space-y-6 max-w-2xl">
         <Skeleton className="h-8 w-48" />
-        <Card>
+        <Card className="rounded-2xl border bg-card shadow-sm">
           <CardContent className="p-6 space-y-6">
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-24 w-full" />
@@ -143,13 +143,13 @@ export default function AgentProfilePage() {
             <Skeleton className="h-10 w-full" />
           </CardContent>
         </Card>
-        <Card>
+        <Card className="rounded-2xl border bg-card shadow-sm">
           <CardContent className="p-6 space-y-4">
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-24 w-full" />
           </CardContent>
         </Card>
-        <Card>
+        <Card className="rounded-2xl border bg-card shadow-sm">
           <CardContent className="p-6 space-y-3">
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-6 w-full" />
@@ -172,7 +172,7 @@ export default function AgentProfilePage() {
       />
 
       {/* User Info (Read-only) */}
-      <Card>
+      <Card className="rounded-2xl border bg-card shadow-sm">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <User className="size-4 text-muted-foreground" />
@@ -188,7 +188,7 @@ export default function AgentProfilePage() {
               <Input
                 value={`${firstName} ${lastName}`.trim() || 'ثبت نشده'}
                 readOnly
-                className="bg-muted pr-10"
+                className="border border-input bg-background pr-10 shadow-sm focus-visible:ring-1 focus-visible:ring-primary"
                 placeholder="نام"
               />
             </div>
@@ -202,7 +202,7 @@ export default function AgentProfilePage() {
               <Input
                 value={mobile}
                 readOnly
-                className="bg-muted pr-10"
+                className="border border-input bg-background pr-10 shadow-sm focus-visible:ring-1 focus-visible:ring-primary"
                 placeholder="شماره موبایل"
                 dir="ltr"
               />
@@ -217,7 +217,7 @@ export default function AgentProfilePage() {
               <Input
                 value={email || 'ثبت نشده'}
                 readOnly
-                className="bg-muted pr-10"
+                className="border border-input bg-background pr-10 shadow-sm focus-visible:ring-1 focus-visible:ring-primary"
                 placeholder="ایمیل"
                 dir="ltr"
               />
@@ -227,7 +227,7 @@ export default function AgentProfilePage() {
       </Card>
 
       {/* Business Info (Editable) */}
-      <Card>
+      <Card className="rounded-2xl border bg-card shadow-sm">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Building className="size-4 text-muted-foreground" />
@@ -244,7 +244,7 @@ export default function AgentProfilePage() {
                 id="businessName"
                 value={businessName}
                 onChange={(e) => setBusinessName(e.target.value)}
-                className="pr-10"
+                className="border border-input bg-background pr-10 shadow-sm focus-visible:ring-1 focus-visible:ring-primary"
                 placeholder="نام کسب‌وکار را وارد کنید"
               />
             </div>
@@ -259,6 +259,7 @@ export default function AgentProfilePage() {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="توضیحات مربوط به کسب‌وکار خود را وارد کنید..."
               rows={4}
+              className="border border-input bg-background shadow-sm focus-visible:ring-1 focus-visible:ring-primary"
             />
           </div>
 
@@ -288,7 +289,7 @@ export default function AgentProfilePage() {
       </Card>
 
       {/* Referral Link */}
-      <Card className="border-emerald-200 dark:border-emerald-900">
+      <Card className="rounded-2xl border bg-card shadow-sm">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Link2 className="size-4 text-emerald-600" />
@@ -306,7 +307,7 @@ export default function AgentProfilePage() {
               <Input
                 value={referralLink}
                 readOnly
-                className="pr-10 bg-muted font-mono text-xs"
+                className="border border-input bg-background pr-10 font-mono text-xs shadow-sm focus-visible:ring-1 focus-visible:ring-primary"
                 dir="ltr"
               />
             </div>
