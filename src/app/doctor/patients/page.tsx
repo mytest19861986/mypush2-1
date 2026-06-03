@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { PageHeader } from '@/components/shared'
+import { EmptyState, PageHeader } from '@/components/shared'
 import { apiClient } from '@/lib/api-client'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -79,13 +79,13 @@ function visitErrorMessage(error: unknown) {
 
 function LookupLoadingState() {
   return (
-    <Card>
+    <Card className="mx-auto max-w-3xl rounded-2xl border border-slate-100/60 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-slate-800/60">
       <CardContent className="space-y-4 p-6">
         <Skeleton className="h-5 w-40" />
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          <Skeleton className="h-20 rounded-lg" />
-          <Skeleton className="h-20 rounded-lg" />
-          <Skeleton className="h-20 rounded-lg" />
+          <Skeleton className="h-20 rounded-2xl" />
+          <Skeleton className="h-20 rounded-2xl" />
+          <Skeleton className="h-20 rounded-2xl" />
         </div>
       </CardContent>
     </Card>
@@ -187,27 +187,28 @@ export default function DoctorPatientsPage() {
   const canCreateVisit = Boolean(lookupResult?.hasActivePlan)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir="rtl">
       <PageHeader
         title="جستجوی بیمار"
         description="با وارد کردن کد ملی، وضعیت طرح فعال بیمار را بررسی و در صورت اعتبار، ویزیت را ثبت کنید."
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
+      <Card className="mx-auto max-w-xl rounded-2xl border border-slate-100/60 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-slate-800/60">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center justify-center gap-2 text-base">
             <UserSearch className="size-4 text-emerald-600" />
             بررسی وضعیت طرح
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-col gap-3 md:flex-row md:items-end">
-            <div className="flex-1 space-y-2">
+          <div className="space-y-4">
+            <div className="space-y-2">
               <Label htmlFor="nationalCode">کد ملی بیمار</Label>
               <div className="relative">
                 <Hash className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="nationalCode"
+                  type="tel"
                   value={nationalCode}
                   onChange={(event) => handleNationalCodeChange(event.target.value)}
                   onKeyDown={handleKeyDown}
@@ -215,7 +216,7 @@ export default function DoctorPatientsPage() {
                   inputMode="numeric"
                   maxLength={10}
                   dir="ltr"
-                  className="h-11 pr-10 text-left font-mono text-lg tracking-widest"
+                  className="h-12 rounded-xl pr-10 text-center font-mono text-lg tracking-widest"
                   aria-invalid={Boolean(validationError)}
                 />
               </div>
@@ -227,7 +228,7 @@ export default function DoctorPatientsPage() {
             <Button
               onClick={handleLookup}
               disabled={isLookingUp || nationalCode.trim().length !== 10}
-              className="h-11 gap-2 md:min-w-44"
+              className="h-12 w-full gap-2 rounded-xl text-base shadow-sm"
             >
               {isLookingUp ? (
                 <Loader2 className="size-4 animate-spin" />
@@ -241,21 +242,21 @@ export default function DoctorPatientsPage() {
       </Card>
 
       {lookupError && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="mx-auto max-w-xl">
           <AlertTriangle className="size-4" />
           <AlertDescription>{lookupError}</AlertDescription>
         </Alert>
       )}
 
       {visitMessage && (
-        <Alert className="border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300">
+        <Alert className="mx-auto max-w-xl border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300">
           <CheckCircle2 className="size-4" />
           <AlertDescription>{visitMessage}</AlertDescription>
         </Alert>
       )}
 
       {visitError && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="mx-auto max-w-xl">
           <AlertTriangle className="size-4" />
           <AlertDescription>{visitError}</AlertDescription>
         </Alert>
@@ -265,8 +266,8 @@ export default function DoctorPatientsPage() {
         <LookupLoadingState />
       ) : lookupResult ? (
         lookupResult.hasActivePlan ? (
-          <Card className="border-emerald-200 dark:border-emerald-900">
-            <CardHeader>
+          <Card className="mx-auto max-w-3xl overflow-hidden rounded-2xl border border-emerald-200/70 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-emerald-900/50">
+            <CardHeader className="bg-gradient-to-l from-emerald-500/10 via-teal-500/5 to-background">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <ShieldCheck className="size-5 text-emerald-600" />
@@ -277,9 +278,9 @@ export default function DoctorPatientsPage() {
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent className="space-y-5">
+            <CardContent className="space-y-5 p-5 sm:p-6">
               <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                <div className="rounded-lg border bg-muted/30 p-4">
+                <div className="rounded-2xl border border-slate-100/70 bg-background/70 p-4 dark:border-slate-800/70">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <User className="size-4" />
                     بیمار
@@ -290,7 +291,7 @@ export default function DoctorPatientsPage() {
                   </p>
                 </div>
 
-                <div className="rounded-lg border bg-muted/30 p-4">
+                <div className="rounded-2xl border border-slate-100/70 bg-background/70 p-4 dark:border-slate-800/70">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <FileText className="size-4" />
                     طرح
@@ -300,7 +301,7 @@ export default function DoctorPatientsPage() {
                   </p>
                 </div>
 
-                <div className="rounded-lg border bg-muted/30 p-4">
+                <div className="rounded-2xl border border-slate-100/70 bg-background/70 p-4 dark:border-slate-800/70">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <CalendarDays className="size-4" />
                     اعتبار
@@ -316,7 +317,7 @@ export default function DoctorPatientsPage() {
                   <p className="text-sm font-medium">طرح‌های فعال</p>
                   <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                     {lookupResult.plans.map((plan, index) => (
-                      <div key={`${index}-${plan.planTitle}-${plan.endDate}`} className="rounded-lg border p-3 text-sm">
+                      <div key={`${index}-${plan.planTitle}-${plan.endDate}`} className="rounded-2xl border border-slate-100/70 bg-background/70 p-3 text-sm dark:border-slate-800/70">
                         <p className="font-medium">{plan.planTitle}</p>
                         <p className="mt-1 text-xs text-muted-foreground">
                           {formatDate(plan.startDate)} تا {formatDate(plan.endDate)}
@@ -346,7 +347,7 @@ export default function DoctorPatientsPage() {
                 <Button
                   onClick={handleCreateVisit}
                   disabled={!canCreateVisit || isCreatingVisit || visitRegistered}
-                  className="min-w-36 gap-2"
+                  className="h-12 w-full gap-2 rounded-xl text-base shadow-sm sm:w-auto sm:min-w-44"
                 >
                   {isCreatingVisit ? (
                     <>
@@ -364,7 +365,7 @@ export default function DoctorPatientsPage() {
             </CardContent>
           </Card>
         ) : (
-          <Card className="border-amber-200 dark:border-amber-900">
+          <Card className="mx-auto max-w-xl rounded-2xl border border-amber-200/80 bg-amber-50/60 shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-amber-900/50 dark:bg-amber-950/20">
             <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
               <div className="flex size-14 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">
                 <AlertTriangle className="size-7" />
@@ -377,17 +378,12 @@ export default function DoctorPatientsPage() {
           </Card>
         )
       ) : (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-            <div className="flex size-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
-              <UserSearch className="size-7" />
-            </div>
-            <h2 className="text-base font-semibold">جستجوی بیمار</h2>
-            <p className="max-w-sm text-sm text-muted-foreground">
-              کد ملی ۱۰ رقمی بیمار را وارد کنید تا وضعیت طرح فعال او بررسی شود.
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={<UserSearch />}
+          title="جستجوی بیمار"
+          description="کد ملی ۱۰ رقمی بیمار را وارد کنید تا وضعیت طرح فعال او بررسی شود."
+          className="mx-auto max-w-xl border-dashed py-12 shadow-none"
+        />
       )}
     </div>
   )

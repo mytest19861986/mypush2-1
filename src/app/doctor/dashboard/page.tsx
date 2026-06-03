@@ -5,9 +5,9 @@ import Link from 'next/link'
 import { useAuthStore } from '@/stores/auth-store'
 import { doctorsService } from '@/services/doctors.service'
 import { contractsService } from '@/services/contracts.service'
-import { StatCard, StatusBadge } from '@/components/shared'
+import { StatusBadge } from '@/components/shared'
+import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Badge } from '@/components/ui/badge'
 import {
   Stethoscope,
   FileText,
@@ -16,8 +16,9 @@ import {
   CalendarDays,
   TrendingUp,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { motion, type Variants } from 'framer-motion'
-import { formatPrice, toPersianNum, getDisplayName, formatDate } from '@/utils/formatters'
+import { formatPrice, toPersianNum, getDisplayName } from '@/utils/formatters'
 import type { DoctorItem, ContractItem } from '@/types'
 
 // ---------- Types ----------
@@ -44,6 +45,28 @@ const containerVariants: Variants = {
 const itemVariants: Variants = {
   hidden: { opacity: 0, y: 12 },
   show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: easeOut } },
+}
+
+function DoctorStatCard({
+  title,
+  value,
+  icon: Icon,
+}: {
+  title: string
+  value: string
+  icon: LucideIcon
+}) {
+  return (
+    <Card className="rounded-2xl border border-slate-100/60 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-slate-800/60">
+      <CardContent className="flex min-h-28 flex-col justify-between p-5">
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <Icon className="size-4 shrink-0 text-muted-foreground" />
+        </div>
+        <p className="mt-4 truncate text-3xl font-bold text-card-foreground">{value}</p>
+      </CardContent>
+    </Card>
+  )
 }
 
 // ---------- Dashboard Page ----------
@@ -129,20 +152,22 @@ export default function DoctorDashboardPage() {
     >
       {/* Welcome Card */}
       <motion.div variants={itemVariants}>
-        <div className="rounded-xl border border-emerald-200 bg-gradient-to-l from-emerald-50 to-transparent p-6 dark:border-emerald-900 dark:from-emerald-950/30 dark:to-transparent">
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 shrink-0">
-              <Stethoscope className="h-7 w-7" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-xl font-bold truncate">
-                خوش آمدید، دکتر {getDisplayName(user)}
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                {doctorData?.specialty
-                  ? `${doctorData.specialty} · ${doctorData.clinicName || 'مطب'}`
-                  : doctorData?.clinicName || 'پنل مدیریت مطب'}
-              </p>
+        <div className="overflow-hidden rounded-2xl border border-emerald-100/70 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-emerald-900/40">
+          <div className="bg-gradient-to-l from-emerald-500/10 via-teal-500/5 to-background p-5 sm:p-6">
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">
+                <Stethoscope className="h-7 w-7" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-xl font-bold truncate">
+                  خوش آمدید، دکتر {getDisplayName(user)}
+                </h1>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {doctorData?.specialty
+                    ? `${doctorData.specialty} · ${doctorData.clinicName || 'مطب'}`
+                    : doctorData?.clinicName || 'پنل مدیریت مطب'}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -151,36 +176,33 @@ export default function DoctorDashboardPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <motion.div variants={itemVariants}>
-          <StatCard
+          <DoctorStatCard
             title="قراردادهای امروز"
             value={toPersianNum(stats?.todayContracts || 0)}
             icon={CalendarDays}
-            iconClassName="bg-primary/10 text-primary"
           />
         </motion.div>
 
         <motion.div variants={itemVariants}>
-          <StatCard
+          <DoctorStatCard
             title="بیماران فعال"
             value={toPersianNum(stats?.activePatients || 0)}
             icon={Users}
-            iconClassName="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
           />
         </motion.div>
 
         <motion.div variants={itemVariants}>
-          <StatCard
+          <DoctorStatCard
             title="تخفیف اعمال شده (تومان)"
             value={formatPrice(stats?.totalDiscounts || 0)}
             icon={Percent}
-            iconClassName="bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400"
           />
         </motion.div>
       </div>
 
       {/* Recent Contracts */}
       <motion.div variants={itemVariants}>
-        <div className="rounded-xl border bg-card shadow-sm">
+        <div className="rounded-2xl border border-slate-100/60 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-slate-800/60">
           <div className="flex items-center justify-between p-4 pb-3">
             <h2 className="text-base font-semibold flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-emerald-600" />
@@ -199,7 +221,7 @@ export default function DoctorDashboardPage() {
                 {stats.recentContracts.map((contract) => (
                   <div
                     key={contract.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                    className="flex items-center justify-between rounded-2xl bg-background/70 p-3 transition-colors hover:bg-muted/60"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 shrink-0">
