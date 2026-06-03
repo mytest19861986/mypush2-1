@@ -6,7 +6,6 @@ const STATIC_ASSETS = [
   '/icon-512.png',
 ];
 
-// نصب و کش کردن فایل‌های استاتیک
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -16,7 +15,6 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// فعال‌سازی و پاک کردن کش‌های قدیمی
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -30,24 +28,34 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// رهگیری درخواست‌ها - Network First با fallback به کش
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-  
-  // نادیده گرفتن درخواست‌های non-GET
-  if (request.method !== 'GET') return;
-  
-  // نادیده گرفتن درخواست‌های API
-  if (request.url.includes('/api/')) return;
-  
-  // نادیده گرفتن درخواست‌های chrome-extension
-  if (request.url.startsWith('chrome-extension://')) return;
-  
+  const url = new URL(request.url);
+
+  if (request.method !== 'GET') {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  if (url.origin !== self.location.origin) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  if (
+    url.pathname.startsWith('/_next/') ||
+    url.pathname.startsWith('/api/') ||
+    url.pathname.startsWith('/auth/') ||
+    url.pathname.startsWith('/user/')
+  ) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   event.respondWith(
     fetch(request)
       .then((response) => {
-        // کش کردن پاسخ موفق
-        if (response.status === 200) {
+        if (response.ok) {
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(request, responseClone);
@@ -56,14 +64,14 @@ self.addEventListener('fetch', (event) => {
         return response;
       })
       .catch(() => {
-        // برگشت به کش در صورت قطعی اینترنت
         return caches.match(request).then((cachedResponse) => {
           if (cachedResponse) return cachedResponse;
-          // صفحه آفلاین برای ناوبری
           if (request.mode === 'navigate') {
-            return caches.match('/');
+            return caches.match('/').then((cachedHome) => {
+              return cachedHome || fetch(request);
+            });
           }
-          return new Response('آفلاین هستید', { status: 503 });
+          return fetch(request);
         });
       })
   );
