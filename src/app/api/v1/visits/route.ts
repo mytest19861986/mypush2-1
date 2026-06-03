@@ -120,6 +120,7 @@ export async function POST(request: NextRequest) {
         userId: true,
         firstName: true,
         lastName: true,
+        nationalCode: true,
         status: true,
       },
     })
@@ -182,6 +183,7 @@ export async function POST(request: NextRequest) {
             select: {
               firstName: true,
               lastName: true,
+              nationalCode: true,
             },
           },
           userPlan: {

@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
               select: {
                 firstName: true,
                 lastName: true,
+                nationalCode: true,
               },
             },
           },

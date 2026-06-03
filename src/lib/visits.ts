@@ -28,6 +28,7 @@ export function toSafeVisitResponse(visit: {
   planHolder: {
     firstName: string | null
     lastName: string | null
+    nationalCode: string | null
   }
   userPlan: {
     endDate: Date
@@ -49,6 +50,7 @@ export function toSafeVisitResponse(visit: {
     planHolder: {
       firstName: visit.planHolder.firstName,
       lastName: visit.planHolder.lastName,
+      nationalCode: visit.planHolder.nationalCode,
     },
   }
 }
