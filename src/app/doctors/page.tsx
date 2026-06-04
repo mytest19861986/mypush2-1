@@ -257,9 +257,9 @@ function DoctorCard({ doctor }: { doctor: PublicDoctor }) {
   const hasDiscount = typeof doctor.discountPercent === 'number' && doctor.discountPercent > 0
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-      <div className="flex flex-row items-start gap-4">
-        <div className="grid size-14 shrink-0 place-items-center overflow-hidden rounded-2xl bg-teal-50 text-teal-700 ring-1 ring-teal-100">
+    <article className="rounded-2xl border border-border/50 bg-card p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-md">
+      <div className="flex flex-row items-center gap-4">
+        <div className="grid size-20 shrink-0 place-items-center overflow-hidden rounded-full bg-teal-50 text-teal-700 ring-1 ring-border/70">
           {doctor.profileImageUrl ? (
             <img
               src={doctor.profileImageUrl}
@@ -267,16 +267,15 @@ function DoctorCard({ doctor }: { doctor: PublicDoctor }) {
               className="size-full object-cover"
             />
           ) : (
-            <div className="relative">
-              <UserRound className="size-7" />
-              <Stethoscope className="absolute -bottom-1 -left-2 size-4 rounded-full bg-teal-50 text-teal-700" />
+            <div className="grid size-full place-items-center">
+              <UserRound className="size-9" />
             </div>
           )}
         </div>
 
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-lg font-black text-slate-950">{doctor.fullName}</h2>
-          <p className="mt-1 min-h-6 text-sm font-semibold text-slate-500">
+          <h2 className="truncate text-lg font-bold text-foreground">{doctor.fullName}</h2>
+          <p className="mt-1 min-h-6 text-sm text-muted-foreground">
             {doctor.specialty || 'تخصص ثبت نشده'}
           </p>
         </div>
@@ -284,13 +283,13 @@ function DoctorCard({ doctor }: { doctor: PublicDoctor }) {
 
       <div className="mt-5 space-y-3">
         {location ? (
-          <div className="flex min-h-6 items-center gap-2 text-sm font-medium text-slate-600">
-            <MapPin className="size-4 shrink-0 text-teal-600" />
+          <div className="flex min-h-6 items-center gap-1 text-sm text-muted-foreground">
+            <MapPin className="size-4 shrink-0" />
             <span>{location}</span>
           </div>
         ) : null}
 
-        <div className="inline-flex max-w-full items-center gap-2 rounded-full bg-orange-100 px-3 py-2 text-sm font-black text-orange-600">
+        <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-bold text-amber-700 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-300">
           <BadgePercent className="size-4 shrink-0" />
           <span className="truncate">
             {hasDiscount
@@ -299,14 +298,14 @@ function DoctorCard({ doctor }: { doctor: PublicDoctor }) {
           </span>
         </div>
 
-        <p className="rounded-xl bg-slate-50 px-3 py-3 text-xs font-semibold leading-6 text-slate-500">
+        <p className="rounded-xl bg-muted/50 px-3 py-3 text-xs font-medium leading-6 text-muted-foreground">
           تخفیف‌ها بر اساس قرارداد هر پزشک متغیر است.
         </p>
       </div>
 
       <Button
         type="button"
-        className="mt-5 h-11 w-full rounded-xl bg-orange-500 font-black text-white shadow-sm hover:bg-orange-600"
+        className="mt-5 h-11 w-full rounded-xl bg-primary font-bold text-primary-foreground shadow-sm hover:bg-primary/90"
       >
         مشاهده اطلاعات
       </Button>
@@ -316,11 +315,11 @@ function DoctorCard({ doctor }: { doctor: PublicDoctor }) {
 
 function DirectoryEmptyState({ hasDoctors }: { hasDoctors: boolean }) {
   return (
-    <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center shadow-sm">
+    <div className="rounded-2xl border border-dashed border-border/60 bg-card p-10 text-center shadow-sm">
       <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-teal-50 text-teal-700">
         <Stethoscope className="size-8" />
       </div>
-      <p className="mt-5 font-black text-slate-900">
+      <p className="mt-5 font-bold text-foreground">
         {hasDoctors
           ? 'در حال حاضر پزشکی با این فیلتر پیدا نشد.'
           : 'در حال حاضر پزشکی برای نمایش ثبت نشده است.'}
@@ -331,13 +330,13 @@ function DirectoryEmptyState({ hasDoctors }: { hasDoctors: boolean }) {
 
 function DirectoryErrorState({ filters }: { filters: DoctorFilters }) {
   return (
-    <div className="rounded-2xl border border-orange-100 bg-white p-10 text-center shadow-sm">
-      <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-orange-50 text-orange-500">
+    <div className="rounded-2xl border border-border/60 bg-card p-10 text-center shadow-sm">
+      <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-muted text-muted-foreground">
         <RotateCcw className="size-8" />
       </div>
-      <p className="mt-5 font-black text-slate-900">امکان بارگذاری فهرست پزشکان وجود ندارد.</p>
-      <p className="mt-2 text-sm leading-7 text-slate-500">لطفا چند لحظه دیگر دوباره تلاش کنید.</p>
-      <Button asChild className="mt-6 rounded-xl bg-orange-500 text-white hover:bg-orange-600">
+      <p className="mt-5 font-bold text-foreground">امکان بارگذاری فهرست پزشکان وجود ندارد.</p>
+      <p className="mt-2 text-sm leading-7 text-muted-foreground">لطفا چند لحظه دیگر دوباره تلاش کنید.</p>
+      <Button asChild className="mt-6 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90">
         <Link href={buildDoctorsHref(filters)}>
           <RotateCcw className="size-4" />
           تلاش دوباره
@@ -350,7 +349,7 @@ function DirectoryErrorState({ filters }: { filters: DoctorFilters }) {
 function DirectoryLoading() {
   return (
     <div className="grid gap-6 lg:grid-cols-[25%_1fr] lg:items-start">
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="rounded-2xl border border-border/50 bg-card p-5 shadow-sm">
         <Skeleton className="h-8 w-24" />
         <div className="mt-6 space-y-5">
           <Skeleton className="h-11 w-full rounded-xl" />
@@ -368,9 +367,9 @@ function DirectoryLoading() {
         <Skeleton className="mb-5 h-6 w-36" />
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, index) => (
-            <div key={index} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex gap-4">
-                <Skeleton className="size-14 rounded-2xl bg-teal-100" />
+            <div key={index} className="rounded-2xl border border-border/50 bg-card p-5 shadow-sm">
+              <div className="flex items-center gap-4">
+                <Skeleton className="size-20 rounded-full bg-teal-100" />
                 <div className="flex-1 space-y-3">
                   <Skeleton className="h-5 w-3/4" />
                   <Skeleton className="h-4 w-1/2" />
@@ -424,10 +423,10 @@ async function DirectoryContent({ filters }: { filters: DoctorFilters }) {
 
       <section>
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-base font-black text-slate-900">
+          <p className="text-base font-bold text-foreground">
             {toPersianDigits(filteredDoctors.length)} پزشک یافت شد
           </p>
-          <p className="text-sm font-semibold text-slate-500">درصد تخفیف برای هر پزشک متفاوت است.</p>
+          <p className="text-sm font-medium text-muted-foreground">درصد تخفیف برای هر پزشک متفاوت است.</p>
         </div>
 
         {filteredDoctors.length > 0 ? (
@@ -453,28 +452,28 @@ export default async function DoctorsPage({
   const filters = buildFilters(resolvedSearchParams)
 
   return (
-    <main dir="rtl" className="min-h-screen bg-slate-50 text-slate-900">
-      <section className="border-b border-slate-200 bg-white px-4 py-16 text-center sm:px-6 lg:px-8">
+    <main dir="rtl" className="min-h-screen bg-background text-foreground">
+      <section className="border-b border-border/60 bg-card px-4 py-10 text-center sm:px-6 md:py-12 lg:px-8">
         <div className="mx-auto max-w-3xl">
-          <Link href="/" className="mb-8 inline-flex text-sm font-black text-teal-700 hover:text-teal-800">
+          <Link href="/" className="mb-5 inline-flex text-sm font-bold text-primary hover:text-primary/80">
             بازگشت به حامی کارت
           </Link>
-          <div className="mx-auto mb-5 grid size-14 place-items-center rounded-2xl bg-teal-50 text-teal-700 ring-1 ring-teal-100">
-            <Stethoscope className="size-7" />
+          <div className="mx-auto mb-3 grid size-11 place-items-center rounded-2xl bg-teal-50 text-teal-700 ring-1 ring-teal-100">
+            <Stethoscope className="size-6" />
           </div>
-          <h1 className="text-3xl font-black leading-tight text-slate-950 sm:text-4xl lg:text-5xl">
+          <h1 className="text-2xl font-bold leading-tight text-foreground md:text-3xl">
             پزشکان و مراکز درمانی طرف قرارداد
           </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
+          <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
             از میان پزشکان متخصص و مراکز درمانی معتبر انتخاب کنید و با حامی‌کارت از تخفیف ویژه بهره‌مند شوید.
           </p>
-          <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-slate-500">
+          <p className="mx-auto mt-2 max-w-2xl text-xs leading-6 text-muted-foreground md:text-sm">
             حامی کارت بیمه درمانی نیست؛ یک پلتفرم عضویت و تخفیف خدمات پزشکی نزد پزشکان طرف قرارداد است.
           </p>
         </div>
       </section>
 
-      <section className="px-4 py-10 sm:px-6 lg:px-8">
+      <section className="px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <Suspense key={JSON.stringify(filters)} fallback={<DirectoryLoading />}>
             <DirectoryContent filters={filters} />
