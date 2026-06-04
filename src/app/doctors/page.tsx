@@ -1,6 +1,8 @@
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { readFile } from 'fs/promises'
+import path from 'path'
 import {
   BadgePercent,
   MapPin,
@@ -22,6 +24,8 @@ export const metadata: Metadata = {
 }
 
 type SortKey = 'discount' | 'newest'
+
+const publicAvatarMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp'])
 
 type DoctorFilters = {
   q?: string
@@ -117,6 +121,42 @@ function getSafePublicImageUrl(value?: string | null) {
   }
 }
 
+async function getDoctorAvatarDataUrl(userId: string, avatarPath?: string | null) {
+  const normalizedPath = normalize(avatarPath)
+  if (!normalizedPath) return null
+
+  const upload = await db.upload.findFirst({
+    where: {
+      userId,
+      path: normalizedPath,
+      type: 'AVATAR',
+    },
+    select: {
+      path: true,
+      mimeType: true,
+    },
+  })
+
+  if (!upload || !publicAvatarMimeTypes.has(upload.mimeType)) {
+    return null
+  }
+
+  const uploadsRoot = path.resolve(process.cwd(), 'private-uploads')
+  const filePath = path.resolve(uploadsRoot, upload.path)
+  const relativePath = path.relative(uploadsRoot, filePath)
+
+  if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+    return null
+  }
+
+  try {
+    const fileBuffer = await readFile(filePath)
+    return `data:${upload.mimeType};base64,${fileBuffer.toString('base64')}`
+  } catch {
+    return null
+  }
+}
+
 async function getPublicDoctors(): Promise<PublicDoctor[]> {
   const doctors = await db.doctor.findMany({
     where: {
@@ -127,6 +167,7 @@ async function getPublicDoctors(): Promise<PublicDoctor[]> {
     },
     select: {
       id: true,
+      userId: true,
       specialty: true,
       city: true,
       province: true,
@@ -149,23 +190,25 @@ async function getPublicDoctors(): Promise<PublicDoctor[]> {
     },
   })
 
-  return doctors.map((doctor) => {
+  return Promise.all(doctors.map(async (doctor) => {
     const fullName = [doctor.user.profile?.firstName, doctor.user.profile?.lastName]
       .map(normalize)
       .filter(Boolean)
       .join(' ')
+    const avatar = doctor.user.profile?.avatar
 
     return {
       id: doctor.id,
       fullName: fullName || 'پزشک طرف قرارداد',
-      profileImageUrl: getSafePublicImageUrl(doctor.user.profile?.avatar),
+      profileImageUrl:
+        (await getDoctorAvatarDataUrl(doctor.userId, avatar)) || getSafePublicImageUrl(avatar),
       specialty: doctor.specialty,
       city: doctor.city,
       province: doctor.province,
       discountPercent: doctor.discountPercent,
       createdAt: doctor.createdAt,
     }
-  })
+  }))
 }
 
 function getLocationLabel(doctor: PublicDoctor) {
