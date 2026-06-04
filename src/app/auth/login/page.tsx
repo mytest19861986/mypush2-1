@@ -77,6 +77,10 @@ const brandingVariants: Variants = {
 
 // ─── Login Page ──────────────────────────────────────────────────────────────
 
+const authCardClassName = 'rounded-2xl border border-border/50 bg-card shadow-sm'
+const authFieldClassName =
+  'border border-input bg-background shadow-sm focus-visible:ring-1 focus-visible:ring-primary'
+
 export default function LoginPage() {
   const router = useRouter()
   const {
@@ -311,25 +315,22 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex md:grid md:grid-cols-5">
+    <div className="min-h-screen overflow-x-hidden bg-background text-foreground md:grid md:grid-cols-5">
       {/* ─── Branding Panel (hidden on mobile) ─────────────────────────────── */}
       <motion.div
         initial="hidden"
         animate="visible"
         variants={brandingVariants}
-        className="hidden md:flex md:col-span-2 relative overflow-hidden bg-gradient-to-br from-emerald-600 to-teal-700 flex-col items-center justify-center p-8 lg:p-12 text-white"
+        className="relative hidden overflow-hidden border-l border-primary-foreground/10 bg-primary p-8 text-primary-foreground md:col-span-2 md:flex md:flex-col md:items-center md:justify-center lg:p-12"
       >
-        {/* Decorative circles */}
-        <div className="absolute top-[-60px] left-[-60px] w-48 h-48 rounded-full bg-white/5" />
-        <div className="absolute bottom-[-80px] right-[-40px] w-64 h-64 rounded-full bg-white/5" />
-        <div className="absolute top-[30%] right-[-30px] w-32 h-32 rounded-full bg-white/[0.03]" />
-        <div className="absolute bottom-[25%] left-[-20px] w-24 h-24 rounded-full bg-white/[0.04]" />
+        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.14),transparent_42%,rgba(255,255,255,0.08))]" />
+        <div className="absolute inset-x-0 top-0 h-px bg-primary-foreground/20" />
 
         {/* Content */}
         <div className="relative z-10 max-w-sm text-center space-y-8">
           {/* Icon */}
           <motion.div
-            className="mx-auto w-20 h-20 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center shadow-lg shadow-black/10"
+            className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-primary-foreground/10 shadow-sm ring-1 ring-primary-foreground/20 backdrop-blur-sm"
             animate={{ scale: [1, 1.05, 1] }}
             transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
           >
@@ -341,13 +342,13 @@ export default function LoginPage() {
             <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">
               سامانه تخفیف درمانی
             </h1>
-            <p className="text-emerald-100 font-medium text-base lg:text-lg">
+            <p className="text-base font-medium text-primary-foreground/90 lg:text-lg">
               حامی کارت
             </p>
           </div>
 
           {/* Tagline */}
-          <p className="text-emerald-100/80 text-sm lg:text-base leading-relaxed">
+          <p className="text-sm leading-relaxed text-primary-foreground/75 lg:text-base">
             سلامتی خود را با تخفیف‌های ویژه تضمین کنید
           </p>
 
@@ -363,10 +364,10 @@ export default function LoginPage() {
                 initial={{ opacity: 0, x: -16 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5 }}
-                className="flex items-center gap-3"
+                className="flex items-center gap-3 rounded-xl bg-primary-foreground/10 px-3 py-2 ring-1 ring-primary-foreground/10"
               >
-                <Icon className="w-5 h-5 text-emerald-200 flex-shrink-0" />
-                <span className="text-sm text-emerald-50">{text}</span>
+                <Icon className="h-5 w-5 flex-shrink-0 text-primary-foreground/80" />
+                <span className="text-sm text-primary-foreground/90">{text}</span>
               </motion.div>
             ))}
           </div>
@@ -374,7 +375,7 @@ export default function LoginPage() {
       </motion.div>
 
       {/* ─── Login Form Panel ──────────────────────────────────────────────── */}
-      <div className="flex-1 md:col-span-3 flex items-center justify-center p-4 sm:p-6 md:p-8 lg:p-12 bg-background">
+      <div className="flex min-h-screen flex-1 items-center justify-center bg-muted/20 p-4 sm:p-6 md:col-span-3 md:p-8 lg:p-12">
         <motion.div
           initial="hidden"
           animate="visible"
@@ -384,10 +385,10 @@ export default function LoginPage() {
           {/* Mobile-only branding (compact) */}
           <motion.div
             variants={itemVariants}
-            className="md:hidden text-center mb-8"
+            className="mb-8 text-center md:hidden"
           >
-            <div className="mx-auto w-14 h-14 rounded-xl bg-emerald-600 flex items-center justify-center mb-3">
-              <HeartPulse className="w-7 h-7 text-white" />
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
+              <HeartPulse className="w-7 h-7" />
             </div>
             <h1 className="text-lg font-bold text-foreground">سامانه تخفیف درمانی</h1>
             <p className="text-xs text-muted-foreground mt-1">حامی کارت</p>
@@ -398,7 +399,7 @@ export default function LoginPage() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 text-muted-foreground hover:text-foreground"
+              className="h-10 w-10 rounded-xl text-muted-foreground hover:text-foreground"
               onClick={() => router.push('/')}
               aria-label="بازگشت به صفحه اصلی"
             >
@@ -408,24 +409,24 @@ export default function LoginPage() {
 
           {/* Card */}
           <motion.div variants={itemVariants}>
-            <Card className="w-full shadow-lg border-border/60">
-              <CardHeader className="text-center pb-2">
-                <CardTitle className="text-xl font-bold">
+            <Card className={`w-full ${authCardClassName}`}>
+              <CardHeader className="px-5 pb-4 pt-6 text-center sm:px-7">
+                <CardTitle className="text-xl font-bold leading-8">
                   ورود به حساب کاربری
                 </CardTitle>
-                <CardDescription className="text-sm mt-1.5">
+                <CardDescription className="mt-2 text-sm leading-6">
                   با شماره موبایل خود وارد حساب کاربری شوید
                 </CardDescription>
               </CardHeader>
 
-              <CardContent>
+              <CardContent className="px-5 sm:px-7">
                 <Tabs defaultValue="otp" className="w-full">
-                  <TabsList className="w-full grid grid-cols-2">
-                    <TabsTrigger value="otp" className="gap-1.5 text-sm">
+                  <TabsList className="grid h-11 w-full grid-cols-2 rounded-xl bg-muted/70 p-1">
+                    <TabsTrigger value="otp" className="rounded-lg text-sm">
                       <Phone className="h-3.5 w-3.5" />
                       کد یکبار مصرف
                     </TabsTrigger>
-                    <TabsTrigger value="password" className="gap-1.5 text-sm">
+                    <TabsTrigger value="password" className="rounded-lg text-sm">
                       <Lock className="h-3.5 w-3.5" />
                       رمز عبور
                     </TabsTrigger>
@@ -457,7 +458,7 @@ export default function LoginPage() {
                                 const value = e.target.value.replace(/\D/g, '')
                                 setOtpMobile(value)
                               }}
-                              className="text-left pe-10 font-mono tracking-wider"
+                              className={`${authFieldClassName} pe-10 text-left font-mono tracking-wider`}
                             />
                             <Phone className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                           </div>
@@ -467,7 +468,7 @@ export default function LoginPage() {
                         </div>
 
                         <Button
-                          className="w-full"
+                          className="h-11 w-full rounded-xl font-semibold shadow-sm"
                           onClick={handleSendOtp}
                           disabled={otpLoading || otpMobile.length < MAX_MOBILE_LENGTH}
                         >
@@ -495,7 +496,7 @@ export default function LoginPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-9 w-9 rounded-xl"
                             onClick={handleBackToMobile}
                           >
                             <ArrowLeft className="h-4 w-4" />
@@ -516,9 +517,9 @@ export default function LoginPage() {
                           <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="rounded-md bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 p-3 text-center"
+                            className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-center"
                           >
-                            <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                            <p className="text-xs text-primary">
                               کد تایید (محیط توسعه):{' '}
                               <span
                                 dir="ltr"
@@ -556,7 +557,7 @@ export default function LoginPage() {
 
                         {/* Remaining attempts */}
                         {remainingAttempts !== null && remainingAttempts > 0 && (
-                          <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3 text-center">
+                          <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-center">
                             <p className="text-xs text-destructive">
                               {remainingAttempts} بار تلاش باقیمانده
                             </p>
@@ -565,7 +566,7 @@ export default function LoginPage() {
 
                         {/* Verify button */}
                         <Button
-                          className="w-full"
+                          className="h-11 w-full rounded-xl font-semibold shadow-sm"
                           onClick={handleVerifyOtp}
                           disabled={verifyLoading || otpCode.length < OTP_LENGTH}
                         >
@@ -594,7 +595,7 @@ export default function LoginPage() {
                           ) : (
                             <Button
                               variant="link"
-                              className="text-sm p-0 h-auto"
+                              className="h-auto p-0 text-sm font-semibold"
                               onClick={handleResendOtp}
                             >
                               ارسال مجدد کد تایید
@@ -629,7 +630,7 @@ export default function LoginPage() {
                               const value = e.target.value.replace(/\D/g, '')
                               setPasswordMobile(value)
                             }}
-                            className="text-left pe-10 font-mono tracking-wider"
+                            className={`${authFieldClassName} pe-10 text-left font-mono tracking-wider`}
                           />
                           <Phone className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         </div>
@@ -645,13 +646,13 @@ export default function LoginPage() {
                             placeholder="رمز عبور خود را وارد کنید"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="pe-10"
+                            className={`${authFieldClassName} pe-10`}
                           />
                           <Button
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="absolute end-0 top-0 h-full px-3 hover:bg-transparent"
+                            className="absolute end-0 top-0 h-full rounded-xl px-3 hover:bg-transparent"
                             onClick={() => setShowPassword(!showPassword)}
                             tabIndex={-1}
                             aria-label={
@@ -671,7 +672,7 @@ export default function LoginPage() {
 
                       <Button
                         type="submit"
-                        className="w-full"
+                        className="h-11 w-full rounded-xl font-semibold shadow-sm"
                         disabled={
                           loginLoading ||
                           passwordMobile.length < MAX_MOBILE_LENGTH ||
@@ -693,7 +694,7 @@ export default function LoginPage() {
               </CardContent>
 
               {/* Footer */}
-              <div className="px-6 pb-6">
+              <div className="px-5 pb-6 sm:px-7">
                 <p className="text-xs text-muted-foreground text-center leading-relaxed">
                   با ورود به سیستم،{' '}
                   <span className="text-foreground font-medium">
@@ -708,7 +709,7 @@ export default function LoginPage() {
           {/* Dev Helper Info */}
           <motion.div
             variants={itemVariants}
-            className="mt-4 p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground text-center space-y-1"
+            className={`mt-4 space-y-1 p-4 text-center text-xs text-muted-foreground ${authCardClassName}`}
           >
             <p className="font-medium">حساب‌های آزمایشی:</p>
             <p>

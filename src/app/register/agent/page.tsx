@@ -30,6 +30,10 @@ const fadeInUp: Variants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: easeOut } },
 }
 
+const pageCardClassName = 'rounded-2xl border border-border/50 bg-card shadow-sm'
+const fieldClassName =
+  'border border-input bg-background shadow-sm focus-visible:ring-1 focus-visible:ring-primary'
+
 export default function RegisterAgentPage() {
   const router = useRouter()
 
@@ -71,17 +75,17 @@ export default function RegisterAgentPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="flex min-h-screen items-center justify-center overflow-x-hidden bg-background p-4 text-foreground">
         <motion.div
           initial="hidden"
           animate="visible"
           variants={fadeInUp}
           className="w-full max-w-md"
         >
-          <Card className="border-emerald-200 dark:border-emerald-900">
+          <Card className={`${pageCardClassName} border-primary/20`}>
             <CardContent className="p-8 text-center">
-              <div className="mx-auto w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center mb-4">
-                <CheckCircle2 className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <CheckCircle2 className="h-8 w-8" />
               </div>
               <h2 className="text-xl font-bold mb-2">درخواست شما ثبت شد</h2>
               <p className="text-muted-foreground mb-6">
@@ -90,7 +94,7 @@ export default function RegisterAgentPage() {
               </p>
               <Button
                 onClick={() => router.push('/user/dashboard')}
-                className="w-full"
+                className="h-11 w-full rounded-xl font-semibold shadow-sm"
               >
                 بازگشت به داشبورد
                 <ArrowLeft className="h-4 w-4 mr-1" />
@@ -103,55 +107,55 @@ export default function RegisterAgentPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 py-10">
+    <div className="min-h-screen overflow-x-hidden bg-background px-4 py-8 text-foreground sm:px-6 lg:px-8">
       <motion.div
         initial="hidden"
         animate="visible"
         variants={fadeInUp}
-        className="w-full max-w-lg"
+        className="mx-auto w-full max-w-2xl"
       >
         {/* Back button */}
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
+          className="mb-5 inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
           بازگشت
         </button>
 
         {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 shrink-0">
+        <div className={`${pageCardClassName} mb-6 flex items-start gap-4 p-5 sm:items-center sm:p-6`}>
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <Briefcase className="h-7 w-7" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">ثبت‌نام نماینده</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <h1 className="text-2xl font-bold leading-8">ثبت‌نام نماینده</h1>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
               فرم ثبت‌نام نماینده همکاری در شبکه حامی کارت
             </p>
           </div>
         </div>
 
         {/* Info Card */}
-        <Card className="border-primary/20 bg-primary/5 mb-6">
-          <CardContent className="p-4 flex items-start gap-3">
+        <Card className={`${pageCardClassName} mb-6 bg-primary/5`}>
+          <CardContent className="flex items-start gap-3 p-4 sm:p-5">
             <UserPlus className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-            <div className="text-sm text-muted-foreground">
-              <p className="font-medium text-foreground mb-1">نماینده حامی کارت شوید!</p>
+            <div className="text-sm leading-6 text-muted-foreground">
+              <p className="mb-1 font-semibold text-foreground">نماینده حامی کارت شوید!</p>
               <p>با ثبت‌نام به عنوان نماینده، می‌توانید پزشکان و کاربران را معرفی کرده و از پورسانت بهره‌مند شوید.</p>
             </div>
           </CardContent>
         </Card>
 
         {/* Form Card */}
-        <Card>
-          <CardContent className="p-6">
+        <Card className={pageCardClassName}>
+          <CardContent className="p-5 sm:p-7">
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Business Info */}
               <div>
                 <div className="flex items-center gap-2 mb-4">
                   <ShieldCheck className="h-4 w-4 text-primary" />
-                  <h3 className="font-semibold text-sm">اطلاعات کسب‌وکار</h3>
+                  <h3 className="text-sm font-semibold">اطلاعات کاری</h3>
                 </div>
                 <div className="space-y-4">
                   <div className="space-y-2">
@@ -164,6 +168,7 @@ export default function RegisterAgentPage() {
                       placeholder="مثلاً: نمایندگی سلامت پارس"
                       value={form.businessName}
                       onChange={(e) => handleChange('businessName', e.target.value)}
+                      className={fieldClassName}
                       required
                     />
                   </div>
@@ -178,6 +183,7 @@ export default function RegisterAgentPage() {
                       placeholder="توضیح مختصری درباره فعالیت و زمینه کاری خود بنویسید..."
                       value={form.description}
                       onChange={(e) => handleChange('description', e.target.value)}
+                      className={fieldClassName}
                       rows={4}
                     />
                   </div>
@@ -187,11 +193,11 @@ export default function RegisterAgentPage() {
               <Separator />
 
               {/* Submit */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <div className="flex flex-col gap-3 pt-2 sm:flex-row">
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold h-12"
+                  className="h-12 flex-1 rounded-xl font-semibold shadow-sm"
                 >
                   {loading ? (
                     <>
@@ -209,7 +215,7 @@ export default function RegisterAgentPage() {
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
-                  className="h-12"
+                  className="h-12 rounded-xl border-border/70 bg-background shadow-sm"
                 >
                   انصراف
                 </Button>
@@ -219,7 +225,7 @@ export default function RegisterAgentPage() {
         </Card>
 
         {/* Info note */}
-        <p className="text-xs text-muted-foreground text-center mt-4">
+        <p className="mt-4 text-center text-xs leading-6 text-muted-foreground">
           فیلدهای دارای ستاره <span className="text-red-500">*</span> الزامی هستند.
           پس از بررسی و تأیید مدیریت، نقش نمایندگی فعال می‌شود.
         </p>

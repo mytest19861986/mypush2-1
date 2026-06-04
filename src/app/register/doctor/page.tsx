@@ -62,6 +62,12 @@ const fadeInUp: Variants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: easeOut } },
 }
 
+const pageCardClassName = 'rounded-2xl border border-border/50 bg-card shadow-sm'
+const fieldClassName =
+  'border border-input bg-background shadow-sm focus-visible:ring-1 focus-visible:ring-primary'
+const selectTriggerClassName =
+  'w-full border border-input bg-background shadow-sm focus-visible:ring-1 focus-visible:ring-primary'
+
 export default function RegisterDoctorPage() {
   const router = useRouter()
 
@@ -123,17 +129,17 @@ export default function RegisterDoctorPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="flex min-h-screen items-center justify-center overflow-x-hidden bg-background p-4 text-foreground">
         <motion.div
           initial="hidden"
           animate="visible"
           variants={fadeInUp}
           className="w-full max-w-md"
         >
-          <Card className="border-emerald-200 dark:border-emerald-900">
+          <Card className={`${pageCardClassName} border-primary/20`}>
             <CardContent className="p-8 text-center">
-              <div className="mx-auto w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center mb-4">
-                <CheckCircle2 className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <CheckCircle2 className="h-8 w-8" />
               </div>
               <h2 className="text-xl font-bold mb-2">درخواست شما ثبت شد</h2>
               <p className="text-muted-foreground mb-6">
@@ -142,7 +148,7 @@ export default function RegisterDoctorPage() {
               </p>
               <Button
                 onClick={() => router.push('/user/dashboard')}
-                className="w-full"
+                className="h-11 w-full rounded-xl font-semibold shadow-sm"
               >
                 بازگشت به داشبورد
                 <ArrowLeft className="h-4 w-4 mr-1" />
@@ -155,44 +161,44 @@ export default function RegisterDoctorPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 py-10">
+    <div className="min-h-screen overflow-x-hidden bg-background px-4 py-8 text-foreground sm:px-6 lg:px-8">
       <motion.div
         initial="hidden"
         animate="visible"
         variants={fadeInUp}
-        className="w-full max-w-2xl"
+        className="mx-auto w-full max-w-3xl"
       >
         {/* Back button */}
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
+          className="mb-5 inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
           بازگشت
         </button>
 
         {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 shrink-0">
+        <div className={`${pageCardClassName} mb-6 flex items-start gap-4 p-5 sm:items-center sm:p-6`}>
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <Stethoscope className="h-7 w-7" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">ثبت‌نام پزشک</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <h1 className="text-2xl font-bold leading-8">ثبت‌نام پزشک</h1>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
               فرم ثبت‌نام پزشک در شبکه حامی کارت
             </p>
           </div>
         </div>
 
         {/* Form Card */}
-        <Card>
-          <CardContent className="p-6">
+        <Card className={pageCardClassName}>
+          <CardContent className="p-5 sm:p-7">
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Section 1: Basic Info */}
               <div>
                 <div className="flex items-center gap-2 mb-4">
                   <ShieldCheck className="h-4 w-4 text-primary" />
-                  <h3 className="font-semibold text-sm">اطلاعات حرفه‌ای</h3>
+                  <h3 className="text-sm font-semibold">اطلاعات تخصصی</h3>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -205,6 +211,7 @@ export default function RegisterDoctorPage() {
                       placeholder="مثلاً: ۱۲۳۴۵"
                       value={form.medicalCode}
                       onChange={(e) => handleChange('medicalCode', e.target.value)}
+                      className={fieldClassName}
                       required
                     />
                   </div>
@@ -217,7 +224,7 @@ export default function RegisterDoctorPage() {
                       value={form.specialty}
                       onValueChange={(v) => handleChange('specialty', v)}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className={selectTriggerClassName}>
                         <SelectValue placeholder="انتخاب تخصص" />
                       </SelectTrigger>
                       <SelectContent>
@@ -238,7 +245,7 @@ export default function RegisterDoctorPage() {
               <div>
                 <div className="flex items-center gap-2 mb-4">
                   <Building className="h-4 w-4 text-primary" />
-                  <h3 className="font-semibold text-sm">اطلاعات مطب</h3>
+                  <h3 className="text-sm font-semibold">اطلاعات مطب</h3>
                 </div>
                 <div className="space-y-4">
                   <div className="space-y-2">
@@ -251,6 +258,7 @@ export default function RegisterDoctorPage() {
                       placeholder="مثلاً: کلینیک آریا"
                       value={form.clinicName}
                       onChange={(e) => handleChange('clinicName', e.target.value)}
+                      className={fieldClassName}
                       required
                     />
                   </div>
@@ -264,6 +272,7 @@ export default function RegisterDoctorPage() {
                       placeholder="آدرس کامل مطب"
                       value={form.clinicAddress}
                       onChange={(e) => handleChange('clinicAddress', e.target.value)}
+                      className={fieldClassName}
                     />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -276,7 +285,7 @@ export default function RegisterDoctorPage() {
                         value={form.province || locationNoneValue}
                         onValueChange={handleProvinceChange}
                       >
-                        <SelectTrigger id="province">
+                        <SelectTrigger id="province" className={selectTriggerClassName}>
                           <SelectValue placeholder="انتخاب استان" />
                         </SelectTrigger>
                         <SelectContent>
@@ -299,7 +308,7 @@ export default function RegisterDoctorPage() {
                         onValueChange={handleCityChange}
                         disabled={!form.province}
                       >
-                        <SelectTrigger id="city">
+                        <SelectTrigger id="city" className={selectTriggerClassName}>
                           <SelectValue placeholder="انتخاب شهر" />
                         </SelectTrigger>
                         <SelectContent>
@@ -323,6 +332,7 @@ export default function RegisterDoctorPage() {
                       placeholder="مثلاً: ۰۲۱-۱۲۳۴۵۶۷۸"
                       value={form.phone}
                       onChange={(e) => handleChange('phone', e.target.value)}
+                      className={fieldClassName}
                     />
                   </div>
                 </div>
@@ -334,7 +344,7 @@ export default function RegisterDoctorPage() {
               <div>
                 <div className="flex items-center gap-2 mb-4">
                   <User className="h-4 w-4 text-primary" />
-                  <h3 className="font-semibold text-sm">درباره شما</h3>
+                  <h3 className="text-sm font-semibold">اطلاعات فردی</h3>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="bio" className="flex items-center gap-1.5">
@@ -346,17 +356,18 @@ export default function RegisterDoctorPage() {
                     placeholder="خلاصه‌ای از سوابق و تخصص‌های خود را بنویسید..."
                     value={form.bio}
                     onChange={(e) => handleChange('bio', e.target.value)}
+                    className={fieldClassName}
                     rows={4}
                   />
                 </div>
               </div>
 
               {/* Submit */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <div className="flex flex-col gap-3 pt-2 sm:flex-row">
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold h-12"
+                  className="h-12 flex-1 rounded-xl font-semibold shadow-sm"
                 >
                   {loading ? (
                     <>
@@ -374,7 +385,7 @@ export default function RegisterDoctorPage() {
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
-                  className="h-12"
+                  className="h-12 rounded-xl border-border/70 bg-background shadow-sm"
                 >
                   انصراف
                 </Button>
@@ -384,7 +395,7 @@ export default function RegisterDoctorPage() {
         </Card>
 
         {/* Info note */}
-        <p className="text-xs text-muted-foreground text-center mt-4">
+        <p className="mt-4 text-center text-xs leading-6 text-muted-foreground">
           فیلدهای دارای ستاره <span className="text-red-500">*</span> الزامی هستند.
           پس از بررسی و تأیید مدیریت، نقش پزشکی فعال می‌شود.
         </p>
