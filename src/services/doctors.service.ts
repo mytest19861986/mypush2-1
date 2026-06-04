@@ -46,7 +46,7 @@ export class DoctorsService extends BaseService {
   }
 
   async getMyProfile() {
-    return this.get<DoctorItem>('/doctors/my')
+    return this.get<DoctorItem>('/doctor/my')
   }
 
   async updateMyProfile(data: DoctorUpdateData) {

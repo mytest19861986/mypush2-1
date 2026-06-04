@@ -1,14 +1,71 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
-import { writeFile, mkdir } from 'fs/promises'
+import { writeFile, mkdir, readFile, stat } from 'fs/promises'
 import path from 'path'
 import { db } from '@/lib/db'
-import { requirePermission } from '@/lib/auth'
+import { authenticateRequest, requirePermission } from '@/lib/auth'
 import { successResponse, errorResponse } from '@/lib/api-response'
 import { validateFile, getFileExtension } from '@/lib/upload'
 import { createAuditLog, AuditActions } from '@/lib/audit'
 
 const validUploadTypes = ['AVATAR', 'DOCUMENT', 'GENERAL'] as const
+
+// GET /api/v1/uploads?type=AVATAR — Stream current user's saved avatar
+export async function GET(request: NextRequest) {
+  const { authenticated, payload, error } = await authenticateRequest(request)
+  if (!authenticated) return errorResponse('UNAUTHORIZED', error!, 401)
+
+  const uploadType = request.nextUrl.searchParams.get('type')
+  if (uploadType !== 'AVATAR') {
+    return errorResponse('VALIDATION_ERROR', 'Unsupported upload lookup', 400)
+  }
+
+  const profile = await db.userProfile.findUnique({
+    where: { userId: payload!.sub },
+    select: { avatar: true },
+  })
+
+  if (!profile?.avatar) {
+    return errorResponse('NOT_FOUND', 'Avatar not found', 404)
+  }
+
+  const upload = await db.upload.findFirst({
+    where: {
+      userId: payload!.sub,
+      path: profile.avatar,
+      type: 'AVATAR',
+    },
+  })
+
+  if (!upload) {
+    return errorResponse('NOT_FOUND', 'Avatar upload not found', 404)
+  }
+
+  const uploadsRoot = path.resolve(process.cwd(), 'private-uploads')
+  const filePath = path.resolve(uploadsRoot, upload.path)
+  const relativePath = path.relative(uploadsRoot, filePath)
+
+  if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+    return errorResponse('VALIDATION_ERROR', 'Invalid avatar path', 400)
+  }
+
+  try {
+    const fileBuffer = await readFile(filePath)
+    const fileStat = await stat(filePath)
+
+    return new Response(fileBuffer, {
+      status: 200,
+      headers: {
+        'Content-Type': upload.mimeType || 'application/octet-stream',
+        'Content-Length': fileStat.size.toString(),
+        'Content-Disposition': `inline; filename="${path.basename(filePath)}"`,
+        'Cache-Control': 'private, max-age=60',
+      },
+    })
+  } catch {
+    return errorResponse('NOT_FOUND', 'Avatar file not found', 404)
+  }
+}
 
 // POST /api/v1/uploads — Upload a file
 export async function POST(request: NextRequest) {

@@ -18,6 +18,7 @@ const updateProfileSchema = z.object({
     .optional(),
   address: z.string().max(500).optional(),
   gender: z.enum(['MALE', 'FEMALE']).optional(),
+  avatar: z.string().max(500).nullable().optional(),
 })
 
 // PUT /api/v1/users/profile — Update current user's profile
@@ -36,7 +37,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const { firstName, lastName, nationalCode, address, gender } = parsed.data
+    const { firstName, lastName, nationalCode, address, gender, avatar } = parsed.data
     const shouldLinkPlanHolder = nationalCode !== undefined && nationalCode.length > 0
 
     // Validate national code format if provided
@@ -54,6 +55,21 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    if (avatar) {
+      const avatarUpload = await db.upload.findFirst({
+        where: {
+          userId: user.sub,
+          path: avatar,
+          type: 'AVATAR',
+        },
+        select: { id: true },
+      })
+
+      if (!avatarUpload) {
+        return errorResponse('VALIDATION_ERROR', 'Invalid avatar upload', 400)
+      }
+    }
+
     // Upsert profile
     const existingProfile = await db.userProfile.findUnique({
       where: { userId: user.sub },
@@ -66,6 +82,7 @@ export async function PUT(request: NextRequest) {
       if (nationalCode !== undefined) updateData.nationalCode = nationalCode || null
       if (address !== undefined) updateData.address = address
       if (gender !== undefined) updateData.gender = gender
+      if (avatar !== undefined) updateData.avatar = avatar || null
 
       await db.userProfile.update({
         where: { userId: user.sub },
@@ -80,6 +97,7 @@ export async function PUT(request: NextRequest) {
           nationalCode: nationalCode || null,
           address: address || null,
           gender: gender || null,
+          avatar: avatar || null,
         },
       })
     }

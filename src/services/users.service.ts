@@ -1,5 +1,5 @@
 import { BaseService } from './base.service'
-import type { UserItem, PaginationMeta } from '@/types'
+import type { UserItem } from '@/types'
 
 interface UserListParams {
   page?: number
@@ -7,6 +7,23 @@ interface UserListParams {
   search?: string
   status?: string
   role?: string
+}
+
+interface UserProfileUpdateData {
+  firstName?: string
+  lastName?: string
+  nationalCode?: string
+  address?: string
+  gender?: 'MALE' | 'FEMALE'
+  avatar?: string | null
+}
+
+interface UploadResult {
+  id: string
+  path: string
+  type: string
+  size: number
+  mimeType: string
 }
 
 export class UsersService extends BaseService {
@@ -26,6 +43,17 @@ export class UsersService extends BaseService {
 
   async changeStatus(id: string, status: string) {
     return this.patch(`/users/${id}/status`, { status })
+  }
+
+  async updateProfile(data: UserProfileUpdateData) {
+    return this.put('/users/profile', data)
+  }
+
+  async uploadAvatar(file: File, onProgress?: (progress: number) => void) {
+    const formData = new FormData()
+    formData.append('type', 'AVATAR')
+    formData.append('file', file)
+    return this.upload<UploadResult>('/uploads', formData, onProgress)
   }
 
   async delete<T = unknown>(id: string): Promise<T> {

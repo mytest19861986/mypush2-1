@@ -5,6 +5,7 @@ const ALLOWED_MIME_TYPES = [
   'image/jpeg',
   'image/png',
   'image/jpg',
+  'image/webp',
   'application/pdf',
 ] as const
 
@@ -54,6 +55,7 @@ export function getFileExtension(mimeType: string): string {
     'image/jpeg': 'jpg',
     'image/jpg': 'jpg',
     'image/png': 'png',
+    'image/webp': 'webp',
     'application/pdf': 'pdf',
   }
 

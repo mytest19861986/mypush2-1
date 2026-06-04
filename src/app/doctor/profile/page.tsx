@@ -1,10 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { ChangeEvent } from 'react'
 import { useToast } from '@/hooks/use-toast'
 import { PageHeader, StatusBadge } from '@/components/shared'
-import { doctorsService } from '@/services'
+import { doctorsService, usersService } from '@/services'
+import { useAuthStore } from '@/stores/auth-store'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -20,6 +23,7 @@ import {
 import {
   AlertTriangle,
   Building2,
+  Camera,
   CheckCircle2,
   Clock,
   Loader2,
@@ -28,6 +32,7 @@ import {
   Save,
   ShieldCheck,
   Stethoscope,
+  Upload,
 } from 'lucide-react'
 import { getCitiesByProvince, getProvinceNames } from '@/constants/iran-locations'
 import { toPersianNum } from '@/utils/formatters'
@@ -38,6 +43,7 @@ const provinceNames = getProvinceNames()
 const cardClassName =
   'rounded-2xl border border-slate-100/60 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-slate-800/60'
 const inputClassName = 'h-11 rounded-xl'
+const avatarMimeTypes = ['image/jpeg', 'image/png', 'image/webp']
 
 const statusMeta: Record<
   DoctorStatus,
@@ -88,9 +94,15 @@ const statusMeta: Record<
 
 export default function DoctorProfilePage() {
   const { toast } = useToast()
+  const { initialize } = useAuthStore()
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+  const avatarPreviewUrlRef = useRef<string | null>(null)
   const [doctorData, setDoctorData] = useState<DoctorItem | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null)
+  const [avatarError, setAvatarError] = useState<string | null>(null)
   const [form, setForm] = useState({
     specialty: '',
     clinicName: '',
@@ -101,6 +113,23 @@ export default function DoctorProfilePage() {
     bio: '',
   })
   const cityOptions = getCitiesByProvince(form.province)
+
+  const replaceAvatarPreview = useCallback((url: string | null) => {
+    if (avatarPreviewUrlRef.current) {
+      URL.revokeObjectURL(avatarPreviewUrlRef.current)
+    }
+
+    avatarPreviewUrlRef.current = url
+    setAvatarPreviewUrl(url)
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (avatarPreviewUrlRef.current) {
+        URL.revokeObjectURL(avatarPreviewUrlRef.current)
+      }
+    }
+  }, [])
 
   const handleProvinceChange = (value: string) => {
     setForm((prev) => ({
@@ -137,6 +166,105 @@ export default function DoctorProfilePage() {
     loadProfile({ showPageLoader: true })
   }, [])
 
+  useEffect(() => {
+    const avatarPath = doctorData?.user?.profile?.avatar
+    if (!avatarPath) {
+      replaceAvatarPreview(null)
+      return
+    }
+
+    let cancelled = false
+
+    const fetchAvatar = async () => {
+      try {
+        const token = localStorage.getItem('accessToken')
+        const res = await fetch('/api/v1/uploads?type=AVATAR', {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        })
+
+        if (!res.ok) throw new Error('Avatar not available')
+
+        const blob = await res.blob()
+        const nextUrl = URL.createObjectURL(blob)
+
+        if (cancelled) {
+          URL.revokeObjectURL(nextUrl)
+          return
+        }
+
+        replaceAvatarPreview(nextUrl)
+        setAvatarError(null)
+      } catch {
+        if (!cancelled) {
+          replaceAvatarPreview(null)
+        }
+      }
+    }
+
+    fetchAvatar()
+
+    return () => {
+      cancelled = true
+    }
+  }, [doctorData?.user?.profile?.avatar, replaceAvatarPreview])
+
+  const handleAvatarChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+
+    if (!file) return
+
+    if (!avatarMimeTypes.includes(file.type)) {
+      const message = 'فرمت تصویر باید jpg، png یا webp باشد.'
+      setAvatarError(message)
+      toast({ title: 'خطا', description: message, variant: 'destructive' })
+      return
+    }
+
+    setAvatarError(null)
+    setIsUploadingAvatar(true)
+    replaceAvatarPreview(URL.createObjectURL(file))
+
+    try {
+      const uploaded = await usersService.uploadAvatar(file)
+      const avatarPath = uploaded.data?.path
+
+      if (!uploaded.success || !avatarPath) {
+        throw new Error('Avatar upload failed')
+      }
+
+      await usersService.updateProfile({ avatar: avatarPath })
+
+      setDoctorData((prev) => {
+        if (!prev?.user) return prev
+
+        return {
+          ...prev,
+          user: {
+            ...prev.user,
+            profile: {
+              firstName: prev.user.profile?.firstName ?? null,
+              lastName: prev.user.profile?.lastName ?? null,
+              nationalCode: prev.user.profile?.nationalCode ?? null,
+              gender: prev.user.profile?.gender ?? null,
+              address: prev.user.profile?.address ?? null,
+              avatar: avatarPath,
+            },
+          },
+        }
+      })
+
+      await initialize()
+      toast({ title: 'موفق', description: 'تصویر پروفایل با موفقیت ذخیره شد' })
+    } catch {
+      setAvatarError('خطا در آپلود یا ذخیره تصویر پروفایل')
+      toast({ title: 'خطا', description: 'خطا در آپلود یا ذخیره تصویر پروفایل', variant: 'destructive' })
+      await loadProfile()
+    } finally {
+      setIsUploadingAvatar(false)
+    }
+  }
+
   const handleSave = async () => {
     setIsSaving(true)
     try {
@@ -170,6 +298,15 @@ export default function DoctorProfilePage() {
   const status = doctorData ? statusMeta[doctorData.status] : null
   const StatusIcon = status?.icon || ShieldCheck
   const discountPercent = doctorData?.discountPercent ?? 0
+  const profile = doctorData?.user?.profile
+  const doctorName =
+    [profile?.firstName, profile?.lastName].filter(Boolean).join(' ').trim() ||
+    doctorData?.user?.mobile ||
+    'پزشک'
+  const avatarFallback =
+    `${profile?.firstName?.charAt(0) || ''}${profile?.lastName?.charAt(0) || ''}` ||
+    doctorData?.user?.mobile?.slice(-2) ||
+    'پ'
 
   return (
     <div className="space-y-6" dir="rtl">
@@ -206,14 +343,67 @@ export default function DoctorProfilePage() {
                   </div>
                 </div>
 
-                {doctorData.medicalCode && (
-                  <div className="rounded-2xl border border-white/60 bg-background/70 px-4 py-3 text-sm shadow-sm dark:border-slate-800/60">
-                    <p className="text-xs text-muted-foreground">کد نظام پزشکی</p>
-                    <p className="mt-1 font-semibold" dir="ltr">
-                      {doctorData.medicalCode}
-                    </p>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <div className="rounded-2xl border border-white/60 bg-background/70 px-4 py-3 shadow-sm dark:border-slate-800/60">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="size-14 rounded-2xl ring-2 ring-emerald-100 dark:ring-emerald-900/50">
+                        {avatarPreviewUrl && (
+                          <AvatarImage src={avatarPreviewUrl} alt={doctorName} className="object-cover" />
+                        )}
+                        <AvatarFallback className="rounded-2xl bg-emerald-100 text-base font-bold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">
+                          {avatarFallback}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Camera className="size-3.5" />
+                          تصویر پروفایل
+                        </p>
+                        <input
+                          ref={avatarInputRef}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          className="hidden"
+                          onChange={handleAvatarChange}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={isUploadingAvatar}
+                          onClick={() => avatarInputRef.current?.click()}
+                          className="mt-2 h-8 rounded-xl px-3 text-xs"
+                        >
+                          {isUploadingAvatar ? (
+                            <>
+                              <Loader2 className="ml-1.5 size-3.5 animate-spin" />
+                              در حال آپلود
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="ml-1.5 size-3.5" />
+                              انتخاب تصویر
+                            </>
+                          )}
+                        </Button>
+                        {avatarError && (
+                          <p className="mt-1 max-w-44 text-xs text-destructive">
+                            {avatarError}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                )}
+
+                  {doctorData.medicalCode && (
+                    <div className="rounded-2xl border border-white/60 bg-background/70 px-4 py-3 text-sm shadow-sm dark:border-slate-800/60">
+                      <p className="text-xs text-muted-foreground">کد نظام پزشکی</p>
+                      <p className="mt-1 font-semibold" dir="ltr">
+                        {doctorData.medicalCode}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
               {status?.description && (
                 <p className="mt-4 max-w-3xl text-sm leading-6 text-muted-foreground">
