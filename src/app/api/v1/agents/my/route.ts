@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { authenticateRequest } from '@/lib/auth'
 import { successResponse, errorResponse } from '@/lib/api-response'
 import { createAuditLog } from '@/lib/audit'
+import { generateReferralCode } from '@/lib/referrals'
 
 // GET /api/v1/agents/my — Get current user's agent info
 export async function GET(request: NextRequest) {
@@ -43,7 +44,13 @@ export async function GET(request: NextRequest) {
     return errorResponse('NOT_FOUND', 'Agent record not found', 404)
   }
 
-  return successResponse(agent, 'Agent info retrieved')
+  return successResponse(
+    {
+      ...agent,
+      referralCode: agent.status === 'APPROVED' ? generateReferralCode(payload!.sub) : null,
+    },
+    'Agent info retrieved'
+  )
 }
 
 // PUT /api/v1/agents/my — Update current user's agent info

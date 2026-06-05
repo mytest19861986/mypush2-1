@@ -26,6 +26,7 @@ import type { AuthUser } from '@/types'
 import {
   AlertCircle,
   CheckCircle2,
+  Copy,
   CreditCard,
   Loader2,
   Mail,
@@ -60,6 +61,11 @@ type ProfileSaveResult = SavedProfileResponse | {
   data?: SavedProfileResponse
 }
 
+type UserPlansResponse = {
+  plans?: Array<{ status: string }>
+  referralCode?: string | null
+}
+
 const emptyForm: ProfileForm = {
   firstName: '',
   lastName: '',
@@ -90,6 +96,58 @@ function buildSuccessMessage(saved: SavedProfileResponse) {
   return 'تغییرات با موفقیت ذخیره شد.'
 }
 
+function getActivePlanStatus(data: UserPlansResponse | Array<{ status: string }> | undefined) {
+  const plans = Array.isArray(data) ? data : data?.plans
+  return Array.isArray(plans) && plans.some((plan) => plan.status === 'ACTIVE')
+}
+
+function ReferralCodePanel({ referralCode }: { referralCode?: string | null }) {
+  const [copied, setCopied] = useState(false)
+
+  if (!referralCode) return null
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(referralCode)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1800)
+    } catch {
+      setCopied(false)
+    }
+  }
+
+  return (
+    <Card className="border-primary/20 bg-primary/5">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Copy className="size-4 text-primary" />
+          کد معرفی شما
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex max-w-sm items-center gap-2 rounded-lg border bg-background px-3 py-2">
+          <p className="min-w-0 flex-1 truncate font-mono text-sm font-semibold" dir="ltr">
+            {referralCode}
+          </p>
+          <Button type="button" variant="outline" size="sm" onClick={handleCopy} className="shrink-0">
+            {copied ? (
+              <>
+                <CheckCircle2 className="ml-2 size-4" />
+                کپی شد
+              </>
+            ) : (
+              <>
+                <Copy className="ml-2 size-4" />
+                کپی
+              </>
+            )}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 export default function UserProfilePage() {
   const { toast } = useToast()
   const { user, initialize } = useAuthStore()
@@ -98,6 +156,8 @@ export default function UserProfilePage() {
   const [isSaving, setIsSaving] = useState(false)
   const [form, setForm] = useState<ProfileForm>(emptyForm)
   const [loadedNationalCode, setLoadedNationalCode] = useState('')
+  const [hasActivePlan, setHasActivePlan] = useState(false)
+  const [safeReferralCode, setSafeReferralCode] = useState<string | null>(null)
   const [nationalCodeError, setNationalCodeError] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<{
     type: 'success' | 'error'
@@ -115,14 +175,25 @@ export default function UserProfilePage() {
 
     const fetchProfile = async () => {
       try {
-        const res = await apiClient.get<AuthUser>('/auth/me')
+        const [res, plansRes] = await Promise.all([
+          apiClient.get<AuthUser>('/auth/me'),
+          apiClient.get<UserPlansResponse | Array<{ status: string }>>('/user-plans/my'),
+        ])
         if (res.success && res.data) {
           const nextForm = mapUserToForm(res.data)
           setForm(nextForm)
           setLoadedNationalCode(nextForm.nationalCode)
         }
+        setHasActivePlan(plansRes.success ? getActivePlanStatus(plansRes.data) : false)
+        setSafeReferralCode(
+          plansRes.success && !Array.isArray(plansRes.data)
+            ? plansRes.data?.referralCode ?? null
+            : null
+        )
       } catch {
         // The auth store fallback above keeps the form usable when this refresh fails.
+        setHasActivePlan(false)
+        setSafeReferralCode(null)
       } finally {
         setIsLoading(false)
       }
@@ -208,6 +279,7 @@ export default function UserProfilePage() {
     : (user?.mobile || '').slice(-2)
 
   const hasExistingNationalCode = Boolean(loadedNationalCode)
+  const referralCode = hasActivePlan ? safeReferralCode : null
 
   if (isLoading) {
     return (
@@ -291,6 +363,8 @@ export default function UserProfilePage() {
           </div>
         </CardContent>
       </Card>
+
+      <ReferralCodePanel referralCode={referralCode} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>

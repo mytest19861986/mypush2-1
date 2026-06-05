@@ -6,6 +6,7 @@ import { successResponse, errorResponse } from '@/lib/api-response'
 import { createAuditLog, AuditActions } from '@/lib/audit'
 import { parsePaymentMetadata } from '@/lib/payments'
 import { getClientIp } from '@/app/api/v1/auth/_helpers'
+import { getOnlinePlanCommissionPercent } from '@/lib/commissions'
 
 const successSchema = z.object({
   refId: z.string().max(100).optional(),
@@ -240,6 +241,38 @@ export async function POST(
         },
       })
 
+      let commission:
+        | {
+            id: string
+            amount: number
+            percent: number
+            status: string
+          }
+        | null = null
+
+      if (validatedReferrerId) {
+        const commissionPercent = getOnlinePlanCommissionPercent()
+        const existingCommission = await tx.commission.findFirst({
+          where: { userPlanId: userPlan.id },
+          select: { id: true, amount: true, percent: true, status: true },
+        })
+
+        commission =
+          existingCommission ??
+          (commissionPercent
+            ? await tx.commission.create({
+                data: {
+                  agentId: validatedReferrerId,
+                  userPlanId: userPlan.id,
+                  amount: Math.round((payment.finalAmount * commissionPercent) / 100),
+                  percent: commissionPercent,
+                  status: 'PENDING',
+                },
+                select: { id: true, amount: true, percent: true, status: true },
+              })
+            : null)
+      }
+
       await tx.payment.update({
         where: { id: payment.id },
         data: { planHolderId },
@@ -257,6 +290,8 @@ export async function POST(
             userPlanId: userPlan.id,
             amount: payment.amount,
             finalAmount: payment.finalAmount,
+            referrerId: validatedReferrerId,
+            commissionId: commission?.id,
           }),
           ip,
           device,
@@ -274,16 +309,38 @@ export async function POST(
             planHolderId,
             planId: payment.planId,
             source: 'ONLINE_PAYMENT',
+            referrerId: validatedReferrerId,
           }),
           ip,
           device,
         },
       })
 
+      if (commission) {
+        await tx.auditLog.create({
+          data: {
+            userId: payload.sub,
+            action: AuditActions.COMMISSION_CREATED,
+            entity: 'Commission',
+            entityId: commission.id,
+            details: JSON.stringify({
+              agentId: validatedReferrerId,
+              userPlanId: userPlan.id,
+              amount: commission.amount,
+              percent: commission.percent,
+              status: commission.status,
+            }),
+            ip,
+            device,
+          },
+        })
+      }
+
       return {
         paymentId: payment.id,
         status: 'SUCCESS',
         userPlanId: userPlan.id,
+        commissionId: commission?.id,
         plan: {
           id: payment.plan.id,
           title: payment.plan.name,

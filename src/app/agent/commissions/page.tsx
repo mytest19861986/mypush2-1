@@ -107,6 +107,7 @@ interface SettlementItem {
   userId?: string
   amount: number
   status: SettlementStatus
+  // Payment/transfer internals from the API shape; do not render in agent UI.
   trackingCode: string | null
   receiptUrl?: string | null
   requestedAt: string
@@ -590,7 +591,6 @@ export default function AgentCommissionsPage() {
                             <TableHead>وضعیت</TableHead>
                             <TableHead>تاریخ درخواست</TableHead>
                             <TableHead>تاریخ پرداخت</TableHead>
-                            <TableHead>کد پیگیری</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -612,11 +612,6 @@ export default function AgentCommissionsPage() {
                                   {getDateOrDash(settlement.settledAt)}
                                 </span>
                               </TableCell>
-                              <TableCell>
-                                <span className="whitespace-nowrap text-sm text-muted-foreground">
-                                  {settlement.trackingCode || '-'}
-                                </span>
-                              </TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
@@ -635,14 +630,10 @@ export default function AgentCommissionsPage() {
                             </div>
                             {renderSettlementStatus(settlement.status)}
                           </div>
-                          <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                          <div className="mt-3 grid grid-cols-1 gap-3 text-xs">
                             <div>
                               <p className="text-muted-foreground">پرداخت</p>
                               <p className="mt-1">{getDateOrDash(settlement.settledAt)}</p>
-                            </div>
-                            <div>
-                              <p className="text-muted-foreground">کد پیگیری</p>
-                              <p className="mt-1">{settlement.trackingCode || '-'}</p>
                             </div>
                           </div>
                         </div>

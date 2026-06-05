@@ -350,9 +350,6 @@ export default function AdminCommissionsPage() {
           <span className="truncate text-sm font-medium">
             {row.agent ? getDisplayName(row.agent) : 'نامشخص'}
           </span>
-          {row.agent?.mobile && (
-            <span dir="ltr" className="truncate font-mono text-xs text-muted-foreground">{row.agent.mobile}</span>
-          )}
           {row.agent?.agent?.businessName && (
             <span className="truncate text-xs text-muted-foreground">{row.agent.agent.businessName}</span>
           )}
@@ -368,11 +365,6 @@ export default function AdminCommissionsPage() {
           <span className="truncate text-sm font-medium">
             {row.userPlan?.user ? getDisplayName(row.userPlan.user) : 'نامشخص'}
           </span>
-          {row.userPlan?.user?.mobile && (
-            <span dir="ltr" className="truncate font-mono text-xs text-muted-foreground">
-              {row.userPlan.user.mobile}
-            </span>
-          )}
         </div>
       ),
     },

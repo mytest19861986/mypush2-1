@@ -6,6 +6,7 @@ import { successResponse, errorResponse } from '@/lib/api-response'
 import { createAuditLog, AuditActions } from '@/lib/audit'
 import { createPendingPayment } from '@/lib/payments'
 import { getClientIp } from '@/app/api/v1/auth/_helpers'
+import { findApprovedAgentByReferralCode, normalizeReferralCode } from '@/lib/referrals'
 
 // POST /api/v1/user-plans - Start online plan purchase (requires auth)
 export async function POST(request: NextRequest) {
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { planId } = parsed.data
-    const referralCode = parsed.data.referralCode ?? parsed.data.referrerCode
+    const referralCode = normalizeReferralCode(parsed.data.referralCode ?? parsed.data.referrerCode)
 
     const plan = await db.discountPlan.findUnique({ where: { id: planId } })
     if (!plan) {
@@ -56,17 +57,9 @@ export async function POST(request: NextRequest) {
 
     let referrerId: string | null = null
     if (referralCode) {
-      const referrerUser = await db.user.findUnique({
-        where: { mobile: referralCode },
-        include: { agent: true },
-      })
+      const referrerUser = await findApprovedAgentByReferralCode(db, referralCode, userId)
 
-      if (
-        referrerUser &&
-        referrerUser.agent &&
-        referrerUser.agent.status === 'APPROVED' &&
-        referrerUser.id !== userId
-      ) {
+      if (referrerUser) {
         referrerId = referrerUser.id
       }
     }

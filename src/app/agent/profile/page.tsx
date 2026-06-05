@@ -106,9 +106,11 @@ export default function AgentProfilePage() {
 
   // ---------- Copy Referral Link ----------
 
-  const referralCode = agentData?.id || ''
+  const referralCode = agentData?.referralCode || ''
   const referralLink = typeof window !== 'undefined'
-    ? `${window.location.origin}/?ref=${referralCode.slice(0, 8)}`
+    ? referralCode
+      ? `${window.location.origin}/?ref=${referralCode}`
+      : ''
     : ''
 
   const handleCopyLink = async () => {

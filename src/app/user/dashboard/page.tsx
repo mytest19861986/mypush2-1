@@ -18,6 +18,7 @@ import {
   CalendarDays,
   CheckCircle2,
   ClipboardList,
+  Copy,
   CreditCard,
   HeartPulse,
   IdCard,
@@ -35,6 +36,7 @@ type UserPlansResponse = {
   plans?: UserPlanItem[]
   activeCount?: number
   totalCount?: number
+  referralCode?: string | null
 }
 
 type UserVisit = {
@@ -576,6 +578,53 @@ function ProfileCompletionCard({ nationalCode }: { nationalCode?: string | null 
   )
 }
 
+function ReferralCodeCard({ referralCode }: { referralCode?: string | null }) {
+  const [copied, setCopied] = useState(false)
+
+  if (!referralCode) return null
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(referralCode)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1800)
+    } catch {
+      setCopied(false)
+    }
+  }
+
+  return (
+    <Card className="rounded-2xl border border-slate-100/60 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-slate-800/60">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Copy className="size-5 text-primary" />
+          کد معرفی شما
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex items-center gap-2 rounded-2xl border border-slate-100/70 bg-background/70 p-3 dark:border-slate-800/70">
+          <p className="min-w-0 flex-1 truncate font-mono text-sm font-semibold" dir="ltr">
+            {referralCode}
+          </p>
+          <Button type="button" variant="outline" size="sm" onClick={handleCopy} className="shrink-0">
+            {copied ? (
+              <>
+                <CheckCircle2 className="ml-2 size-4" />
+                کپی شد
+              </>
+            ) : (
+              <>
+                <Copy className="ml-2 size-4" />
+                کپی
+              </>
+            )}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 function ProductGuidanceCard() {
   const steps = ['خرید طرح', 'انتخاب پزشک طرف قرارداد', 'استفاده از تخفیف همان پزشک هنگام مراجعه']
 
@@ -613,6 +662,7 @@ export default function UserDashboardPage() {
   const [plans, setPlans] = useState<UserPlanItem[]>([])
   const [visits, setVisits] = useState<UserVisit[]>([])
   const [reviews, setReviews] = useState<ReviewItem[]>([])
+  const [safeReferralCode, setSafeReferralCode] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -637,11 +687,13 @@ export default function UserDashboardPage() {
           : plansRes.data.plans
 
         setPlans(Array.isArray(plansData) ? plansData : [])
+        setSafeReferralCode(Array.isArray(plansRes.data) ? null : plansRes.data.referralCode ?? null)
         setVisits(visitsRes.success && Array.isArray(visitsRes.data) ? visitsRes.data : [])
         setReviews(reviewsRes.success && Array.isArray(reviewsRes.data) ? reviewsRes.data : [])
       } catch (err) {
         setError(err instanceof Error ? err.message : 'خطا در ارتباط با سرور')
         setPlans([])
+        setSafeReferralCode(null)
         setVisits([])
         setReviews([])
       } finally {
@@ -662,6 +714,7 @@ export default function UserDashboardPage() {
   )
 
   const activePlan = activePlans[0]
+  const referralCode = activePlan ? safeReferralCode : null
 
   const reviewsByVisit = useMemo(
     () =>
@@ -740,6 +793,7 @@ export default function UserDashboardPage() {
         </main>
 
         <aside className="space-y-5">
+          <ReferralCodeCard referralCode={referralCode} />
           <ProfileCompletionCard nationalCode={nationalCode} />
           <QuickActionsCard />
           <ProductGuidanceCard />

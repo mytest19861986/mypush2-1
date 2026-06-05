@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { successResponse, errorResponse } from '@/lib/api-response'
 import { requireAuth } from '@/lib/auth'
+import { generateReferralCode } from '@/lib/referrals'
 
 /**
  * GET /api/v1/user-plans/my
@@ -36,6 +37,7 @@ export async function GET(request: NextRequest) {
       plans: [...activePlans, ...otherPlans],
       activeCount: activePlans.length,
       totalCount: userPlans.length,
+      referralCode: activePlans.length > 0 ? generateReferralCode(user.sub) : null,
     })
   } catch (e) {
     const msg = (e as Error).message

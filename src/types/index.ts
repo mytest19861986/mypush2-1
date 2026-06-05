@@ -109,6 +109,7 @@ export type DoctorStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED'
 export interface AgentItem {
   id: string
   userId: string
+  referralCode?: string | null
   businessName?: string | null
   status: AgentStatus
   score: number
