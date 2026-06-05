@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { DoctorRoute } from '@/components/guards/DoctorRoute'
 import { ErrorBoundary } from '@/components/shared'
+import { BrandLogo } from '@/components/shared/brand-logo'
 import { ThemeToggle } from '@/components/shared/theme-toggle'
 import { useAuthStore } from '@/stores/auth-store'
 import { doctorsService } from '@/services'
@@ -38,9 +39,7 @@ function SidebarContent({
     <div className="flex h-full flex-col">
       {/* Logo / Brand */}
       <div className="flex items-center gap-3 p-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-600 text-white">
-          <Stethoscope className="h-5 w-5" />
-        </div>
+        <BrandLogo imageClassName="h-10" />
         <div>
           <h2 className="font-bold text-sm">پنل پزشکان</h2>
           {doctorData?.specialty && (

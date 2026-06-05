@@ -7,7 +7,7 @@ import { UserRoute } from '@/components/guards/UserRoute'
 import { useAuthStore } from '@/stores/auth-store'
 import { userDashboardNav } from '@/config/dashboard-nav'
 import { cn } from '@/lib/utils'
-import { ErrorBoundary, ThemeToggle } from '@/components/shared'
+import { BrandLogo, ErrorBoundary, ThemeToggle } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
@@ -57,9 +57,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     <div className="flex h-full flex-col bg-card">
       {/* Brand */}
       <div className="flex items-center gap-3 p-4">
-        <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <HeartPulse className="size-5" />
-        </div>
+        <BrandLogo imageClassName="h-10" />
         <div className="flex flex-col">
           <span className="text-sm font-semibold">پنل کاربری</span>
           <span className="text-xs text-muted-foreground">تخفیف درمان</span>

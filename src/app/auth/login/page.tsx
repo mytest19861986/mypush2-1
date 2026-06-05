@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { motion, type Variants } from 'framer-motion'
 import { toast } from 'sonner'
 import {
-  HeartPulse,
   Phone,
   Lock,
   Loader2,
@@ -21,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { BrandLogo } from '@/components/shared/brand-logo'
 import {
   InputOTP,
   InputOTPGroup,
@@ -334,7 +334,11 @@ export default function LoginPage() {
             animate={{ scale: [1, 1.05, 1] }}
             transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
           >
-            <HeartPulse className="w-10 h-10 text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.3)]" />
+            <BrandLogo
+              priority
+              className="justify-center"
+              imageClassName="h-16"
+            />
           </motion.div>
 
           {/* Title */}
@@ -388,7 +392,11 @@ export default function LoginPage() {
             className="mb-8 text-center md:hidden"
           >
             <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
-              <HeartPulse className="w-7 h-7" />
+              <BrandLogo
+                priority
+                className="justify-center"
+                imageClassName="h-14"
+              />
             </div>
             <h1 className="text-lg font-bold text-foreground">سامانه تخفیف درمانی</h1>
             <p className="text-xs text-muted-foreground mt-1">حامی کارت</p>

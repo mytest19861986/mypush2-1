@@ -4,7 +4,6 @@ import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Shield,
   LogOut,
   Bell,
   Menu,
@@ -14,6 +13,7 @@ import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
 import { adminDashboardNav, adminDashboardPageTitles } from '@/config/dashboard-nav'
 import { AdminRoute } from '@/components/guards/AdminRoute'
+import { BrandLogo } from '@/components/shared/brand-logo'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
@@ -61,9 +61,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     <div className="flex h-full flex-col">
       {/* Brand header */}
       <div className="flex items-center gap-3 px-4 py-5">
-        <div className="flex size-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-lg shadow-emerald-600/25">
-          <Shield className="size-5" />
-        </div>
+        <BrandLogo imageClassName="h-10" />
         <div className="flex flex-col">
           <span className="text-sm font-bold tracking-tight">پنل مدیریت</span>
           <span className="text-[11px] text-muted-foreground">سامانه تخفیف درمانی</span>
@@ -173,7 +171,7 @@ function AdminSidebar() {
           </SheetContent>
         </Sheet>
         <div className="flex items-center gap-2">
-          <Shield className="size-5 text-emerald-600" />
+          <BrandLogo imageClassName="h-8" />
           <span className="text-sm font-bold">پنل مدیریت</span>
         </div>
       </div>

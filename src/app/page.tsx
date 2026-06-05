@@ -4,7 +4,7 @@ import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores/auth-store'
-import { ErrorBoundary } from '@/components/shared'
+import { BrandLogo, ErrorBoundary } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
@@ -251,10 +251,12 @@ export default function Home() {
       <header className="sticky top-0 z-50 border-b border-sky-100/70 bg-white/85 backdrop-blur-xl">
         <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-3" aria-label={brandName}>
-            <span className="flex size-9 items-center justify-center rounded-xl bg-teal-600 text-white shadow-md shadow-teal-600/15">
-              <HeartPulse className="size-4" />
-            </span>
-            <span className="text-lg font-black text-slate-950">{brandName}</span>
+            <BrandLogo
+              showText
+              priority
+              className="text-slate-950"
+              imageClassName="h-12"
+            />
           </Link>
 
           <nav className="hidden items-center gap-7 text-[15px] font-medium text-slate-800 md:flex">

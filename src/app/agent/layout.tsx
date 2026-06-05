@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { AgentRoute } from '@/components/guards/AgentRoute'
 import { ErrorBoundary } from '@/components/shared'
+import { BrandLogo } from '@/components/shared/brand-logo'
 import { ThemeToggle } from '@/components/shared/theme-toggle'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { useAuthStore } from '@/stores/auth-store'
@@ -26,7 +27,6 @@ import {
 import {
   LogOut,
   Menu,
-  Briefcase,
 } from 'lucide-react'
 import type { AgentItem } from '@/types'
 import { getDisplayName, getUserInitials } from '@/utils/formatters'
@@ -53,9 +53,7 @@ function SidebarContent({
     <div className="flex h-full flex-col bg-card">
       {/* Brand */}
       <div className="flex items-center gap-3 p-4">
-        <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-600 text-white">
-          <Briefcase className="size-5" />
-        </div>
+        <BrandLogo imageClassName="h-10" />
         <div className="flex flex-col">
           <span className="text-sm font-semibold">پنل نمایندگان</span>
           {agentData?.businessName && (
@@ -179,9 +177,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
               </SheetContent>
             </Sheet>
             <div className="flex items-center gap-2">
-              <div className="flex size-7 items-center justify-center rounded-md bg-emerald-600 text-white">
-                <Briefcase className="size-4" />
-              </div>
+              <BrandLogo imageClassName="h-8" />
               <span className="text-sm font-semibold">پنل نمایندگان</span>
             </div>
             {agentData && (
