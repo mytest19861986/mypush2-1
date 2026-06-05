@@ -218,7 +218,7 @@ export async function POST(
           },
         })
 
-        if (referrer?.agent?.status === 'APPROVED') {
+        if (referrer?.agent?.status === 'APPROVED' && referrer.id !== payment.userId) {
           validatedReferrerId = referrer.id
         }
       }
