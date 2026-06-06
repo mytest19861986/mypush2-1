@@ -9,6 +9,28 @@ const OTP_EXPIRY_MS = 2 * 60 * 1000 // 2 minutes
 const MAX_VERIFY_ATTEMPTS = 5
 const MAX_RESEND_ATTEMPTS = 3
 const RESEND_WINDOW_MS = 5 * 60 * 1000 // 5 minutes
+const OTP_CODE_PATTERN = /^\d{5}$/
+
+export function isDemoFixedOTPEnabled(): boolean {
+  return process.env.DEMO_FIXED_OTP_ENABLED === 'true'
+}
+
+/**
+ * Demo/staging only: use a fixed OTP from the environment when explicitly enabled.
+ * Never enable DEMO_FIXED_OTP_ENABLED for real production users.
+ */
+export function getOTPForSend(): string {
+  if (!isDemoFixedOTPEnabled()) {
+    return generateOTP()
+  }
+
+  const fixedOTP = process.env.DEMO_FIXED_OTP?.trim()
+  if (!fixedOTP || !OTP_CODE_PATTERN.test(fixedOTP)) {
+    throw new Error('DEMO_FIXED_OTP must be exactly 5 digits when DEMO_FIXED_OTP_ENABLED is true')
+  }
+
+  return fixedOTP
+}
 
 /**
  * Generate a random 5-digit OTP code.

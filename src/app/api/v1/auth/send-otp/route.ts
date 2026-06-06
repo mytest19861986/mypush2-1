@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { successResponse, errorResponse } from '@/lib/api-response'
 import { db } from '@/lib/db'
-import { generateOTP, storeOTP, canResendOTP, recordOTPSend, getOTPAttempts } from '@/lib/otp'
+import { getOTPForSend, storeOTP, canResendOTP, recordOTPSend, getOTPAttempts } from '@/lib/otp'
 import { rateLimit } from '@/lib/rate-limit'
 import { createAuditLog, AuditActions } from '@/lib/audit'
 
@@ -156,13 +156,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate and store OTP in database
-    const otp = generateOTP()
+    // Generate and store OTP in database. Demo fixed OTP is env-gated in getOTPForSend().
+    const otp = getOTPForSend()
     await storeOTP(mobile, otp)
     await recordOTPSend(mobile)
 
-    // Log OTP for development (in production this would send SMS)
-    console.log(`[DEV OTP] Mobile: ${mobile}, Code: ${otp}`)
+    // Development only: never log OTP values in production.
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[DEV OTP] Mobile: ${mobile}, Code: ${otp}`)
+    }
 
     const { remaining } = await getOTPAttempts(mobile)
     const canResendFlag = remaining > 0
