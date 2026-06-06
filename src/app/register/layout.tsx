@@ -1,7 +1,7 @@
 'use client'
 
 import { useAuthStore } from '@/stores/auth-store'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { Loader2 } from 'lucide-react'
 
@@ -11,19 +11,21 @@ export default function RegisterLayout({
   children: React.ReactNode
 }) {
   const router = useRouter()
+  const pathname = usePathname()
   const { isAuthenticated, isLoading, initialize } = useAuthStore()
+  const isPublicAgentRegistration = pathname === '/register/agent'
 
   useEffect(() => {
     initialize()
   }, [initialize])
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (!isPublicAgentRegistration && !isLoading && !isAuthenticated) {
       router.replace('/auth/login')
     }
-  }, [isLoading, isAuthenticated, router])
+  }, [isPublicAgentRegistration, isLoading, isAuthenticated, router])
 
-  if (isLoading || !isAuthenticated) {
+  if (isLoading || (!isPublicAgentRegistration && !isAuthenticated)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
