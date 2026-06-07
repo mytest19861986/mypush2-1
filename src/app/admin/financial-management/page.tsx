@@ -2,12 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
+  BarChart3,
   Banknote,
+  CalendarDays,
   Check,
   Clock,
   Loader2,
   MoreHorizontal,
   RefreshCw,
+  TrendingUp,
+  Users,
   Wallet,
   XCircle,
 } from 'lucide-react'
@@ -102,6 +106,37 @@ interface SettlementItem {
   } | null
 }
 
+interface FinancialChannelBreakdown {
+  key: string
+  label: string
+  amount: number
+  count: number
+}
+
+interface FinancialTimeBucket {
+  date: string
+  amount: number
+  count: number
+}
+
+interface FinancialReport {
+  range: {
+    from: string
+    to: string
+  }
+  totalSuccessfulPayments: number | null
+  paidUsersCount: number | null
+  grossRevenue: number | null
+  directRevenue: number | null
+  salesPartnerRevenue: number | null
+  referralRevenue: number | null
+  totalCommissions: number | null
+  netRevenue: number | null
+  channelBreakdown: FinancialChannelBreakdown[]
+  dailyRevenue: FinancialTimeBucket[]
+  unsupportedMetrics?: string[]
+}
+
 const settlementFilters: { value: SettlementFilter; label: string }[] = [
   { value: 'all', label: 'همه' },
   { value: 'PENDING', label: 'در انتظار بررسی' },
@@ -151,6 +186,36 @@ function getDateOrDash(value?: string | null) {
   return value ? formatDateTime(value) : '-'
 }
 
+function toDateInputValue(date: Date) {
+  return date.toISOString().slice(0, 10)
+}
+
+function getDefaultReportRange() {
+  const to = new Date()
+  const from = new Date()
+  from.setDate(to.getDate() - 30)
+
+  return {
+    from: toDateInputValue(from),
+    to: toDateInputValue(to),
+  }
+}
+
+function formatNullableCount(value: number | null) {
+  return value === null ? 'داده کافی موجود نیست' : value.toLocaleString('fa-IR')
+}
+
+function formatNullableMoney(value: number | null) {
+  return value === null ? 'داده کافی موجود نیست' : formatPriceWithUnit(value)
+}
+
+function formatShortDate(value: string) {
+  return new Date(value).toLocaleDateString('fa-IR', {
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
 function renderSettlementStatus(status: SettlementStatus) {
   return (
     <StatusBadge
@@ -189,11 +254,17 @@ function LoadingState() {
 
 export default function FinancialManagementPage() {
   const { toast } = useToast()
+  const defaultReportRange = useMemo(() => getDefaultReportRange(), [])
   const [wallets, setWallets] = useState<WalletItem[]>([])
   const [settlements, setSettlements] = useState<SettlementItem[]>([])
+  const [financialReport, setFinancialReport] = useState<FinancialReport | null>(null)
+  const [reportFrom, setReportFrom] = useState(defaultReportRange.from)
+  const [reportTo, setReportTo] = useState(defaultReportRange.to)
   const [settlementFilter, setSettlementFilter] = useState<SettlementFilter>('all')
   const [isLoading, setIsLoading] = useState(true)
+  const [isReportLoading, setIsReportLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [reportErrorMessage, setReportErrorMessage] = useState<string | null>(null)
   const [processing, setProcessing] = useState<{ id: string; action: SettlementAction } | null>(null)
   const [rejectTarget, setRejectTarget] = useState<SettlementItem | null>(null)
   const [paidTarget, setPaidTarget] = useState<SettlementItem | null>(null)
@@ -233,9 +304,38 @@ export default function FinancialManagementPage() {
     }
   }, [settlementFilter])
 
+  const fetchFinancialReport = useCallback(async () => {
+    if (!reportFrom || !reportTo) return
+
+    setIsReportLoading(true)
+    setReportErrorMessage(null)
+
+    try {
+      const params = new URLSearchParams({ from: reportFrom, to: reportTo })
+      const reportRes = await apiClient.get<FinancialReport>(
+        `/admin/financial-reports?${params.toString()}`
+      )
+
+      if (!reportRes.success || !reportRes.data) {
+        throw new Error(reportRes.error?.message || reportRes.message || 'خطا در دریافت گزارش مالی')
+      }
+
+      setFinancialReport(reportRes.data)
+    } catch (error) {
+      setFinancialReport(null)
+      setReportErrorMessage(getErrorMessage(error, 'خطا در دریافت گزارش مالی'))
+    } finally {
+      setIsReportLoading(false)
+    }
+  }, [reportFrom, reportTo])
+
   useEffect(() => {
     void fetchFinancialData()
   }, [fetchFinancialData])
+
+  useEffect(() => {
+    void fetchFinancialReport()
+  }, [fetchFinancialReport])
 
   const totals = useMemo(
     () => ({
@@ -246,6 +346,56 @@ export default function FinancialManagementPage() {
         .reduce((total, settlement) => total + settlement.amount, 0),
     }),
     [settlements, wallets]
+  )
+
+  const reportKpis = useMemo(
+    () => [
+      {
+        title: 'کاربران پرداخت‌کرده',
+        value: formatNullableCount(financialReport?.paidUsersCount ?? null),
+        icon: Users,
+        tone: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
+      },
+      {
+        title: 'تعداد پرداخت موفق',
+        value: formatNullableCount(financialReport?.totalSuccessfulPayments ?? null),
+        icon: Check,
+        tone: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+      },
+      {
+        title: 'درآمد ناخالص',
+        value: formatNullableMoney(financialReport?.grossRevenue ?? null),
+        icon: Banknote,
+        tone: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
+      },
+      {
+        title: 'پورسانت‌ها',
+        value: formatNullableMoney(financialReport?.totalCommissions ?? null),
+        icon: Wallet,
+        tone: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+      },
+      {
+        title: 'درآمد خالص',
+        value: formatNullableMoney(financialReport?.netRevenue ?? null),
+        icon: TrendingUp,
+        tone: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
+      },
+    ],
+    [financialReport]
+  )
+
+  const maxChannelAmount = useMemo(
+    () =>
+      Math.max(
+        1,
+        ...(financialReport?.channelBreakdown.map((channel) => channel.amount) ?? [])
+      ),
+    [financialReport]
+  )
+
+  const maxDailyAmount = useMemo(
+    () => Math.max(1, ...(financialReport?.dailyRevenue.map((item) => item.amount) ?? [])),
+    [financialReport]
   )
 
   const updateSettlement = (updatedSettlement: SettlementItem) => {
@@ -453,6 +603,175 @@ export default function FinancialManagementPage() {
         title="مدیریت مالی"
         description="مدیریت کیف پول‌ها، درخواست‌های تسویه و وضعیت‌های مالی سامانه"
       />
+
+      <Card className="rounded-2xl border border-border/50 bg-card shadow-sm" dir="rtl">
+        <CardHeader className="gap-4 border-b border-border/60 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+          <div className="space-y-1">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <BarChart3 className="size-5 text-emerald-600" />
+              گزارش مالی
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              بر اساس پرداخت‌های موفق، فروش‌های تاییدشده و پورسانت‌های ثبت‌شده
+            </p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+            <div className="space-y-1">
+              <Label htmlFor="financial-report-from" className="text-xs">
+                از تاریخ
+              </Label>
+              <Input
+                id="financial-report-from"
+                type="date"
+                value={reportFrom}
+                onChange={(event) => setReportFrom(event.target.value)}
+                className="h-9"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="financial-report-to" className="text-xs">
+                تا تاریخ
+              </Label>
+              <Input
+                id="financial-report-to"
+                type="date"
+                value={reportTo}
+                onChange={(event) => setReportTo(event.target.value)}
+                className="h-9"
+              />
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => void fetchFinancialReport()}
+              disabled={isReportLoading}
+              aria-label="به‌روزرسانی گزارش مالی"
+            >
+              {isReportLoading ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <RefreshCw className="size-4" />
+              )}
+            </Button>
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-4 p-4 sm:p-5">
+          {reportErrorMessage ? (
+            <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-destructive/20 bg-destructive/5 p-6 text-center">
+              <XCircle className="size-8 text-destructive" />
+              <p className="text-sm font-medium">دریافت گزارش مالی ناموفق بود.</p>
+              <p className="text-xs text-muted-foreground">{reportErrorMessage}</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                {reportKpis.map((card) => (
+                  <div key={card.title} className="rounded-lg border bg-background/50 p-3">
+                    <div className="flex items-center gap-2">
+                      <span className={cn('flex size-9 items-center justify-center rounded-lg', card.tone)}>
+                        <card.icon className="size-4" />
+                      </span>
+                      <span className="text-xs text-muted-foreground">{card.title}</span>
+                    </div>
+                    {isReportLoading ? (
+                      <Skeleton className="mt-3 h-5 w-28" />
+                    ) : (
+                      <p className="mt-3 text-sm font-bold leading-6">{card.value}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid gap-4 xl:grid-cols-2">
+                <div className="rounded-lg border p-4">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <h3 className="text-sm font-semibold">تفکیک کانال فروش</h3>
+                    <span className="text-xs text-muted-foreground">
+                      {financialReport?.channelBreakdown.length ?? 0} کانال
+                    </span>
+                  </div>
+                  {isReportLoading ? (
+                    <div className="space-y-3">
+                      {Array.from({ length: 3 }).map((_, index) => (
+                        <Skeleton key={index} className="h-10 w-full" />
+                      ))}
+                    </div>
+                  ) : financialReport?.channelBreakdown.length ? (
+                    <div className="space-y-4">
+                      {financialReport.channelBreakdown.map((channel) => {
+                        const width = Math.max(4, Math.round((channel.amount / maxChannelAmount) * 100))
+                        return (
+                          <div key={channel.key} className="space-y-2">
+                            <div className="flex items-center justify-between gap-3 text-xs">
+                              <span className="font-medium">{channel.label}</span>
+                              <span className="text-muted-foreground">
+                                {formatPriceWithUnit(channel.amount)} / {channel.count.toLocaleString('fa-IR')} پرداخت
+                              </span>
+                            </div>
+                            <div className="h-2 overflow-hidden rounded-full bg-muted">
+                              <div
+                                className="h-full rounded-full bg-emerald-600"
+                                style={{ width: `${width}%` }}
+                              />
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className="flex min-h-28 items-center justify-center text-sm text-muted-foreground">
+                      داده‌ای برای نمایش وجود ندارد.
+                    </div>
+                  )}
+                </div>
+
+                <div className="rounded-lg border p-4">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <h3 className="text-sm font-semibold">روند درآمد</h3>
+                    <CalendarDays className="size-4 text-muted-foreground" />
+                  </div>
+                  {isReportLoading ? (
+                    <Skeleton className="h-40 w-full" />
+                  ) : financialReport?.dailyRevenue.length ? (
+                    <div className="flex h-44 items-end gap-2 overflow-x-auto pb-1">
+                      {financialReport.dailyRevenue.map((item) => {
+                        const height = Math.max(8, Math.round((item.amount / maxDailyAmount) * 100))
+                        return (
+                          <div key={item.date} className="flex min-w-12 flex-1 flex-col items-center gap-2">
+                            <div className="flex h-32 w-full items-end rounded bg-muted/70 px-1">
+                              <div
+                                className="w-full rounded-t bg-sky-600"
+                                style={{ height: `${height}%` }}
+                                title={`${formatPriceWithUnit(item.amount)} - ${item.count.toLocaleString('fa-IR')} پرداخت`}
+                              />
+                            </div>
+                            <span className="whitespace-nowrap text-[11px] text-muted-foreground">
+                              {formatShortDate(item.date)}
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className="flex min-h-40 items-center justify-center text-sm text-muted-foreground">
+                      داده‌ای برای نمایش وجود ندارد.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {!!financialReport?.unsupportedMetrics?.length && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
+                  داده کافی برای انتساب کامل برخی پرداخت‌های آنلاین موجود نیست؛ این موارد در کانال «آنلاین بدون انتساب کافی» آمده‌اند.
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       {isLoading ? (
         <LoadingState />
