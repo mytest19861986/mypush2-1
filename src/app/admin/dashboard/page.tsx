@@ -8,6 +8,7 @@ import {
   CreditCard,
   FileCheck,
   DollarSign,
+  ReceiptText,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -22,7 +23,7 @@ import {
 } from '@/components/ui/table'
 import { PageHeader } from '@/components/shared'
 import { StatCard } from '@/components/shared'
-import { auditService, usersService, agentsService } from '@/services'
+import { dashboardService } from '@/services'
 import type { DashboardStats } from '@/types'
 import { cn } from '@/lib/utils'
 import { toPersianNum, formatPriceWithUnit, formatDateTime } from '@/utils/formatters'
@@ -50,12 +51,6 @@ function getActionBadgeClass(action: string) {
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
-  const [totalUsers, setTotalUsers] = useState(0)
-  const [totalAgents, setTotalAgents] = useState(0)
-  const [pendingAgents, setPendingAgents] = useState(0)
-  const [activePlans, setActivePlans] = useState(0)
-  const [todayContracts, setTodayContracts] = useState(0)
-  const [monthlyRevenue, setMonthlyRevenue] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -63,33 +58,11 @@ export default function AdminDashboardPage() {
     async function fetchData() {
       setIsLoading(true)
       try {
-        const [statsRes, usersRes, agentsRes, pendingRes] = await Promise.allSettled([
-          auditService.getStats(),
-          usersService.getList({ page: 1, limit: 1 }),
-          agentsService.getList({ page: 1, limit: 1 }),
-          agentsService.getList({ page: 1, limit: 1, status: 'PENDING' }),
-        ])
-
-        if (statsRes.status === 'fulfilled' && statsRes.value.success) {
-          const data = statsRes.value.data
-          if (data) {
-            setStats(data)
-            setActivePlans(data.activePlans ?? 0)
-            setTodayContracts(data.todayContracts ?? 0)
-            setMonthlyRevenue(data.monthlyRevenue ?? 0)
-          }
-        }
-
-        if (usersRes.status === 'fulfilled' && usersRes.value.success) {
-          setTotalUsers(usersRes.value.pagination?.total ?? 0)
-        }
-
-        if (agentsRes.status === 'fulfilled' && agentsRes.value.success) {
-          setTotalAgents(agentsRes.value.pagination?.total ?? 0)
-        }
-
-        if (pendingRes.status === 'fulfilled' && pendingRes.value.success) {
-          setPendingAgents(pendingRes.value.pagination?.total ?? 0)
+        const statsRes = await dashboardService.getStats()
+        if (statsRes.success && statsRes.data) {
+          setStats(statsRes.data)
+        } else {
+          setError('خطا در دریافت اطلاعات')
         }
       } catch {
         setError('خطا در دریافت اطلاعات')
@@ -125,13 +98,37 @@ export default function AdminDashboardPage() {
       />
 
       {/* Stat cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="کل کاربران"
-          value={totalUsers}
+          title="کاربران کل"
+          value={stats?.totalUsers ?? 0}
           icon={Users}
           description="ثبت‌نام شده در سامانه"
           className="rounded-2xl border border-border/50 bg-card shadow-sm"
+        />
+        <StatCard
+          title="کاربران پرداخت‌کرده در ۳۰ روز اخیر"
+          value={stats?.paidUsersLast30Days ?? 0}
+          icon={Users}
+          description="کاربران یکتای دارای پرداخت موفق"
+          className="rounded-2xl border border-border/50 bg-card shadow-sm"
+          iconClassName="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
+        />
+        <StatCard
+          title="خریدهای موفق ۳۰ روز اخیر"
+          value={stats?.successfulPaymentsLast30Days ?? 0}
+          icon={ReceiptText}
+          description="فقط پرداخت‌های موفق"
+          className="rounded-2xl border border-border/50 bg-card shadow-sm"
+          iconClassName="bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400"
+        />
+        <StatCard
+          title="مبلغ پرداخت موفق ۳۰ روز اخیر"
+          value={formatPriceWithUnit(stats?.successfulPaymentsAmountLast30Days ?? 0)}
+          icon={DollarSign}
+          description="بر اساس مبلغ نهایی پرداخت"
+          className="rounded-2xl border border-border/50 bg-card shadow-sm"
+          iconClassName="bg-teal-100 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400"
         />
         <StatCard
           title="کل پزشکان"
@@ -143,16 +140,16 @@ export default function AdminDashboardPage() {
         />
         <StatCard
           title="کل نمایندگان"
-          value={totalAgents}
+          value={stats?.totalAgents ?? 0}
           icon={Briefcase}
-          description={`${toPersianNum(pendingAgents)} در انتظار تأیید`}
-          trend={pendingAgents > 0 ? { value: pendingAgents, isUp: true } : undefined}
+          description={`${toPersianNum(stats?.pendingAgents ?? 0)} در انتظار تأیید`}
+          trend={(stats?.pendingAgents ?? 0) > 0 ? { value: stats?.pendingAgents ?? 0, isUp: true } : undefined}
           className="rounded-2xl border border-border/50 bg-card shadow-sm"
           iconClassName="bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400"
         />
         <StatCard
           title="طرح‌های فعال"
-          value={activePlans}
+          value={stats?.activePlans ?? 0}
           icon={CreditCard}
           description="طرح تخفیف فعال"
           className="rounded-2xl border border-border/50 bg-card shadow-sm"
@@ -160,16 +157,16 @@ export default function AdminDashboardPage() {
         />
         <StatCard
           title="قراردادهای امروز"
-          value={todayContracts}
+          value={stats?.todayContracts ?? 0}
           icon={FileCheck}
           description="ویزیت‌های ثبت شده"
-          trend={todayContracts > 0 ? { value: todayContracts, isUp: true } : undefined}
+          trend={(stats?.todayContracts ?? 0) > 0 ? { value: stats?.todayContracts ?? 0, isUp: true } : undefined}
           className="rounded-2xl border border-border/50 bg-card shadow-sm"
           iconClassName="bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400"
         />
         <StatCard
           title="درآمد ماهانه"
-          value={formatPriceWithUnit(monthlyRevenue)}
+          value={formatPriceWithUnit(stats?.monthlyRevenue ?? 0)}
           icon={DollarSign}
           description="تومان — این ماه"
           className="rounded-2xl border border-border/50 bg-card shadow-sm"
@@ -217,7 +214,7 @@ export default function AdminDashboardPage() {
                       <TableCell className="px-4 py-4 text-sm">
                         {log.user?.profile?.firstName || log.user?.profile?.lastName
                           ? `${log.user.profile.firstName || ''} ${log.user.profile.lastName || ''}`.trim()
-                          : log.user?.mobile || 'نامشخص'}
+                          : 'نامشخص'}
                       </TableCell>
                       <TableCell className="px-4 py-4 text-sm text-muted-foreground">
                         {log.entity ? (ENTITY_LABELS[log.entity] || log.entity) : '—'}
@@ -303,12 +300,7 @@ export default function AdminDashboardPage() {
                         {toPersianNum(index + 1)}
                       </span>
                       <div className="flex min-w-0 flex-col">
-                        <span className="truncate text-sm">{item.name || item.mobile}</span>
-                        {item.name && (
-                          <span className="truncate text-xs text-muted-foreground">
-                            {item.mobile}
-                          </span>
-                        )}
+                        <span className="truncate text-sm">{item.name || 'نامشخص'}</span>
                       </div>
                     </div>
                     <span className="shrink-0 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">

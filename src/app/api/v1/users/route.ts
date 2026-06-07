@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
 
   const { page, limit, search, status, role } = parsed.data
   const skip = (page - 1) * limit
+  const now = new Date()
 
   // Build where clause
   const where: Record<string, unknown> = { deletedAt: null }
@@ -84,22 +85,46 @@ export async function GET(request: NextRequest) {
             },
           },
         },
+        userPlans: {
+          where: {
+            status: 'ACTIVE',
+            endDate: { gte: now },
+          },
+          orderBy: { endDate: 'desc' },
+          take: 1,
+          select: {
+            status: true,
+            endDate: true,
+            plan: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
       },
     }),
     db.user.count({ where }),
   ])
 
-  const formattedUsers = users.map((user) => ({
-    id: user.id,
-    mobile: user.mobile,
-    email: user.email,
-    status: user.status,
-    isMobileVerified: user.isMobileVerified,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
-    profile: user.profile,
-    roles: user.roles.map((ur) => ur.role),
-  }))
+  const formattedUsers = users.map((user) => {
+    const activePlan = user.userPlans[0]
+
+    return {
+      id: user.id,
+      mobile: user.mobile,
+      email: user.email,
+      status: user.status,
+      isMobileVerified: user.isMobileVerified,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      profile: user.profile,
+      roles: user.roles.map((ur) => ur.role),
+      activePlanName: activePlan?.plan.name ?? null,
+      activePlanEndDate: activePlan?.endDate.toISOString() ?? null,
+      activePlanStatus: activePlan?.status ?? null,
+    }
+  })
 
   return paginatedResponse(formattedUsers, {
     page,

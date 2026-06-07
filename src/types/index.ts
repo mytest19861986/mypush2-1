@@ -59,6 +59,9 @@ export interface UserItem {
   deletedAt?: string | null
   profile: UserProfile | null
   roles: RoleItem[]
+  activePlanName?: string | null
+  activePlanEndDate?: string | null
+  activePlanStatus?: UserPlanStatus | null
 }
 
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'BLOCKED'
@@ -268,6 +271,9 @@ export interface DashboardStats {
   activePlans: number
   todayContracts: number
   monthlyRevenue: number
+  paidUsersLast30Days: number
+  successfulPaymentsLast30Days: number
+  successfulPaymentsAmountLast30Days: number
   totalLogs: number
   todayLogs: number
   topActions: { action: string; count: number }[]

@@ -191,13 +191,14 @@ export default function AdminUsersPage() {
 
       <div className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm">
         <div className="w-full overflow-x-auto">
-          <table className="w-full min-w-[760px]">
+          <table className="w-full min-w-[900px]">
             <thead className="bg-transparent border-b">
               <tr>
                 <th className="px-4 py-4 text-right text-sm font-semibold text-foreground">موبایل</th>
                 <th className="px-4 py-4 text-right text-sm font-semibold text-foreground">نام</th>
                 <th className="px-4 py-4 text-right text-sm font-semibold text-foreground">ایمیل</th>
                 <th className="px-4 py-4 text-right text-sm font-semibold text-foreground">وضعیت</th>
+                <th className="px-4 py-4 text-right text-sm font-semibold text-foreground">طرح فعال</th>
                 <th className="px-4 py-4 text-right text-sm font-semibold text-foreground">نقش‌ها</th>
                 <th className="px-4 py-4 text-right text-sm font-semibold text-foreground">تاریخ</th>
                 <th className="px-4 py-4 text-left text-sm font-semibold text-foreground">عملیات</th>
@@ -207,14 +208,14 @@ export default function AdminUsersPage() {
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-b transition-colors last:border-0 hover:bg-muted/40">
-                    <td colSpan={7} className="px-4 py-4">
+                    <td colSpan={8} className="px-4 py-4">
                       <Skeleton className="h-6 w-full" />
                     </td>
                   </tr>
                 ))
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                  <td colSpan={8} className="px-4 py-10 text-center text-sm text-muted-foreground">
                     کاربری یافت نشد
                   </td>
                 </tr>
@@ -225,6 +226,20 @@ export default function AdminUsersPage() {
                     <td className="px-4 py-4 text-sm font-medium text-foreground">{getDisplayName(user)}</td>
                     <td className="px-4 py-4 text-sm text-muted-foreground">{user.email || '—'}</td>
                     <td className="px-4 py-4 text-sm"><StatusBadge status={user.status} className="font-medium" /></td>
+                    <td className="px-4 py-4 text-sm">
+                      {user.activePlanName ? (
+                        <div className="min-w-0">
+                          <p className="truncate font-medium text-foreground">{user.activePlanName}</p>
+                          {user.activePlanEndDate && (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              تا {formatDate(user.activePlanEndDate)}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">بدون طرح فعال</span>
+                      )}
+                    </td>
                     <td className="px-4 py-4 text-sm">
                       <div className="flex flex-wrap gap-1">
                         <Badge variant="outline" className="border-border/70 bg-background text-xs font-medium">
