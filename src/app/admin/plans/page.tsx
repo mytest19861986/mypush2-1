@@ -39,8 +39,9 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useToast } from '@/hooks/use-toast'
 import { PageHeader, StatusBadge, EmptyState } from '@/components/shared'
+import { ApiError } from '@/lib/api-client'
 import { plansService } from '@/services'
-import type { DiscountPlanItem } from '@/types'
+import type { DiscountPlanItem, PlanMutationData, PlanStatus } from '@/types'
 import { toPersianNum, formatPrice } from '@/utils/formatters'
 
 /* ── Types ────────────────────────────────────────────────── */
@@ -48,21 +49,116 @@ import { toPersianNum, formatPrice } from '@/utils/formatters'
 interface PlanFormData {
   name: string
   description: string
-  price: number
-  discountPercent: number
-  durationDays: number
-  maxUses: number
-  status: string
+  price: string
+  discountPercent: string
+  durationDays: string
+  maxUses: string
+  salesPartnerCommissionPercent: string
+  referralCommissionPercent: string
+  status: PlanStatus
 }
 
 const emptyForm: PlanFormData = {
   name: '',
   description: '',
-  price: 0,
-  discountPercent: 0,
-  durationDays: 30,
-  maxUses: -1,
+  price: '0',
+  discountPercent: '0',
+  durationDays: '30',
+  maxUses: '-1',
+  salesPartnerCommissionPercent: '0',
+  referralCommissionPercent: '0',
   status: 'ACTIVE',
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof ApiError) return error.message
+  if (error instanceof Error && error.message) return error.message
+  return fallback
+}
+
+function parseIntegerInput(value: string, defaultValue: number) {
+  const trimmed = value.trim()
+  if (!trimmed) return defaultValue
+
+  const parsed = Number(trimmed)
+  return Number.isInteger(parsed) ? parsed : null
+}
+
+function validatePercent(value: number, message: string) {
+  if (value < 0 || value > 100) return message
+  return null
+}
+
+function buildPlanPayload(formData: PlanFormData): { payload: PlanMutationData } | { error: string } {
+  const name = formData.name.trim()
+  if (!name) {
+    return { error: 'نام طرح الزامی است' }
+  }
+
+  const price = parseIntegerInput(formData.price, 0)
+  if (price === null || price < 0) {
+    return { error: 'قیمت باید عدد صحیح و بزرگ‌تر یا مساوی صفر باشد' }
+  }
+
+  const discountPercent = parseIntegerInput(formData.discountPercent, 0)
+  if (discountPercent === null) {
+    return { error: 'درصد تخفیف باید عددی بین ۰ تا ۱۰۰ باشد' }
+  }
+  const discountError = validatePercent(
+    discountPercent,
+    'درصد تخفیف باید عددی بین ۰ تا ۱۰۰ باشد'
+  )
+  if (discountError) return { error: discountError }
+
+  const durationDays = parseIntegerInput(formData.durationDays, 30)
+  if (durationDays === null || durationDays < 1) {
+    return { error: 'مدت طرح باید عدد صحیح و حداقل ۱ روز باشد' }
+  }
+
+  const maxUses = parseIntegerInput(formData.maxUses, -1)
+  if (maxUses === null) {
+    return { error: 'حداکثر استفاده باید عدد صحیح باشد' }
+  }
+
+  const salesPartnerCommissionPercent = parseIntegerInput(
+    formData.salesPartnerCommissionPercent,
+    0
+  )
+  if (salesPartnerCommissionPercent === null) {
+    return { error: 'درصد پورسانت همکار فروش باید عددی بین ۰ تا ۱۰۰ باشد' }
+  }
+  const salesPartnerCommissionError = validatePercent(
+    salesPartnerCommissionPercent,
+    'درصد پورسانت همکار فروش باید عددی بین ۰ تا ۱۰۰ باشد'
+  )
+  if (salesPartnerCommissionError) return { error: salesPartnerCommissionError }
+
+  const referralCommissionPercent = parseIntegerInput(
+    formData.referralCommissionPercent,
+    0
+  )
+  if (referralCommissionPercent === null) {
+    return { error: 'درصد پورسانت رفرال کاربر باید عددی بین ۰ تا ۱۰۰ باشد' }
+  }
+  const referralCommissionError = validatePercent(
+    referralCommissionPercent,
+    'درصد پورسانت رفرال کاربر باید عددی بین ۰ تا ۱۰۰ باشد'
+  )
+  if (referralCommissionError) return { error: referralCommissionError }
+
+  return {
+    payload: {
+      name,
+      description: formData.description,
+      price,
+      discountPercent,
+      durationDays,
+      maxUses,
+      salesPartnerCommissionPercent,
+      referralCommissionPercent,
+      status: formData.status,
+    },
+  }
 }
 
 /* ── Plans Page ──────────────────────────────────────────── */
@@ -110,20 +206,23 @@ export default function AdminPlansPage() {
     setFormData({
       name: plan.name,
       description: plan.description || '',
-      price: plan.price,
-      discountPercent: plan.discountPercent,
-      durationDays: plan.durationDays,
-      maxUses: plan.maxUses,
+      price: String(plan.price),
+      discountPercent: String(plan.discountPercent),
+      durationDays: String(plan.durationDays),
+      maxUses: String(plan.maxUses),
+      salesPartnerCommissionPercent: String(plan.salesPartnerCommissionPercent ?? 0),
+      referralCommissionPercent: String(plan.referralCommissionPercent ?? 0),
       status: plan.status,
     })
     setDialogOpen(true)
   }
 
   const handleSave = async () => {
-    if (!formData.name.trim()) {
+    const planPayload = buildPlanPayload(formData)
+    if ('error' in planPayload) {
       toast({
         title: 'خطا',
-        description: 'نام طرح الزامی است',
+        description: planPayload.error,
         variant: 'destructive',
       })
       return
@@ -132,18 +231,21 @@ export default function AdminPlansPage() {
     setIsSaving(true)
     try {
       if (editingPlan) {
-        await plansService.update(editingPlan.id, formData)
+        await plansService.update(editingPlan.id, planPayload.payload)
         toast({ title: 'موفق', description: 'طرح با موفقیت بروزرسانی شد' })
       } else {
-        await plansService.create(formData)
+        await plansService.create(planPayload.payload)
         toast({ title: 'موفق', description: 'طرح جدید با موفقیت ایجاد شد' })
       }
       setDialogOpen(false)
       fetchPlans()
-    } catch {
+    } catch (error) {
       toast({
         title: 'خطا',
-        description: editingPlan ? 'خطا در بروزرسانی طرح' : 'خطا در ایجاد طرح',
+        description: getErrorMessage(
+          error,
+          editingPlan ? 'خطا در بروزرسانی طرح' : 'خطا در ایجاد طرح'
+        ),
         variant: 'destructive',
       })
     } finally {
@@ -191,6 +293,8 @@ export default function AdminPlansPage() {
     }
   }
 
+  const maxUsesPreview = parseIntegerInput(formData.maxUses, -1)
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -203,7 +307,7 @@ export default function AdminPlansPage() {
           </>
         }
         action={
-          <Button onClick={openCreateDialog} className="shrink-0 bg-emerald-600 hover:bg-emerald-700">
+          <Button type="button" onClick={openCreateDialog} className="shrink-0 bg-emerald-600 hover:bg-emerald-700">
             <Plus className="ml-2 size-4" />
             ایجاد طرح جدید
           </Button>
@@ -308,6 +412,24 @@ export default function AdminPlansPage() {
                       {plan.maxUses === -1 ? 'نامحدود' : toPersianNum(plan.maxUses)}
                     </span>
                   </div>
+                  <div className="rounded-lg bg-card/70 p-2.5 text-center ring-1 ring-border/40">
+                    <div className="mb-1 flex items-center justify-center gap-1 text-muted-foreground">
+                      <Percent className="size-3" />
+                      <span className="text-[10px]">همکار فروش</span>
+                    </div>
+                    <span className="text-xs font-bold text-emerald-600">
+                      {toPersianNum(plan.salesPartnerCommissionPercent ?? 0)}٪
+                    </span>
+                  </div>
+                  <div className="rounded-lg bg-card/70 p-2.5 text-center ring-1 ring-border/40">
+                    <div className="mb-1 flex items-center justify-center gap-1 text-muted-foreground">
+                      <Percent className="size-3" />
+                      <span className="text-[10px]">رفرال کاربر</span>
+                    </div>
+                    <span className="text-xs font-bold text-emerald-600">
+                      {toPersianNum(plan.referralCommissionPercent ?? 0)}٪
+                    </span>
+                  </div>
                 </div>
 
                 {/* Footer actions */}
@@ -332,6 +454,7 @@ export default function AdminPlansPage() {
                       variant="ghost"
                       size="icon"
                       className="size-8"
+                      type="button"
                       onClick={() => openEditDialog(plan)}
                     >
                       <Pencil className="size-3.5" />
@@ -340,6 +463,7 @@ export default function AdminPlansPage() {
                       variant="ghost"
                       size="icon"
                       className="size-8 text-destructive hover:text-destructive"
+                      type="button"
                       onClick={() => setDeleteTarget(plan)}
                     >
                       <Trash2 className="size-3.5" />
@@ -409,7 +533,7 @@ export default function AdminPlansPage() {
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      price: parseInt(e.target.value) || 0,
+                      price: e.target.value,
                     })
                   }
                 />
@@ -426,8 +550,7 @@ export default function AdminPlansPage() {
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      discountPercent:
-                        Math.min(100, Math.max(0, parseInt(e.target.value) || 0)),
+                      discountPercent: e.target.value,
                     })
                   }
                 />
@@ -447,7 +570,7 @@ export default function AdminPlansPage() {
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      durationDays: parseInt(e.target.value) || 30,
+                      durationDays: e.target.value,
                     })
                   }
                 />
@@ -463,13 +586,51 @@ export default function AdminPlansPage() {
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      maxUses: parseInt(e.target.value) || -1,
+                      maxUses: e.target.value,
                     })
                   }
                 />
                 <p className="text-[10px] text-muted-foreground">
-                  {formData.maxUses === -1 ? 'نامحدود' : `${toPersianNum(formData.maxUses)} بار`}
+                  {maxUsesPreview === -1 ? 'نامحدود' : `${toPersianNum(maxUsesPreview ?? formData.maxUses)} بار`}
                 </p>
+              </div>
+            </div>
+
+            {/* Commissions */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="plan-sales-partner-commission">درصد پورسانت همکار فروش</Label>
+                <Input
+                  id="plan-sales-partner-commission"
+                  type="number"
+                  min={0}
+                  max={100}
+                  placeholder="0"
+                  value={formData.salesPartnerCommissionPercent}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      salesPartnerCommissionPercent: e.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="plan-referral-commission">درصد پورسانت رفرال کاربر</Label>
+                <Input
+                  id="plan-referral-commission"
+                  type="number"
+                  min={0}
+                  max={100}
+                  placeholder="0"
+                  value={formData.referralCommissionPercent}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      referralCommissionPercent: e.target.value,
+                    })
+                  }
+                />
               </div>
             </div>
 
@@ -497,12 +658,14 @@ export default function AdminPlansPage() {
           <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
+              type="button"
               onClick={() => setDialogOpen(false)}
               disabled={isSaving}
             >
               انصراف
             </Button>
             <Button
+              type="button"
               onClick={handleSave}
               disabled={isSaving || !formData.name.trim()}
               className="bg-emerald-600 hover:bg-emerald-700 min-w-[100px]"

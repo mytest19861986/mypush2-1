@@ -52,6 +52,23 @@ const footerLinks = [
 
 const brandName = 'حامی‌کارت'
 
+const REFERRAL_STORAGE_KEY = 'hamiReferralCode'
+const REFERRAL_CODE_PATTERN = /^HC[A-F0-9]{10}$/
+
+function normalizeReferralCode(value?: string | null) {
+  if (!value) return null
+
+  const normalized = value.trim().toUpperCase()
+  return REFERRAL_CODE_PATTERN.test(normalized) ? normalized : null
+}
+
+function withReferral(href: string, referralCode?: string | null) {
+  if (!referralCode) return href
+
+  const separator = href.includes('?') ? '&' : '?'
+  return `${href}${separator}ref=${encodeURIComponent(referralCode)}`
+}
+
 const heroSafeCopy =
   'با تهیه طرح عضویت حامی‌کارت، از تخفیف‌های مشخص‌شده نزد پزشکان طرف قرارداد استفاده کنید. درصد تخفیف برای هر پزشک متفاوت است.'
 
@@ -218,10 +235,26 @@ export default function Home() {
   const router = useRouter()
   const { user, isAuthenticated, isLoading, initialize } = useAuthStore()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [referralCode, setReferralCode] = useState<string | null>(null)
 
   useEffect(() => {
     initialize()
   }, [initialize])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const queryReferralCode = normalizeReferralCode(
+      new URLSearchParams(window.location.search).get('ref')
+    )
+    const storedReferralCode = normalizeReferralCode(localStorage.getItem(REFERRAL_STORAGE_KEY))
+    const nextReferralCode = queryReferralCode ?? storedReferralCode
+
+    if (nextReferralCode) {
+      localStorage.setItem(REFERRAL_STORAGE_KEY, nextReferralCode)
+      setReferralCode(nextReferralCode)
+    }
+  }, [])
 
   const getDashboardPath = () => {
     if (user?.roles?.includes('SUPER_ADMIN') || user?.roles?.includes('ADMIN')) return '/admin/dashboard'
@@ -234,6 +267,9 @@ export default function Home() {
   const goToDashboard = () => {
     router.push(getDashboardPath())
   }
+
+  const loginHref = withReferral('/auth/login', referralCode)
+  const plansHref = withReferral('/user/plans', referralCode)
 
   if (isLoading) {
     return (
@@ -279,7 +315,7 @@ export default function Home() {
               </Button>
             ) : (
               <Button asChild variant="outline" className="h-9 rounded-full border-teal-200 bg-white px-5 text-teal-700 hover:bg-teal-50">
-                <Link href="/auth/login">ورود</Link>
+                <Link href={loginHref}>ورود</Link>
               </Button>
             )}
           </div>
@@ -317,7 +353,7 @@ export default function Home() {
                     </Button>
                   ) : (
                     <Button asChild variant="outline" onClick={() => setMobileMenuOpen(false)}>
-                      <Link href="/auth/login">ورود</Link>
+                      <Link href={loginHref}>ورود</Link>
                     </Button>
                   )}
                   <Button
@@ -325,7 +361,7 @@ export default function Home() {
                     className="bg-orange-500 text-white hover:bg-orange-600"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <Link href="/user/plans">خرید طرح حامی کارت</Link>
+                    <Link href={plansHref}>خرید طرح حامی کارت</Link>
                   </Button>
                   <Button asChild variant="ghost" onClick={() => setMobileMenuOpen(false)}>
                     <Link href="/doctors">مشاهده پزشکان طرف قرارداد</Link>
@@ -367,7 +403,7 @@ export default function Home() {
                     size="lg"
                     className="h-[52px] w-full rounded-full bg-orange-500 px-8 text-base font-black text-white shadow-xl shadow-orange-500/30 hover:bg-orange-600 sm:w-auto"
                   >
-                    <Link href="/user/plans">
+                    <Link href={plansHref}>
                       خرید حامی‌کارت
                       <ChevronLeft className="size-4" />
                     </Link>
@@ -464,7 +500,7 @@ export default function Home() {
                       <h3 className="text-xl font-black text-slate-950">{audience.title}</h3>
                       <p className="mt-3 flex-1 leading-7 text-slate-600">{audience.description}</p>
                       <Button asChild variant="outline" className="mt-6 rounded-xl border-teal-200 bg-white text-teal-700 hover:bg-teal-50">
-                        <Link href={audience.href}>
+                        <Link href={audience.href === '/user/plans' ? plansHref : audience.href}>
                           {audience.cta}
                           <ChevronLeft className="size-4" />
                         </Link>
@@ -491,7 +527,7 @@ export default function Home() {
                   </div>
                 </div>
                 <Button asChild size="lg" className="h-12 w-full rounded-2xl bg-orange-500 px-7 text-white shadow-lg shadow-orange-500/20 hover:bg-orange-600 sm:w-auto">
-                  <Link href="/user/plans">خرید طرح حامی کارت</Link>
+                  <Link href={plansHref}>خرید طرح حامی کارت</Link>
                 </Button>
               </div>
             </div>
@@ -507,7 +543,11 @@ export default function Home() {
           </div>
           <div className="flex flex-wrap gap-4">
             {footerLinks.map((link) => (
-              <Link key={link.href} href={link.href} className="hover:text-teal-700">
+              <Link
+                key={link.href}
+                href={link.href === '/auth/login' ? loginHref : link.href}
+                className="hover:text-teal-700"
+              >
                 {link.label}
               </Link>
             ))}

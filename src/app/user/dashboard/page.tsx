@@ -580,12 +580,23 @@ function ProfileCompletionCard({ nationalCode }: { nationalCode?: string | null 
 
 function ReferralCodeCard({ referralCode }: { referralCode?: string | null }) {
   const [copied, setCopied] = useState(false)
+  const [origin, setOrigin] = useState('')
+
+  useEffect(() => {
+    setOrigin(window.location.origin)
+  }, [])
 
   if (!referralCode) return null
 
+  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || origin).replace(/\/$/, '')
+  const referralLink = baseUrl
+    ? `${baseUrl}/auth/login?ref=${encodeURIComponent(referralCode)}`
+    : ''
   const handleCopy = async () => {
+    if (!referralLink) return
+
     try {
-      await navigator.clipboard.writeText(referralCode)
+      await navigator.clipboard.writeText(referralLink)
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1800)
     } catch {
@@ -598,13 +609,16 @@ function ReferralCodeCard({ referralCode }: { referralCode?: string | null }) {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <Copy className="size-5 text-primary" />
-          کد معرفی شما
+          لینک معرفی شما
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        <p className="text-sm leading-6 text-muted-foreground">
+          این لینک را برای معرفی کاربران جدید ارسال کنید.
+        </p>
         <div className="flex items-center gap-2 rounded-2xl border border-slate-100/70 bg-background/70 p-3 dark:border-slate-800/70">
           <p className="min-w-0 flex-1 truncate font-mono text-sm font-semibold" dir="ltr">
-            {referralCode}
+            {referralLink || '...'}
           </p>
           <Button type="button" variant="outline" size="sm" onClick={handleCopy} className="shrink-0">
             {copied ? (

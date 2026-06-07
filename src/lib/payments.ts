@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 interface PaymentMetadata {
   referralCode?: string
   referrerId?: string
+  referrerType?: 'SALES_PARTNER' | 'USER_REFERRAL'
 }
 
 interface CreatePendingPaymentParams {
@@ -26,10 +27,15 @@ function normalizeSafeString(value: unknown, maxLength: number) {
 function sanitizePaymentMetadata(metadata: PaymentMetadata) {
   const referralCode = normalizeSafeString(metadata.referralCode, 20)
   const referrerId = normalizeSafeString(metadata.referrerId, 100)
+  const referrerType =
+    metadata.referrerType === 'SALES_PARTNER' || metadata.referrerType === 'USER_REFERRAL'
+      ? metadata.referrerType
+      : undefined
 
   return {
     ...(referralCode ? { referralCode } : {}),
     ...(referrerId ? { referrerId } : {}),
+    ...(referrerType ? { referrerType } : {}),
   }
 }
 

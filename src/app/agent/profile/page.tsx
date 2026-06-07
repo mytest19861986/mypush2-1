@@ -109,7 +109,7 @@ export default function AgentProfilePage() {
   const referralCode = agentData?.referralCode || ''
   const referralLink = typeof window !== 'undefined'
     ? referralCode
-      ? `${window.location.origin}/?ref=${referralCode}`
+      ? `${window.location.origin}/auth/login?ref=${encodeURIComponent(referralCode)}`
       : ''
     : ''
 

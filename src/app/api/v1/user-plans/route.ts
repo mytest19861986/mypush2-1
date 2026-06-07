@@ -6,7 +6,7 @@ import { successResponse, errorResponse } from '@/lib/api-response'
 import { createAuditLog, AuditActions } from '@/lib/audit'
 import { createPendingPayment } from '@/lib/payments'
 import { getClientIp } from '@/app/api/v1/auth/_helpers'
-import { findApprovedAgentByReferralCode, normalizeReferralCode } from '@/lib/referrals'
+import { findReferrerByReferralCode, normalizeReferralCode, type ReferralReferrerType } from '@/lib/referrals'
 
 // POST /api/v1/user-plans - Start online plan purchase (requires auth)
 export async function POST(request: NextRequest) {
@@ -56,11 +56,13 @@ export async function POST(request: NextRequest) {
     }
 
     let referrerId: string | null = null
+    let referrerType: ReferralReferrerType | null = null
     if (referralCode) {
-      const referrerUser = await findApprovedAgentByReferralCode(db, referralCode, userId)
+      const referrerUser = await findReferrerByReferralCode(db, referralCode, userId)
 
       if (referrerUser) {
         referrerId = referrerUser.id
+        referrerType = referrerUser.type
       }
     }
 
@@ -73,6 +75,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         ...(referralCode ? { referralCode } : {}),
         ...(referrerId ? { referrerId } : {}),
+        ...(referrerType ? { referrerType } : {}),
       },
     })
 

@@ -4,6 +4,15 @@ import { db } from '@/lib/db'
 import { requirePermission } from '@/lib/auth'
 import { successResponse, errorResponse } from '@/lib/api-response'
 
+const commissionPercentSchema = (label: string) =>
+  z.union([
+    z.literal('').transform(() => 0),
+    z.number({ error: `${label} باید عدد باشد` })
+      .int(`${label} باید عدد صحیح باشد`)
+      .min(0, `${label} باید بین ۰ تا ۱۰۰ باشد`)
+      .max(100, `${label} باید بین ۰ تا ۱۰۰ باشد`),
+  ]).optional()
+
 // POST /api/v1/plans — Create plan (requires manage_plans permission)
 export async function POST(request: NextRequest) {
   try {
@@ -19,6 +28,8 @@ export async function POST(request: NextRequest) {
       discountPercent: z.number().int().min(0).max(100, 'درصد تخفیف باید بین ۰ تا ۱۰۰ باشد'),
       durationDays: z.number().int().min(1, 'مدت طرح باید حداقل ۱ روز باشد'),
       maxUses: z.number().int().optional(),
+      salesPartnerCommissionPercent: commissionPercentSchema('درصد پورسانت همکار فروش'),
+      referralCommissionPercent: commissionPercentSchema('درصد پورسانت رفرال کاربر'),
       features: z.string().optional(),
     })
 
@@ -27,7 +38,17 @@ export async function POST(request: NextRequest) {
       return errorResponse('VALIDATION_ERROR', parsed.error.issues.map((e) => e.message).join('. '), 400)
     }
 
-    const { name, description, price, discountPercent, durationDays, maxUses, features } = parsed.data
+    const {
+      name,
+      description,
+      price,
+      discountPercent,
+      durationDays,
+      maxUses,
+      salesPartnerCommissionPercent,
+      referralCommissionPercent,
+      features,
+    } = parsed.data
 
     const plan = await db.discountPlan.create({
       data: {
@@ -37,6 +58,8 @@ export async function POST(request: NextRequest) {
         discountPercent,
         durationDays,
         maxUses: maxUses ?? -1,
+        salesPartnerCommissionPercent: salesPartnerCommissionPercent ?? 0,
+        referralCommissionPercent: referralCommissionPercent ?? 0,
         features,
       },
     })

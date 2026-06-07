@@ -164,6 +164,8 @@ model DiscountPlan {
   discountPercent Int      @default(0) // درصد تخفیف
   durationDays    Int      @default(30) // مدت طرح (روز)
   maxUses         Int      @default(-1) // حداکثر دفعات استفاده (-1 = نامحدود)
+  salesPartnerCommissionPercent Int @default(0)
+  referralCommissionPercent     Int @default(0)
   status          String   @default("ACTIVE") // ACTIVE, INACTIVE
   features        String? // ویژگی‌های طرح (JSON array)
   createdAt       DateTime @default(now())

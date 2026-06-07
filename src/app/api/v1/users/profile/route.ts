@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { requireAuth } from '@/lib/auth'
 import { successResponse, errorResponse } from '@/lib/api-response'
@@ -13,13 +14,23 @@ const updateProfileSchema = z.object({
     .string()
     .trim()
     .refine((value) => value === '' || /^\d{10}$/.test(value), {
-      message: 'National code must be 10 digits',
+      message: 'کد ملی باید ۱۰ رقم باشد.',
     })
     .optional(),
   address: z.string().max(500).optional(),
   gender: z.enum(['MALE', 'FEMALE']).optional(),
   avatar: z.string().max(500).nullable().optional(),
 })
+
+const DUPLICATE_NATIONAL_CODE_MESSAGE = 'این کد ملی قبلاً ثبت شده است.'
+
+function isNationalCodeUniqueError(error: unknown) {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false
+  if (error.code !== 'P2002') return false
+
+  const target = error.meta?.target
+  return Array.isArray(target) && target.includes('nationalCode')
+}
 
 // PUT /api/v1/users/profile — Update current user's profile
 export async function PUT(request: NextRequest) {
@@ -43,7 +54,7 @@ export async function PUT(request: NextRequest) {
     // Validate national code format if provided
     if (nationalCode && nationalCode.length > 0) {
       if (!/^\d{10}$/.test(nationalCode)) {
-        return errorResponse('VALIDATION_ERROR', 'National code must be 10 digits', 400)
+        return errorResponse('VALIDATION_ERROR', 'کد ملی باید ۱۰ رقم باشد.', 400)
       }
 
       // Check national code uniqueness
@@ -51,7 +62,7 @@ export async function PUT(request: NextRequest) {
         where: { nationalCode },
       })
       if (existingProfile && existingProfile.userId !== user.sub) {
-        return errorResponse('DUPLICATE', 'National code already in use by another user', 409)
+        return errorResponse('DUPLICATE', DUPLICATE_NATIONAL_CODE_MESSAGE, 409)
       }
     }
 
@@ -117,7 +128,7 @@ export async function PUT(request: NextRequest) {
       if (planHolderLinking.conflict) {
         return errorResponse(
           'PLAN_HOLDER_LINK_CONFLICT',
-          'This national code is already linked to another user',
+          DUPLICATE_NATIONAL_CODE_MESSAGE,
           409
         )
       }
@@ -154,6 +165,9 @@ export async function PUT(request: NextRequest) {
     const msg = (e as Error).message
     if (msg.includes('token') || msg.includes('authorization')) {
       return errorResponse('UNAUTHORIZED', msg, 401)
+    }
+    if (isNationalCodeUniqueError(e)) {
+      return errorResponse('DUPLICATE', DUPLICATE_NATIONAL_CODE_MESSAGE, 409)
     }
     console.error('[PUT /api/v1/users/profile]', e)
     return errorResponse('INTERNAL_ERROR', 'Internal server error', 500)

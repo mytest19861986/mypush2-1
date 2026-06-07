@@ -1,4 +1,5 @@
 import { createHmac } from 'crypto'
+import type { PrismaClient } from '@prisma/client'
 
 const REFERRAL_CODE_PREFIX = 'HC'
 const REFERRAL_CODE_HASH_LENGTH = 10
@@ -6,14 +7,14 @@ const REFERRAL_CODE_PATTERN = /^HC[A-F0-9]{10}$/
 const TOKEN_PEPPER_MIN_LENGTH = 32
 const REFERRAL_CODE_HMAC_PURPOSE = 'referral-code:v1'
 
-type ReferralLookupClient = {
-  user: {
-    findMany: (args: {
-      where: { agent: { is: { status: string } } }
-      select: { id: true }
-    }) => Promise<Array<{ id: string }>>
-  }
+export type ReferralReferrerType = 'SALES_PARTNER' | 'USER_REFERRAL'
+
+export type ReferralReferrer = {
+  id: string
+  type: ReferralReferrerType
 }
+
+type ReferralLookupClient = Pick<PrismaClient, 'user'>
 
 export function generateReferralCode(userId?: string | null) {
   if (!userId) return null
@@ -44,17 +45,61 @@ export async function findApprovedAgentByReferralCode(
   referralCode?: string | null,
   excludedUserId?: string | null
 ) {
+  const referrer = await findReferrerByReferralCode(client, referralCode, excludedUserId)
+  return referrer?.type === 'SALES_PARTNER' ? { id: referrer.id } : null
+}
+
+export async function findReferrerByReferralCode(
+  client: ReferralLookupClient,
+  referralCode?: string | null,
+  excludedUserId?: string | null
+): Promise<ReferralReferrer | null> {
   const normalized = normalizeReferralCode(referralCode)
   if (!normalized) return null
 
-  const approvedAgents = await client.user.findMany({
-    where: { agent: { is: { status: 'APPROVED' } } },
-    select: { id: true },
+  const now = new Date()
+  const candidateUsers = await client.user.findMany({
+    where: {
+      OR: [
+        { agent: { is: { status: 'APPROVED' } } },
+        {
+          userPlans: {
+            some: {
+              status: 'ACTIVE',
+              endDate: { gte: now },
+            },
+          },
+        },
+      ],
+    },
+    select: {
+      id: true,
+      agent: { select: { status: true } },
+      userPlans: {
+        where: {
+          status: 'ACTIVE',
+          endDate: { gte: now },
+        },
+        select: { id: true },
+        take: 1,
+      },
+    },
   })
 
-  return (
-    approvedAgents.find(
-      (agent) => agent.id !== excludedUserId && generateReferralCode(agent.id) === normalized
-    ) ?? null
+  const referrer = candidateUsers.find(
+    (candidate) =>
+      candidate.id !== excludedUserId && generateReferralCode(candidate.id) === normalized
   )
+
+  if (!referrer) return null
+
+  if (referrer.agent?.status === 'APPROVED') {
+    return { id: referrer.id, type: 'SALES_PARTNER' }
+  }
+
+  if (!referrer.agent && referrer.userPlans.length > 0) {
+    return { id: referrer.id, type: 'USER_REFERRAL' }
+  }
+
+  return null
 }

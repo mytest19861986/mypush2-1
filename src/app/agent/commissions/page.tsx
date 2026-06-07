@@ -493,46 +493,55 @@ export default function AgentCommissionsPage() {
                 ) : (
                   <>
                     <div className="hidden overflow-x-auto md:block">
-                      <Table>
+                      <Table className="min-w-[1010px] table-fixed w-full">
+                        <colgroup>
+                          <col className="w-[160px]" />
+                          <col className="w-[160px]" />
+                          <col className="w-[150px]" />
+                          <col className="w-[90px]" />
+                          <col className="w-[140px]" />
+                          <col className="w-[155px]" />
+                          <col className="w-[155px]" />
+                        </colgroup>
                         <TableHeader>
-                          <TableRow className="bg-muted/50 hover:bg-muted/50">
-                            <TableHead>مشتری</TableHead>
-                            <TableHead>طرح</TableHead>
-                            <TableHead>مبلغ</TableHead>
-                            <TableHead>درصد</TableHead>
-                            <TableHead>وضعیت</TableHead>
-                            <TableHead>تاریخ ثبت</TableHead>
-                            <TableHead>تاریخ پرداخت</TableHead>
+                          <TableRow className="border-b bg-muted/50 hover:bg-muted/50">
+                            <TableHead className="px-4 py-3 text-right">مشتری</TableHead>
+                            <TableHead className="px-4 py-3 text-right">طرح</TableHead>
+                            <TableHead className="px-4 py-3 text-right">مبلغ</TableHead>
+                            <TableHead className="px-4 py-3 text-right">درصد</TableHead>
+                            <TableHead className="px-4 py-3 text-right">وضعیت</TableHead>
+                            <TableHead className="px-4 py-3 text-right">تاریخ ثبت</TableHead>
+                            <TableHead className="px-4 py-3 text-right">تاریخ پرداخت</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {commissions.map((commission) => (
                             <TableRow key={commission.id}>
-                              <TableCell>
-                                <span className="whitespace-nowrap text-sm font-medium">
+                              <TableCell className="px-4 py-3 text-right">
+                                <span className="block truncate text-sm font-medium">
                                   {getCustomerName(commission)}
                                 </span>
                               </TableCell>
-                              <TableCell>
-                                <span className="whitespace-nowrap text-sm">{getPlanName(commission)}</span>
+                              <TableCell className="px-4 py-3 text-right">
+                                <span className="block truncate text-sm">{getPlanName(commission)}</span>
                               </TableCell>
-                              <TableCell>
-                                <span className="whitespace-nowrap text-sm font-semibold">
+                              <TableCell className="px-4 py-3 text-right">
+                                <span className="whitespace-nowrap text-sm font-semibold tabular-nums">
                                   {formatMoney(commission.amount)}
                                 </span>
                               </TableCell>
-                              <TableCell>
-                                <span className="whitespace-nowrap text-sm">
+                              <TableCell className="px-4 py-3 text-right">
+                                <span className="whitespace-nowrap text-sm tabular-nums">
                                   {formatNumber(commission.percent)}٪
                                 </span>
                               </TableCell>
-                              <TableCell>{renderCommissionStatus(commission.status)}</TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3 text-right">{renderCommissionStatus(commission.status)}</TableCell>
+                              <TableCell className="px-4 py-3 text-right">
                                 <span className="whitespace-nowrap text-sm text-muted-foreground">
                                   {formatDateTime(commission.createdAt)}
                                 </span>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3 text-right">
                                 <span className="whitespace-nowrap text-sm text-muted-foreground">
                                   {getDateOrDash(commission.paidAt)}
                                 </span>

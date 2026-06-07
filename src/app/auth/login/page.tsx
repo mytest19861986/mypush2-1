@@ -38,6 +38,15 @@ import type { AuthUser } from '@/types'
 const OTP_LENGTH = 5
 const COUNTDOWN_SECONDS = 120
 const MAX_MOBILE_LENGTH = 11
+const REFERRAL_STORAGE_KEY = 'hamiReferralCode'
+const REFERRAL_CODE_PATTERN = /^HC[A-F0-9]{10}$/
+
+function normalizeReferralCode(value?: string | null) {
+  if (!value) return null
+
+  const normalized = value.trim().toUpperCase()
+  return REFERRAL_CODE_PATTERN.test(normalized) ? normalized : null
+}
 
 function getRedirectPathForUser(user: AuthUser) {
   const roles = user.roles || []
@@ -45,6 +54,18 @@ function getRedirectPathForUser(user: AuthUser) {
   if (roles.includes('DOCTOR')) return '/doctor/dashboard'
   if (roles.includes('AGENT')) return '/agent/dashboard'
   return '/user/dashboard'
+}
+
+function getReferralRedirectPathForUser(user: AuthUser) {
+  if (typeof window === 'undefined') return null
+
+  const roles = user.roles || []
+  if (roles.includes('SUPER_ADMIN') || roles.includes('ADMIN') || roles.includes('DOCTOR') || roles.includes('AGENT')) {
+    return null
+  }
+
+  const referralCode = normalizeReferralCode(localStorage.getItem(REFERRAL_STORAGE_KEY))
+  return referralCode ? `/user/plans?ref=${encodeURIComponent(referralCode)}` : null
 }
 
 // ─── Animation Variants ──────────────────────────────────────────────────────
@@ -124,6 +145,17 @@ export default function LoginPage() {
   }, [])
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const referralCode = normalizeReferralCode(
+      new URLSearchParams(window.location.search).get('ref')
+    )
+    if (referralCode) {
+      localStorage.setItem(REFERRAL_STORAGE_KEY, referralCode)
+    }
+  }, [])
+
+  useEffect(() => {
     let cancelled = false
     const hasStoredToken =
       typeof window !== 'undefined' && Boolean(localStorage.getItem('accessToken'))
@@ -152,7 +184,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!redirectingAfterAuth && !checkingAuth && !isLoading && isAuthenticated && user) {
-      router.replace(getRedirectPathForUser(user))
+      router.replace(getReferralRedirectPathForUser(user) ?? getRedirectPathForUser(user))
     }
   }, [checkingAuth, isAuthenticated, isLoading, redirectingAfterAuth, router, user])
 
@@ -175,7 +207,7 @@ export default function LoginPage() {
     setAuth(userData, data.accessToken, data.refreshToken)
     toast.success('ورود با موفقیت انجام شد')
 
-    const redirectPath = getRedirectPathForUser(userData)
+    const redirectPath = getReferralRedirectPathForUser(userData) ?? getRedirectPathForUser(userData)
     if (redirectFallbackTimeoutRef.current) {
       window.clearTimeout(redirectFallbackTimeoutRef.current)
     }

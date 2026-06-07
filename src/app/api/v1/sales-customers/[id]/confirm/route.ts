@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { authenticateRequest } from '@/lib/auth'
 import { successResponse, errorResponse } from '@/lib/api-response'
 import { AuditActions } from '@/lib/audit'
+import { calculateCommissionAmount, getPlanCommissionPercent } from '@/lib/commissions'
 import {
   addDays,
   canManageSalesCustomers,
@@ -52,6 +53,7 @@ export async function PATCH(
             price: true,
             durationDays: true,
             maxUses: true,
+            salesPartnerCommissionPercent: true,
           },
         },
         salesPartner: {
@@ -166,18 +168,26 @@ export async function PATCH(
         },
       })
 
-      // TODO: Wire commissionPercent to the approved sales partner commission configuration when that field is finalized.
-      const commissionPercent = 0
-      const commissionAmount = Math.round((salesCustomer.plan.price * commissionPercent) / 100)
-      const commission = await tx.commission.create({
-        data: {
-          agentId: salesCustomer.salesPartnerId,
-          userPlanId: userPlan.id,
-          percent: commissionPercent,
-          amount: commissionAmount,
-          status: 'PENDING',
-        },
-      })
+      const commissionPercent = getPlanCommissionPercent(salesCustomer.plan, 'SALES_PARTNER')
+      const commission = commissionPercent
+        ? await tx.commission.create({
+            data: {
+              agentId: salesCustomer.salesPartnerId,
+              userPlanId: userPlan.id,
+              percent: commissionPercent,
+              amount: calculateCommissionAmount(salesCustomer.plan.price, commissionPercent),
+              status: 'PENDING',
+            },
+          })
+        : null
+
+      if (!commissionPercent) {
+        console.info('[sales-customers/confirm] Skipped commission: plan commission percent is zero', {
+          salesCustomerId: salesCustomer.id,
+          planId: salesCustomer.planId,
+          salesPartnerId: salesCustomer.salesPartnerId,
+        })
+      }
 
       const updatedSalesCustomer = await tx.salesCustomer.update({
         where: { id },
@@ -208,7 +218,7 @@ export async function PATCH(
               salesPartnerId: salesCustomer.salesPartnerId,
               planHolderId: planHolder.id,
               userPlanId: userPlan.id,
-              commissionId: commission.id,
+              commissionId: commission?.id,
               nationalCode: maskNationalCode(salesCustomer.nationalCode),
             }),
             ip,
@@ -230,23 +240,27 @@ export async function PATCH(
             ip,
             device,
           },
-          {
-            userId: payload.sub,
-            action: AuditActions.COMMISSION_CREATED,
-            entity: 'Commission',
-            entityId: commission.id,
-            details: JSON.stringify({
-              commissionId: commission.id,
-              agentId: salesCustomer.salesPartnerId,
-              userPlanId: userPlan.id,
-              amount: commission.amount,
-              percent: commission.percent,
-              status: 'PENDING',
-              salesCustomerId: updatedSalesCustomer.id,
-            }),
-            ip,
-            device,
-          },
+          ...(commission
+            ? [
+                {
+                  userId: payload.sub,
+                  action: AuditActions.COMMISSION_CREATED,
+                  entity: 'Commission',
+                  entityId: commission.id,
+                  details: JSON.stringify({
+                    commissionId: commission.id,
+                    agentId: salesCustomer.salesPartnerId,
+                    userPlanId: userPlan.id,
+                    amount: commission.amount,
+                    percent: commission.percent,
+                    status: 'PENDING',
+                    salesCustomerId: updatedSalesCustomer.id,
+                  }),
+                  ip,
+                  device,
+                },
+              ]
+            : []),
         ],
       })
 

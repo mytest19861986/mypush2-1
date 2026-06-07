@@ -171,6 +171,8 @@ export interface DiscountPlanItem {
   discountPercent: number
   durationDays: number
   maxUses: number
+  salesPartnerCommissionPercent: number
+  referralCommissionPercent: number
   status: PlanStatus
   features?: string | null
   createdAt: string
@@ -179,6 +181,19 @@ export interface DiscountPlanItem {
 }
 
 export type PlanStatus = 'ACTIVE' | 'INACTIVE'
+
+export interface PlanMutationData {
+  name: string
+  description?: string
+  price: number
+  discountPercent: number
+  durationDays: number
+  maxUses: number
+  salesPartnerCommissionPercent: number
+  referralCommissionPercent: number
+  status?: PlanStatus
+  features?: string
+}
 
 // ─── User Plans (Purchases) ───
 export interface UserPlanItem {
@@ -200,6 +215,8 @@ export interface UserPlanItem {
     discountPercent: number
     durationDays: number
     maxUses: number
+    salesPartnerCommissionPercent?: number
+    referralCommissionPercent?: number
     features?: string | null
   }
 }

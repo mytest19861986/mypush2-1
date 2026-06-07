@@ -56,15 +56,24 @@ type SavedProfileResponse = {
   linkedPlansCount?: number
 }
 
-type ProfileSaveResult = SavedProfileResponse | {
+type ProfileSaveEnvelope = {
   success: boolean
   data?: SavedProfileResponse
+  message?: string
+  error?: {
+    code: string
+    message: string
+  }
 }
+
+type ProfileSaveResult = SavedProfileResponse | ProfileSaveEnvelope
 
 type UserPlansResponse = {
   plans?: Array<{ status: string }>
   referralCode?: string | null
 }
+
+const PROFILE_SAVE_ERROR_MESSAGE = 'خطا در بروزرسانی پروفایل'
 
 const emptyForm: ProfileForm = {
   firstName: '',
@@ -101,14 +110,33 @@ function getActivePlanStatus(data: UserPlansResponse | Array<{ status: string }>
   return Array.isArray(plans) && plans.some((plan) => plan.status === 'ACTIVE')
 }
 
+function getProfileSaveErrorMessage(res: ProfileSaveResult) {
+  if ('success' in res) {
+    return res.error?.message || res.message || PROFILE_SAVE_ERROR_MESSAGE
+  }
+
+  return PROFILE_SAVE_ERROR_MESSAGE
+}
+
 function ReferralCodePanel({ referralCode }: { referralCode?: string | null }) {
   const [copied, setCopied] = useState(false)
+  const [origin, setOrigin] = useState('')
+
+  useEffect(() => {
+    setOrigin(window.location.origin)
+  }, [])
 
   if (!referralCode) return null
 
+  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || origin).replace(/\/$/, '')
+  const referralLink = baseUrl
+    ? `${baseUrl}/auth/login?ref=${encodeURIComponent(referralCode)}`
+    : ''
   const handleCopy = async () => {
+    if (!referralLink) return
+
     try {
-      await navigator.clipboard.writeText(referralCode)
+      await navigator.clipboard.writeText(referralLink)
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1800)
     } catch {
@@ -121,13 +149,16 @@ function ReferralCodePanel({ referralCode }: { referralCode?: string | null }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <Copy className="size-4 text-primary" />
-          کد معرفی شما
+          لینک معرفی شما
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-3">
+        <p className="text-sm leading-6 text-muted-foreground">
+          این لینک را برای معرفی کاربران جدید ارسال کنید.
+        </p>
         <div className="flex max-w-sm items-center gap-2 rounded-lg border bg-background px-3 py-2">
           <p className="min-w-0 flex-1 truncate font-mono text-sm font-semibold" dir="ltr">
-            {referralCode}
+            {referralLink || '...'}
           </p>
           <Button type="button" variant="outline" size="sm" onClick={handleCopy} className="shrink-0">
             {copied ? (
@@ -244,7 +275,7 @@ export default function UserProfilePage() {
           : res
 
       if (!saved) {
-        throw new Error('خطا در بروزرسانی پروفایل')
+        throw new Error(getProfileSaveErrorMessage(res))
       }
 
       setForm({
@@ -262,7 +293,7 @@ export default function UserProfilePage() {
       setFeedback({ type: 'success', message })
       toast({ title: 'موفق', description: message })
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'خطا در بروزرسانی پروفایل'
+      const msg = err instanceof Error ? err.message : PROFILE_SAVE_ERROR_MESSAGE
       setFeedback({ type: 'error', message: msg })
       toast({ title: 'خطا', description: msg, variant: 'destructive' })
     } finally {

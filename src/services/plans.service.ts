@@ -1,5 +1,5 @@
 import { BaseService } from './base.service'
-import type { DiscountPlanItem, UserPlanItem } from '@/types'
+import type { DiscountPlanItem, PlanMutationData, UserPlanItem } from '@/types'
 
 interface PlanListParams {
   page?: number
@@ -7,17 +7,7 @@ interface PlanListParams {
   status?: string
 }
 
-interface CreatePlanData {
-  name: string
-  description?: string
-  price: number
-  discountPercent: number
-  durationDays: number
-  maxUses: number
-  status?: string
-}
-
-type UpdatePlanData = Partial<CreatePlanData>
+type UpdatePlanData = Partial<PlanMutationData>
 
 export class PlansService extends BaseService {
   async getList(params: PlanListParams = {}) {
@@ -32,7 +22,7 @@ export class PlansService extends BaseService {
     return this.get<DiscountPlanItem>(`/plans/${id}`)
   }
 
-  async create(data: CreatePlanData) {
+  async create(data: PlanMutationData) {
     return this.post<DiscountPlanItem>('/plans', data)
   }
 

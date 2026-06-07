@@ -6,7 +6,11 @@ import { successResponse, errorResponse } from '@/lib/api-response'
 import { createAuditLog, AuditActions } from '@/lib/audit'
 import { parsePaymentMetadata } from '@/lib/payments'
 import { getClientIp } from '@/app/api/v1/auth/_helpers'
-import { getOnlinePlanCommissionPercent } from '@/lib/commissions'
+import {
+  calculateCommissionAmount,
+  getPlanCommissionPercent,
+  type CommissionReferrerType,
+} from '@/lib/commissions'
 
 const successSchema = z.object({
   refId: z.string().max(100).optional(),
@@ -208,19 +212,46 @@ export async function POST(
       }
 
       const metadata = parsePaymentMetadata(payment.metadata)
-      let validatedReferrerId: string | null = null
+      let validatedReferrer:
+        | {
+            id: string
+            type: CommissionReferrerType
+          }
+        | null = null
 
       if (metadata.referrerId) {
         const referrer = await tx.user.findUnique({
           where: { id: metadata.referrerId },
           select: {
             id: true,
+            status: true,
             agent: { select: { status: true } },
+            userPlans: {
+              where: {
+                status: 'ACTIVE',
+                endDate: { gte: now },
+              },
+              select: { id: true },
+              take: 1,
+            },
           },
         })
 
-        if (referrer?.agent?.status === 'APPROVED' && referrer.id !== payment.userId) {
-          validatedReferrerId = referrer.id
+        if (referrer && referrer.id !== payment.userId && referrer.status === 'ACTIVE') {
+          const isApprovedSalesPartner = referrer.agent?.status === 'APPROVED'
+          const isEligibleUserReferral = !referrer.agent && referrer.userPlans.length > 0
+
+          if (
+            isApprovedSalesPartner &&
+            (!metadata.referrerType || metadata.referrerType === 'SALES_PARTNER')
+          ) {
+            validatedReferrer = { id: referrer.id, type: 'SALES_PARTNER' }
+          } else if (
+            isEligibleUserReferral &&
+            (!metadata.referrerType || metadata.referrerType === 'USER_REFERRAL')
+          ) {
+            validatedReferrer = { id: referrer.id, type: 'USER_REFERRAL' }
+          }
         }
       }
 
@@ -230,7 +261,7 @@ export async function POST(
           planId: payment.planId,
           planHolderId,
           paymentId: payment.id,
-          referrerId: validatedReferrerId,
+          referrerId: validatedReferrer?.id ?? null,
           source: 'ONLINE_PAYMENT',
           status: 'ACTIVE',
           startDate: now,
@@ -250,27 +281,34 @@ export async function POST(
           }
         | null = null
 
-      if (validatedReferrerId) {
-        const commissionPercent = getOnlinePlanCommissionPercent()
+      if (validatedReferrer) {
+        const commissionPercent = getPlanCommissionPercent(payment.plan, validatedReferrer.type)
         const existingCommission = await tx.commission.findFirst({
           where: { userPlanId: userPlan.id },
           select: { id: true, amount: true, percent: true, status: true },
         })
 
-        commission =
-          existingCommission ??
-          (commissionPercent
-            ? await tx.commission.create({
-                data: {
-                  agentId: validatedReferrerId,
-                  userPlanId: userPlan.id,
-                  amount: Math.round((payment.finalAmount * commissionPercent) / 100),
-                  percent: commissionPercent,
-                  status: 'PENDING',
-                },
-                select: { id: true, amount: true, percent: true, status: true },
-              })
-            : null)
+        if (existingCommission) {
+          commission = existingCommission
+        } else if (commissionPercent) {
+          commission = await tx.commission.create({
+            data: {
+              agentId: validatedReferrer.id,
+              userPlanId: userPlan.id,
+              amount: calculateCommissionAmount(payment.finalAmount, commissionPercent),
+              percent: commissionPercent,
+              status: 'PENDING',
+            },
+            select: { id: true, amount: true, percent: true, status: true },
+          })
+        } else {
+          console.info('[payments/success] Skipped commission: plan commission percent is zero', {
+            paymentId: payment.id,
+            planId: payment.planId,
+            referrerId: validatedReferrer.id,
+            referrerType: validatedReferrer.type,
+          })
+        }
       }
 
       await tx.payment.update({
@@ -290,7 +328,8 @@ export async function POST(
             userPlanId: userPlan.id,
             amount: payment.amount,
             finalAmount: payment.finalAmount,
-            referrerId: validatedReferrerId,
+            referrerId: validatedReferrer?.id,
+            referrerType: validatedReferrer?.type,
             commissionId: commission?.id,
           }),
           ip,
@@ -309,7 +348,8 @@ export async function POST(
             planHolderId,
             planId: payment.planId,
             source: 'ONLINE_PAYMENT',
-            referrerId: validatedReferrerId,
+            referrerId: validatedReferrer?.id,
+            referrerType: validatedReferrer?.type,
           }),
           ip,
           device,
@@ -324,7 +364,8 @@ export async function POST(
             entity: 'Commission',
             entityId: commission.id,
             details: JSON.stringify({
-              agentId: validatedReferrerId,
+              agentId: validatedReferrer?.id,
+              referrerType: validatedReferrer?.type,
               userPlanId: userPlan.id,
               amount: commission.amount,
               percent: commission.percent,

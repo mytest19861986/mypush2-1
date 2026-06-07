@@ -4,6 +4,15 @@ import { db } from '@/lib/db'
 import { requirePermission } from '@/lib/auth'
 import { successResponse, errorResponse } from '@/lib/api-response'
 
+const commissionPercentSchema = (label: string) =>
+  z.union([
+    z.literal('').transform(() => 0),
+    z.number({ error: `${label} باید عدد باشد` })
+      .int(`${label} باید عدد صحیح باشد`)
+      .min(0, `${label} باید بین ۰ تا ۱۰۰ باشد`)
+      .max(100, `${label} باید بین ۰ تا ۱۰۰ باشد`),
+  ]).optional()
+
 // GET /api/v1/plans/[id] — Get plan details (public)
 export async function GET(
   _request: NextRequest,
@@ -57,6 +66,8 @@ export async function PATCH(
       discountPercent: z.number().int().min(0).max(100).optional(),
       durationDays: z.number().int().min(1).optional(),
       maxUses: z.number().int().optional(),
+      salesPartnerCommissionPercent: commissionPercentSchema('درصد پورسانت همکار فروش'),
+      referralCommissionPercent: commissionPercentSchema('درصد پورسانت رفرال کاربر'),
       features: z.string().optional(),
       status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
     })

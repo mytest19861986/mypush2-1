@@ -63,6 +63,16 @@ type PaymentState =
   | { status: 'success'; message: string; data?: PaymentSuccessResponse }
   | { status: 'error'; message: string; needsProfile?: boolean }
 
+const REFERRAL_STORAGE_KEY = 'hamiReferralCode'
+const REFERRAL_CODE_PATTERN = /^HC[A-F0-9]{10}$/
+
+function normalizeReferralCode(value?: string | null) {
+  if (!value) return null
+
+  const normalized = value.trim().toUpperCase()
+  return REFERRAL_CODE_PATTERN.test(normalized) ? normalized : null
+}
+
 function formatPrice(amount: number) {
   return new Intl.NumberFormat('fa-IR').format(amount)
 }
@@ -208,6 +218,7 @@ export default function PlansPage() {
   const [purchasingPlanId, setPurchasingPlanId] = useState<string | null>(null)
   const [confirmingPayment, setConfirmingPayment] = useState(false)
   const [paymentState, setPaymentState] = useState<PaymentState>({ status: 'idle' })
+  const [referralCode, setReferralCode] = useState<string | null>(null)
 
   const fetchPlans = useCallback(async () => {
     setLoadingPlans(true)
@@ -231,6 +242,19 @@ export default function PlansPage() {
     fetchPlans()
   }, [fetchPlans])
 
+  useEffect(() => {
+    const queryReferralCode = normalizeReferralCode(
+      new URLSearchParams(window.location.search).get('ref')
+    )
+    const storedReferralCode = normalizeReferralCode(localStorage.getItem(REFERRAL_STORAGE_KEY))
+    const nextReferralCode = queryReferralCode ?? storedReferralCode
+
+    if (nextReferralCode) {
+      localStorage.setItem(REFERRAL_STORAGE_KEY, nextReferralCode)
+      setReferralCode(nextReferralCode)
+    }
+  }, [])
+
   const activePlans = useMemo(
     () => plans.filter((plan) => !plan.status || plan.status === 'ACTIVE'),
     [plans]
@@ -243,6 +267,7 @@ export default function PlansPage() {
     try {
       const purchase = await apiClient.post<PurchaseResponse>('/user-plans', {
         planId: plan.id,
+        ...(referralCode ? { referralCode } : {}),
       })
       const paymentId = purchase.paymentId || purchase.payment?.id
 
@@ -278,6 +303,8 @@ export default function PlansPage() {
         message: 'پرداخت با موفقیت ثبت شد و طرح شما فعال گردید.',
         data: payment,
       })
+      localStorage.removeItem(REFERRAL_STORAGE_KEY)
+      setReferralCode(null)
     } catch (error) {
       setPaymentState({
         status: 'error',
