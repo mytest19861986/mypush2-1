@@ -115,10 +115,10 @@ export interface DoctorVisitStats {
   }
   totalVisits: number
   uniquePatientsCount: number
-  completedVisitsCount: number | null
-  pendingVisitsCount: number | null
-  cancelledVisitsCount: number | null
-  totalDiscountAmount: number | null
+  completedVisitsCount: number
+  pendingVisitsCount: number
+  cancelledVisitsCount: number
+  totalDiscountAmount: number
   dailyBreakdown: { date: string; count: number }[]
   statusBreakdown: { status: string; label: string; count: number }[]
 }

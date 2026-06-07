@@ -1,5 +1,5 @@
 import { BaseService } from './base.service'
-import type { DoctorItem } from '@/types'
+import type { DoctorItem, DoctorVisitStats } from '@/types'
 
 interface DoctorListParams {
   page?: number
@@ -63,6 +63,11 @@ export class DoctorsService extends BaseService {
 
   async updateByAdmin(id: string, data: { discountPercent: number }) {
     return this.patch<DoctorItem>(`/doctors/${id}`, data)
+  }
+
+  async getVisitStats(id: string, params: { from: string; to: string }) {
+    const searchParams = new URLSearchParams({ from: params.from, to: params.to })
+    return this.get<DoctorVisitStats>(`/admin/doctors/${id}/visit-stats?${searchParams.toString()}`)
   }
 }
 
