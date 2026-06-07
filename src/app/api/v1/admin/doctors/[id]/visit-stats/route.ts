@@ -5,6 +5,7 @@ import { authenticateRequest } from '@/lib/auth'
 import { successResponse, errorResponse } from '@/lib/api-response'
 
 const dateOnlyPattern = /^\d{4}-\d{2}-\d{2}$/
+const utcIsoDateTimePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/
 
 const statusLabels: Record<string, string> = {
   PENDING: 'در انتظار',
@@ -24,6 +25,7 @@ function isValidDoctorId(id: string) {
 
 function parseDateParam(value: string | null, boundary: 'from' | 'to') {
   if (!value) return null
+  if (!dateOnlyPattern.test(value) && !utcIsoDateTimePattern.test(value)) return null
 
   const normalized =
     dateOnlyPattern.test(value) && boundary === 'from'
