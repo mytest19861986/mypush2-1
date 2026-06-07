@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import {
+  BarChart3,
   MoreHorizontal,
   Eye,
   CheckCircle,
@@ -10,6 +11,7 @@ import {
   Percent,
   Save,
   Loader2,
+  RefreshCw,
   Search,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -40,8 +42,20 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { PageHeader, StatusBadge } from '@/components/shared'
 import { doctorsService } from '@/services'
-import type { DoctorItem } from '@/types'
-import { toPersianNum, getDisplayName } from '@/utils/formatters'
+import type { DoctorItem, DoctorVisitStats } from '@/types'
+import {
+  toPersianNum,
+  getDisplayName,
+  formatJalaliDate,
+  formatJalaliDateRange,
+  formatPriceWithUnit,
+} from '@/utils/formatters'
+import {
+  getCurrentJalaliYearMonth,
+  getJalaliMonthLength,
+  jalaliDatePartsToIsoDate,
+  JALALI_MONTHS,
+} from '@/utils/jalali-date'
 import { DOCTOR_STATUS_LABELS } from '@/constants'
 
 /* ── Specialty filter options ─────────────────────────────── */
@@ -63,6 +77,51 @@ const SPECIALTY_FILTERS = [
 
 /* ── Doctors Page ────────────────────────────────────────── */
 
+interface JalaliDateSelection {
+  year: number
+  month: number
+  day: number
+}
+
+interface JalaliDateRangeSelection {
+  from: JalaliDateSelection
+  to: JalaliDateSelection
+}
+
+function getDefaultVisitStatsRange(): JalaliDateRangeSelection {
+  const current = getCurrentJalaliYearMonth()
+  return {
+    from: { year: current.year, month: current.month, day: 1 },
+    to: {
+      year: current.year,
+      month: current.month,
+      day: getJalaliMonthLength(current.year, current.month),
+    },
+  }
+}
+
+function clampJalaliDay(year: number, month: number, day: number) {
+  return Math.min(day, getJalaliMonthLength(year, month))
+}
+
+function toVisitStatsIsoRange(range: JalaliDateRangeSelection) {
+  return {
+    from: jalaliDatePartsToIsoDate(range.from.year, range.from.month, range.from.day),
+    to: jalaliDatePartsToIsoDate(range.to.year, range.to.month, range.to.day),
+  }
+}
+
+function formatNullableStat(value: number | null | undefined) {
+  return value === null || value === undefined ? 'داده موجود نیست' : toPersianNum(value)
+}
+
+function getDoctorSafeDisplayName(doctor: DoctorItem | null) {
+  const firstName = doctor?.user?.profile?.firstName?.trim() ?? ''
+  const lastName = doctor?.user?.profile?.lastName?.trim() ?? ''
+  const fullName = `${firstName} ${lastName}`.trim()
+  return fullName || doctor?.clinicName?.trim() || 'پزشک'
+}
+
 export default function AdminDoctorsPage() {
   const { toast } = useToast()
   const [doctors, setDoctors] = useState<DoctorItem[]>([])
@@ -80,6 +139,45 @@ export default function AdminDoctorsPage() {
   const [detailError, setDetailError] = useState<string | null>(null)
   const [discountInput, setDiscountInput] = useState('0')
   const [savingDiscount, setSavingDiscount] = useState(false)
+  const defaultStatsRange = useMemo(() => getDefaultVisitStatsRange(), [])
+  const [statsOpen, setStatsOpen] = useState(false)
+  const [statsDoctor, setStatsDoctor] = useState<DoctorItem | null>(null)
+  const [statsRange, setStatsRange] = useState<JalaliDateRangeSelection>(defaultStatsRange)
+  const [visitStats, setVisitStats] = useState<DoctorVisitStats | null>(null)
+  const [isStatsLoading, setIsStatsLoading] = useState(false)
+  const [statsError, setStatsError] = useState<string | null>(null)
+
+  const jalaliYearOptions = useMemo(() => {
+    const currentYear = defaultStatsRange.from.year
+    return Array.from({ length: 12 }, (_, index) => currentYear + 1 - index)
+  }, [defaultStatsRange.from.year])
+
+  const fromDayOptions = useMemo(
+    () =>
+      Array.from(
+        { length: getJalaliMonthLength(statsRange.from.year, statsRange.from.month) },
+        (_, index) => index + 1
+      ),
+    [statsRange.from.month, statsRange.from.year]
+  )
+
+  const toDayOptions = useMemo(
+    () =>
+      Array.from(
+        { length: getJalaliMonthLength(statsRange.to.year, statsRange.to.month) },
+        (_, index) => index + 1
+      ),
+    [statsRange.to.month, statsRange.to.year]
+  )
+
+  const selectedStatsRangeText = useMemo(() => {
+    try {
+      const range = toVisitStatsIsoRange(statsRange)
+      return formatJalaliDateRange(range.from, range.to)
+    } catch {
+      return 'بازه انتخاب شده معتبر نیست'
+    }
+  }, [statsRange])
 
   const fetchDoctors = useCallback(async () => {
     setIsLoading(true)
@@ -108,6 +206,78 @@ export default function AdminDoctorsPage() {
   useEffect(() => {
     fetchDoctors()
   }, [fetchDoctors])
+
+  const fetchVisitStats = useCallback(async () => {
+    if (!statsDoctor) return
+
+    let isoRange: { from: string; to: string }
+    try {
+      isoRange = toVisitStatsIsoRange(statsRange)
+    } catch {
+      setVisitStats(null)
+      setStatsError('بازه انتخاب شده معتبر نیست')
+      setIsStatsLoading(false)
+      return
+    }
+
+    if (isoRange.from > isoRange.to) {
+      setVisitStats(null)
+      setStatsError('تاریخ شروع باید قبل از تاریخ پایان باشد')
+      setIsStatsLoading(false)
+      return
+    }
+
+    setIsStatsLoading(true)
+    setStatsError(null)
+    try {
+      const res = await doctorsService.getVisitStats(statsDoctor.id, isoRange)
+      if (res.success && res.data) {
+        setVisitStats(res.data)
+      } else {
+        setVisitStats(null)
+        setStatsError(res.error?.message || 'خطا در دریافت آمار ویزیت')
+      }
+    } catch {
+      setVisitStats(null)
+      setStatsError('خطا در دریافت آمار ویزیت')
+    } finally {
+      setIsStatsLoading(false)
+    }
+  }, [statsDoctor, statsRange])
+
+  useEffect(() => {
+    if (statsOpen) {
+      void fetchVisitStats()
+    }
+  }, [fetchVisitStats, statsOpen])
+
+  const handleOpenVisitStats = (doctor: DoctorItem) => {
+    setStatsDoctor(doctor)
+    setStatsRange(getDefaultVisitStatsRange())
+    setVisitStats(null)
+    setStatsError(null)
+    setIsStatsLoading(true)
+    setStatsOpen(true)
+  }
+
+  const handleJalaliDatePartChange = (
+    side: 'from' | 'to',
+    part: keyof JalaliDateSelection,
+    value: string
+  ) => {
+    const nextValue = Number(value)
+    if (!Number.isInteger(nextValue)) return
+
+    setStatsRange((current) => {
+      const nextDate = { ...current[side], [part]: nextValue }
+      nextDate.day = clampJalaliDay(nextDate.year, nextDate.month, nextDate.day)
+
+      return {
+        ...current,
+        [side]: nextDate,
+      }
+    })
+  }
 
   const handleSearch = (value: string) => {
     setSearch(value)
@@ -194,6 +364,100 @@ export default function AdminDoctorsPage() {
     } finally {
       setSavingDiscount(false)
     }
+  }
+
+  const visitStatCards = [
+    { title: 'کل ویزیت‌ها', value: formatNullableStat(visitStats?.totalVisits) },
+    { title: 'بیماران یکتا', value: formatNullableStat(visitStats?.uniquePatientsCount) },
+    { title: 'ویزیت تکمیل‌شده', value: formatNullableStat(visitStats?.completedVisitsCount) },
+    { title: 'ویزیت در انتظار', value: formatNullableStat(visitStats?.pendingVisitsCount) },
+    { title: 'لغو/رد شده', value: formatNullableStat(visitStats?.cancelledVisitsCount) },
+    {
+      title: 'مجموع تخفیف',
+      value:
+        visitStats?.totalDiscountAmount === null || visitStats?.totalDiscountAmount === undefined
+          ? 'داده موجود نیست'
+          : formatPriceWithUnit(visitStats.totalDiscountAmount),
+    },
+  ]
+
+  const renderJalaliDateSelects = (
+    side: 'from' | 'to',
+    label: string,
+    dayOptions: number[]
+  ) => {
+    const value = statsRange[side]
+
+    return (
+      <div className="space-y-2">
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="space-y-1">
+            <Label htmlFor={`visit-stats-${side}-year`} className="text-xs">
+              سال
+            </Label>
+            <Select
+              value={String(value.year)}
+              onValueChange={(next) => handleJalaliDatePartChange(side, 'year', next)}
+              dir="rtl"
+            >
+              <SelectTrigger id={`visit-stats-${side}-year`} className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {jalaliYearOptions.map((year) => (
+                  <SelectItem key={year} value={String(year)}>
+                    {year.toLocaleString('fa-IR', { useGrouping: false })}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor={`visit-stats-${side}-month`} className="text-xs">
+              ماه
+            </Label>
+            <Select
+              value={String(value.month)}
+              onValueChange={(next) => handleJalaliDatePartChange(side, 'month', next)}
+              dir="rtl"
+            >
+              <SelectTrigger id={`visit-stats-${side}-month`} className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {JALALI_MONTHS.map((month) => (
+                  <SelectItem key={month.value} value={String(month.value)}>
+                    {month.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor={`visit-stats-${side}-day`} className="text-xs">
+              روز
+            </Label>
+            <Select
+              value={String(value.day)}
+              onValueChange={(next) => handleJalaliDatePartChange(side, 'day', next)}
+              dir="rtl"
+            >
+              <SelectTrigger id={`visit-stats-${side}-day`} className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {dayOptions.map((day) => (
+                  <SelectItem key={day} value={String(day)}>
+                    {day.toLocaleString('fa-IR', { useGrouping: false })}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -317,6 +581,10 @@ export default function AdminDoctorsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleOpenVisitStats(doctor)}>
+                          <BarChart3 className="ml-2 size-4" />
+                          آمار ویزیت
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleViewDetail(doctor.id)}>
                           <Eye className="ml-2 size-4" />
                           مشاهده جزئیات
@@ -391,6 +659,140 @@ export default function AdminDoctorsPage() {
           </div>
         </div>
       )}
+
+      {/* Doctor visit stats dialog */}
+      <Dialog
+        open={statsOpen}
+        onOpenChange={(open) => {
+          setStatsOpen(open)
+          if (!open) {
+            setStatsDoctor(null)
+            setVisitStats(null)
+            setStatsError(null)
+          }
+        }}
+      >
+        <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>آمار ویزیت {getDoctorSafeDisplayName(statsDoctor)}</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-5">
+            <div className="rounded-lg border p-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                {renderJalaliDateSelects('from', 'از تاریخ', fromDayOptions)}
+                {renderJalaliDateSelects('to', 'تا تاریخ', toDayOptions)}
+              </div>
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm font-medium text-muted-foreground">
+                  بازه گزارش: <span className="text-foreground">{selectedStatsRangeText}</span>
+                </p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void fetchVisitStats()}
+                  disabled={isStatsLoading || !statsDoctor}
+                >
+                  {isStatsLoading ? (
+                    <Loader2 className="ml-2 size-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="ml-2 size-4" />
+                  )}
+                  به‌روزرسانی
+                </Button>
+              </div>
+            </div>
+
+            {statsError ? (
+              <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 text-center text-sm text-destructive">
+                {statsError}
+              </div>
+            ) : (
+              <>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {visitStatCards.map((card) => (
+                    <div key={card.title} className="rounded-lg border bg-background/50 p-3">
+                      <p className="text-xs text-muted-foreground">{card.title}</p>
+                      {isStatsLoading ? (
+                        <Skeleton className="mt-3 h-6 w-24" />
+                      ) : (
+                        <p className="mt-3 text-lg font-bold">{card.value}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <div className="rounded-lg border p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="text-sm font-semibold">تفکیک وضعیت</h3>
+                      <span className="text-xs text-muted-foreground">
+                        {toPersianNum(visitStats?.statusBreakdown.length ?? 0)} وضعیت
+                      </span>
+                    </div>
+                    {isStatsLoading ? (
+                      <div className="space-y-2">
+                        {Array.from({ length: 3 }).map((_, index) => (
+                          <Skeleton key={index} className="h-8 w-full" />
+                        ))}
+                      </div>
+                    ) : visitStats?.statusBreakdown.length ? (
+                      <div className="space-y-2">
+                        {visitStats.statusBreakdown.map((item) => (
+                          <div
+                            key={item.status}
+                            className="flex items-center justify-between gap-3 rounded-md bg-muted/40 px-3 py-2 text-sm"
+                          >
+                            <span>{item.label}</span>
+                            <span className="font-semibold">{toPersianNum(item.count)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="py-4 text-center text-sm text-muted-foreground">
+                        داده‌ای برای این بازه وجود ندارد.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="rounded-lg border p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="text-sm font-semibold">روند روزانه</h3>
+                      <span className="text-xs text-muted-foreground">
+                        {toPersianNum(visitStats?.dailyBreakdown.length ?? 0)} روز
+                      </span>
+                    </div>
+                    {isStatsLoading ? (
+                      <div className="space-y-2">
+                        {Array.from({ length: 4 }).map((_, index) => (
+                          <Skeleton key={index} className="h-8 w-full" />
+                        ))}
+                      </div>
+                    ) : visitStats?.dailyBreakdown.length ? (
+                      <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
+                        {visitStats.dailyBreakdown.map((item) => (
+                          <div
+                            key={item.date}
+                            className="flex items-center justify-between gap-3 rounded-md bg-muted/40 px-3 py-2 text-sm"
+                          >
+                            <span>{formatJalaliDate(item.date)}</span>
+                            <span className="font-semibold">{toPersianNum(item.count)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="py-4 text-center text-sm text-muted-foreground">
+                        داده‌ای برای این بازه وجود ندارد.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Doctor detail dialog */}
       <Dialog

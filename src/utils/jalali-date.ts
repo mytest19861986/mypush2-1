@@ -8,6 +8,12 @@ export interface IsoDateRange {
   to: string
 }
 
+export interface JalaliDateParts {
+  year: number
+  month: number
+  day: number
+}
+
 export const JALALI_MONTHS = [
   { value: 1, label: 'فروردین' },
   { value: 2, label: 'اردیبهشت' },
@@ -151,6 +157,39 @@ function formatIsoDate(parts: { year: number; month: number; day: number }) {
   return `${year}-${month}-${day}`
 }
 
+export function getJalaliMonthLength(jy: number, jm: number): number {
+  if (!Number.isInteger(jy) || !Number.isInteger(jm) || jm < 1 || jm > 12) {
+    throw new RangeError('Invalid Jalali year/month')
+  }
+
+  const nextMonth = jm === 12 ? 1 : jm + 1
+  const nextYear = jm === 12 ? jy + 1 : jy
+
+  return jalaliToDayNumber(nextYear, nextMonth, 1) - jalaliToDayNumber(jy, jm, 1)
+}
+
+export function jalaliDatePartsToGregorianDate(jy: number, jm: number, jd: number): Date {
+  const monthLength = getJalaliMonthLength(jy, jm)
+
+  if (!Number.isInteger(jd) || jd < 1 || jd > monthLength) {
+    throw new RangeError('Invalid Jalali day')
+  }
+
+  const gregorian = dayNumberToGregorian(jalaliToDayNumber(jy, jm, jd))
+  return new Date(Date.UTC(gregorian.year, gregorian.month - 1, gregorian.day))
+}
+
+export function jalaliDatePartsToIsoDate(jy: number, jm: number, jd: number): string {
+  const monthLength = getJalaliMonthLength(jy, jm)
+
+  if (!Number.isInteger(jd) || jd < 1 || jd > monthLength) {
+    throw new RangeError('Invalid Jalali day')
+  }
+
+  const gregorian = dayNumberToGregorian(jalaliToDayNumber(jy, jm, jd))
+  return formatIsoDate(gregorian)
+}
+
 function toDisplayDate(value: string | Date): Date {
   if (value instanceof Date) return value
   return dateOnlyPattern.test(value) ? new Date(`${value}T12:00:00`) : new Date(value)
@@ -186,6 +225,11 @@ export function getCurrentJalaliYearMonth(date = new Date()): JalaliYearMonth {
     year: jalaliDate.year,
     month: jalaliDate.month,
   }
+}
+
+export function getCurrentJalaliMonthRange(date = new Date()): IsoDateRange {
+  const current = getCurrentJalaliYearMonth(date)
+  return jalaliMonthToGregorianRange(current.year, current.month)
 }
 
 export function formatJalaliDate(value: string | Date): string {

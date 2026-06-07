@@ -108,6 +108,21 @@ export interface DoctorItem {
 
 export type DoctorStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED'
 
+export interface DoctorVisitStats {
+  range: {
+    from: string
+    to: string
+  }
+  totalVisits: number
+  uniquePatientsCount: number
+  completedVisitsCount: number | null
+  pendingVisitsCount: number | null
+  cancelledVisitsCount: number | null
+  totalDiscountAmount: number | null
+  dailyBreakdown: { date: string; count: number }[]
+  statusBreakdown: { status: string; label: string; count: number }[]
+}
+
 // ─── Agent ───
 export interface AgentItem {
   id: string
