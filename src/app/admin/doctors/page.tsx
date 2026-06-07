@@ -43,7 +43,6 @@ import { doctorsService } from '@/services'
 import type { DoctorItem } from '@/types'
 import { toPersianNum, getDisplayName } from '@/utils/formatters'
 import { DOCTOR_STATUS_LABELS } from '@/constants'
-import { useAuthStore } from '@/stores/auth-store' // اضافه کنید اگر قبلاً اضافه نشده
 
 /* ── Specialty filter options ─────────────────────────────── */
 
@@ -81,7 +80,6 @@ export default function AdminDoctorsPage() {
   const [detailError, setDetailError] = useState<string | null>(null)
   const [discountInput, setDiscountInput] = useState('0')
   const [savingDiscount, setSavingDiscount] = useState(false)
-  const { logout } = useAuthStore()
 
   const fetchDoctors = useCallback(async () => {
     setIsLoading(true)
@@ -198,10 +196,6 @@ export default function AdminDoctorsPage() {
     }
   }
 
-  const handleLogout = async () => {
-    await logout()
-  }
-
   return (
     <div className="space-y-6">
       <PageHeader
@@ -212,11 +206,6 @@ export default function AdminDoctorsPage() {
             <span className="font-semibold text-emerald-600">{toPersianNum(total)}</span>{' '}
             پزشک
           </>
-        }
-        action={
-          <Button variant="destructive" onClick={handleLogout} className="w-full sm:w-auto">
-            خروج
-          </Button>
         }
       />
 

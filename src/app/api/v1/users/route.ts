@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { db } from '@/lib/db'
 import { requirePermission } from '@/lib/auth'
 import { successResponse, errorResponse, paginatedResponse } from '@/lib/api-response'
+import type { Prisma } from '@prisma/client'
 
 const querySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -29,8 +30,21 @@ export async function GET(request: NextRequest) {
   const skip = (page - 1) * limit
   const now = new Date()
 
+  // Admin users page is for regular members only. Provider, sales partner,
+  // and staff accounts have separate management pages.
+  const regularUserRoleFilter: Prisma.UserRoleListRelationFilter = {
+    every: {
+      role: { name: 'USER' },
+    },
+  }
+
   // Build where clause
-  const where: Record<string, unknown> = { deletedAt: null }
+  const where: Prisma.UserWhereInput = {
+    deletedAt: null,
+    doctor: { is: null },
+    agent: { is: null },
+    roles: regularUserRoleFilter,
+  }
 
   if (search) {
     where.OR = [
@@ -47,6 +61,7 @@ export async function GET(request: NextRequest) {
 
   if (role) {
     where.roles = {
+      ...regularUserRoleFilter,
       some: {
         role: { name: role },
       },
