@@ -51,6 +51,9 @@ export async function POST(request: NextRequest) {
             lastName: true,
             nationalCode: true,
             avatar: true,
+            payoutCardNumber: true,
+            payoutSheba: true,
+            payoutAccountOwnerName: true,
           },
         },
         agent: {

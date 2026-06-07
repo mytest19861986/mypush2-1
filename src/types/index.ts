@@ -7,6 +7,9 @@ export interface UserProfile {
   birthDate?: string | null
   gender?: string | null
   address?: string | null
+  payoutCardNumber?: string | null
+  payoutSheba?: string | null
+  payoutAccountOwnerName?: string | null
 }
 
 export interface AuthUser {

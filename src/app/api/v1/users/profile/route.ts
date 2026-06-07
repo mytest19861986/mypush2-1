@@ -6,6 +6,7 @@ import { requireAuth } from '@/lib/auth'
 import { successResponse, errorResponse } from '@/lib/api-response'
 import { createAuditLog, AuditActions } from '@/lib/audit'
 import { linkPlanHolderToUserByNationalCode } from '@/lib/plan-holder-linking'
+import { maskCardNumber, maskSheba, normalizePayoutUpdate } from '@/lib/payout'
 
 const updateProfileSchema = z.object({
   firstName: z.string().max(50).optional(),
@@ -20,6 +21,9 @@ const updateProfileSchema = z.object({
   address: z.string().max(500).optional(),
   gender: z.enum(['MALE', 'FEMALE']).optional(),
   avatar: z.string().max(500).nullable().optional(),
+  cardNumber: z.string().nullable().optional(),
+  sheba: z.string().nullable().optional(),
+  accountOwnerName: z.string().max(100).nullable().optional(),
 })
 
 const DUPLICATE_NATIONAL_CODE_MESSAGE = 'این کد ملی قبلاً ثبت شده است.'
@@ -48,8 +52,27 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const { firstName, lastName, nationalCode, address, gender, avatar } = parsed.data
+    const {
+      firstName,
+      lastName,
+      nationalCode,
+      address,
+      gender,
+      avatar,
+      cardNumber,
+      sheba,
+      accountOwnerName,
+    } = parsed.data
     const shouldLinkPlanHolder = nationalCode !== undefined && nationalCode.length > 0
+    const payout = normalizePayoutUpdate({
+      ...(cardNumber !== undefined ? { cardNumber } : {}),
+      ...(sheba !== undefined ? { sheba } : {}),
+      ...(accountOwnerName !== undefined ? { accountOwnerName } : {}),
+    })
+
+    if (payout.errors.length > 0) {
+      return errorResponse('VALIDATION_ERROR', payout.errors.join(', '), 400)
+    }
 
     // Validate national code format if provided
     if (nationalCode && nationalCode.length > 0) {
@@ -94,6 +117,7 @@ export async function PUT(request: NextRequest) {
       if (address !== undefined) updateData.address = address
       if (gender !== undefined) updateData.gender = gender
       if (avatar !== undefined) updateData.avatar = avatar || null
+      Object.assign(updateData, payout.values)
 
       await db.userProfile.update({
         where: { userId: user.sub },
@@ -109,6 +133,7 @@ export async function PUT(request: NextRequest) {
           address: address || null,
           gender: gender || null,
           avatar: avatar || null,
+          ...payout.values,
         },
       })
     }
@@ -156,6 +181,9 @@ export async function PUT(request: NextRequest) {
         avatar: profile?.avatar,
         address: profile?.address,
         gender: profile?.gender,
+        cardNumber: maskCardNumber(profile?.payoutCardNumber),
+        sheba: maskSheba(profile?.payoutSheba),
+        accountOwnerName: profile?.payoutAccountOwnerName,
         planHolderLinked: planHolderLinking?.linked ?? false,
         linkedPlansCount: planHolderLinking?.linkedUserPlansCount ?? 0,
       },

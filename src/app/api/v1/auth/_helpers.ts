@@ -21,6 +21,9 @@ export async function buildUserResponse(user: {
     nationalCode: string | null
     gender?: string | null
     avatar: string | null
+    payoutCardNumber?: string | null
+    payoutSheba?: string | null
+    payoutAccountOwnerName?: string | null
   } | null
   agent: { id: string; businessName: string | null; status: string } | null
 }) {
@@ -44,6 +47,15 @@ export async function buildUserResponse(user: {
           nationalCode: user.profile.nationalCode,
           ...(user.profile.gender !== undefined ? { gender: user.profile.gender ?? null } : {}),
           avatar: user.profile.avatar,
+          ...(user.profile.payoutCardNumber !== undefined
+            ? { payoutCardNumber: user.profile.payoutCardNumber ?? null }
+            : {}),
+          ...(user.profile.payoutSheba !== undefined
+            ? { payoutSheba: user.profile.payoutSheba ?? null }
+            : {}),
+          ...(user.profile.payoutAccountOwnerName !== undefined
+            ? { payoutAccountOwnerName: user.profile.payoutAccountOwnerName ?? null }
+            : {}),
         }
       : null,
   }

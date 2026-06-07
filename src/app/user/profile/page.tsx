@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { toPersianNum } from '@/utils/formatters'
+import { normalizeCardNumber, normalizePayoutUpdate } from '@/lib/payout'
 import type { AuthUser } from '@/types'
 import {
   AlertCircle,
@@ -43,6 +44,9 @@ type ProfileForm = {
   nationalCode: string
   gender: string
   address: string
+  cardNumber: string
+  sheba: string
+  accountOwnerName: string
 }
 
 type SavedProfileResponse = {
@@ -52,6 +56,9 @@ type SavedProfileResponse = {
   gender?: string | null
   address?: string | null
   avatar?: string | null
+  cardNumber?: string | null
+  sheba?: string | null
+  accountOwnerName?: string | null
   planHolderLinked?: boolean
   linkedPlansCount?: number
 }
@@ -81,6 +88,9 @@ const emptyForm: ProfileForm = {
   nationalCode: '',
   gender: '',
   address: '',
+  cardNumber: '',
+  sheba: '',
+  accountOwnerName: '',
 }
 
 function mapUserToForm(user?: AuthUser | null): ProfileForm {
@@ -90,6 +100,9 @@ function mapUserToForm(user?: AuthUser | null): ProfileForm {
     nationalCode: user?.profile?.nationalCode || '',
     gender: user?.profile?.gender || '',
     address: user?.profile?.address || '',
+    cardNumber: user?.profile?.payoutCardNumber || '',
+    sheba: user?.profile?.payoutSheba || '',
+    accountOwnerName: user?.profile?.payoutAccountOwnerName || '',
   }
 }
 
@@ -254,6 +267,19 @@ export default function UserProfilePage() {
       return
     }
 
+    const payout = normalizePayoutUpdate({
+      ...(form.cardNumber.includes('*') ? {} : { cardNumber: form.cardNumber }),
+      ...(form.sheba.includes('*') ? {} : { sheba: form.sheba }),
+      accountOwnerName: form.accountOwnerName,
+    })
+
+    if (payout.errors.length > 0) {
+      const message = payout.errors[0]
+      setFeedback({ type: 'error', message })
+      toast({ title: 'خطا', description: message, variant: 'destructive' })
+      return
+    }
+
     setIsSaving(true)
     setFeedback(null)
 
@@ -263,6 +289,9 @@ export default function UserProfilePage() {
         lastName: form.lastName.trim(),
         nationalCode,
         address: form.address.trim(),
+        cardNumber: payout.values.payoutCardNumber,
+        sheba: payout.values.payoutSheba,
+        accountOwnerName: payout.values.payoutAccountOwnerName,
         ...(form.gender ? { gender: form.gender as 'MALE' | 'FEMALE' } : {}),
       }
 
@@ -278,13 +307,17 @@ export default function UserProfilePage() {
         throw new Error(getProfileSaveErrorMessage(res))
       }
 
-      setForm({
+      setForm((prev) => ({
+        ...prev,
         firstName: saved.firstName || '',
         lastName: saved.lastName || '',
         nationalCode: saved.nationalCode || '',
         gender: saved.gender || '',
         address: saved.address || '',
-      })
+        accountOwnerName: saved.accountOwnerName || '',
+        // Keep prev.cardNumber and prev.sheba.
+        // API returns masked values and masked values must not be re-submitted.
+      }))
       setLoadedNationalCode(saved.nationalCode || '')
 
       await initialize()
@@ -503,7 +536,7 @@ export default function UserProfilePage() {
       <Card className="border-primary/20 bg-primary/5">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <CreditCard className="size-4 text-primary" />
+            <ShieldCheck className="size-4 text-primary" />
             کد ملی و اتصال طرح
           </CardTitle>
         </CardHeader>
@@ -533,6 +566,57 @@ export default function UserProfilePage() {
             {nationalCodeError && (
               <p className="text-sm text-destructive">{nationalCodeError}</p>
             )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <CreditCard className="size-4 text-primary" />
+            اطلاعات مالی برای دریافت پورسانت رفرال
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm leading-7 text-muted-foreground">
+            برای دریافت پورسانت رفرال، اطلاعات مالی خود را تکمیل کنید.
+          </p>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="referralCardNumber">شماره کارت</Label>
+              <Input
+                id="referralCardNumber"
+                value={form.cardNumber}
+                onChange={(e) =>
+                  updateField('cardNumber', normalizeCardNumber(e.target.value).slice(0, 16))
+                }
+                placeholder="6037990000000000"
+                dir="ltr"
+                inputMode="numeric"
+                maxLength={16}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="referralSheba">شماره شبا</Label>
+              <Input
+                id="referralSheba"
+                value={form.sheba}
+                onChange={(e) => updateField('sheba', e.target.value.toUpperCase())}
+                placeholder="IR000000000000000000000000"
+                dir="ltr"
+              />
+            </div>
+          </div>
+
+          <div className="max-w-sm space-y-2">
+            <Label htmlFor="referralAccountOwnerName">نام صاحب حساب</Label>
+            <Input
+              id="referralAccountOwnerName"
+              value={form.accountOwnerName}
+              onChange={(e) => updateField('accountOwnerName', e.target.value)}
+              placeholder="نام و نام خانوادگی صاحب حساب"
+            />
           </div>
         </CardContent>
       </Card>

@@ -26,11 +26,23 @@ export class AgentsService extends BaseService {
     return this.get<AgentItem>('/agents/my')
   }
 
-  async updateMyProfile(data: { businessName?: string; description?: string }) {
+  async updateMyProfile(data: {
+    businessName?: string
+    description?: string
+    cardNumber?: string | null
+    sheba?: string | null
+    accountOwnerName?: string | null
+  }) {
     return this.put('/agents/my', data)
   }
 
-  async register(data?: { businessName?: string; description?: string }) {
+  async register(data?: {
+    businessName?: string
+    description?: string
+    cardNumber?: string | null
+    sheba?: string | null
+    accountOwnerName?: string | null
+  }) {
     return this.post('/agents/register', data)
   }
 

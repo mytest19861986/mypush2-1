@@ -16,6 +16,9 @@ interface UserProfileUpdateData {
   address?: string
   gender?: 'MALE' | 'FEMALE'
   avatar?: string | null
+  cardNumber?: string | null
+  sheba?: string | null
+  accountOwnerName?: string | null
 }
 
 interface UploadResult {

@@ -26,6 +26,9 @@ export async function GET(request: NextRequest) {
             nationalCode: true,
             gender: true,
             avatar: true,
+            payoutCardNumber: true,
+            payoutSheba: true,
+            payoutAccountOwnerName: true,
           },
         },
         agent: {

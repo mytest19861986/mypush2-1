@@ -22,6 +22,7 @@ import {
 import { useAuthStore } from '@/stores/auth-store'
 import { useCountdown } from '@/hooks/shared'
 import { isValidIranianMobile } from '@/utils/formatters'
+import { normalizeCardNumber, normalizePayoutUpdate } from '@/lib/payout'
 import type { AuthUser } from '@/types'
 import {
   Briefcase,
@@ -81,6 +82,9 @@ export default function RegisterAgentPage() {
     nationalCode: '',
     address: user?.profile?.address || '',
     description: '',
+    cardNumber: '',
+    sheba: '',
+    accountOwnerName: user?.profile?.payoutAccountOwnerName || '',
   })
 
   const handleChange = (field: string, value: string) => {
@@ -178,6 +182,11 @@ export default function RegisterAgentPage() {
     const address = form.address.trim()
     const description = form.description.trim()
     const fullName = `${firstName} ${lastName}`.trim()
+    const payout = normalizePayoutUpdate({
+      cardNumber: form.cardNumber,
+      sheba: form.sheba,
+      accountOwnerName: form.accountOwnerName,
+    })
 
     if (!firstName || !lastName || !nationalCode) {
       toast.error('لطفاً اطلاعات فردی الزامی را تکمیل کنید')
@@ -189,6 +198,11 @@ export default function RegisterAgentPage() {
       return
     }
 
+    if (payout.errors.length > 0) {
+      toast.error(payout.errors[0])
+      return
+    }
+
     setLoading(true)
     try {
       await usersService.updateProfile({
@@ -196,6 +210,9 @@ export default function RegisterAgentPage() {
         lastName,
         nationalCode,
         address,
+        cardNumber: payout.values.payoutCardNumber,
+        sheba: payout.values.payoutSheba,
+        accountOwnerName: payout.values.payoutAccountOwnerName,
       })
 
       if (user) {
@@ -209,6 +226,9 @@ export default function RegisterAgentPage() {
             avatar: user.profile?.avatar ?? null,
             birthDate: user.profile?.birthDate ?? null,
             gender: user.profile?.gender ?? null,
+            payoutCardNumber: payout.values.payoutCardNumber ?? null,
+            payoutSheba: payout.values.payoutSheba ?? null,
+            payoutAccountOwnerName: payout.values.payoutAccountOwnerName ?? null,
           },
         })
       }
@@ -217,6 +237,9 @@ export default function RegisterAgentPage() {
         // Legacy API compatibility: Agent.businessName stores the person's display name.
         businessName: fullName,
         description,
+        cardNumber: payout.values.payoutCardNumber,
+        sheba: payout.values.payoutSheba,
+        accountOwnerName: payout.values.payoutAccountOwnerName,
       })
       setSubmitted(true)
       toast.success('درخواست همکاری فروش با موفقیت ثبت شد و در انتظار تایید مدیریت است')
@@ -603,11 +626,58 @@ export default function RegisterAgentPage() {
               <div>
                 <div className="flex items-center gap-2 mb-4">
                   <CreditCard className="h-4 w-4 text-primary" />
-                  <h3 className="text-sm font-semibold">اطلاعات مالی</h3>
+                  <h3 className="text-sm font-semibold">اطلاعات مالی همکار فروش</h3>
                 </div>
-                <p className="rounded-xl border border-border/70 bg-muted/30 p-3 text-sm leading-6 text-muted-foreground">
-                  ثبت شماره کارت و شبا پس از تأیید مدیریت از مسیر پنل همکار فروش انجام می‌شود.
-                </p>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="cardNumber" className="flex items-center gap-1.5">
+                      <CreditCard className="h-3.5 w-3.5" />
+                      شماره کارت
+                    </Label>
+                    <Input
+                      id="cardNumber"
+                      type="text"
+                      inputMode="numeric"
+                      dir="ltr"
+                      maxLength={16}
+                      value={form.cardNumber}
+                      onChange={(e) =>
+                        handleChange('cardNumber', normalizeCardNumber(e.target.value).slice(0, 16))
+                      }
+                      className={`${fieldClassName} text-left font-mono tracking-wider`}
+                      placeholder="6037990000000000"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="sheba" className="flex items-center gap-1.5">
+                      <CreditCard className="h-3.5 w-3.5" />
+                      شماره شبا
+                    </Label>
+                    <Input
+                      id="sheba"
+                      type="text"
+                      inputMode="text"
+                      dir="ltr"
+                      value={form.sheba}
+                      onChange={(e) => handleChange('sheba', e.target.value.toUpperCase())}
+                      className={`${fieldClassName} text-left font-mono tracking-wider`}
+                      placeholder="IR000000000000000000000000"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="accountOwnerName" className="flex items-center gap-1.5">
+                      <User className="h-3.5 w-3.5" />
+                      نام صاحب حساب
+                    </Label>
+                    <Input
+                      id="accountOwnerName"
+                      value={form.accountOwnerName}
+                      onChange={(e) => handleChange('accountOwnerName', e.target.value)}
+                      className={fieldClassName}
+                      placeholder="نام و نام خانوادگی صاحب حساب"
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Submit */}

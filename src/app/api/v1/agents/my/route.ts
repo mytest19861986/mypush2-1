@@ -4,6 +4,7 @@ import { authenticateRequest } from '@/lib/auth'
 import { successResponse, errorResponse } from '@/lib/api-response'
 import { createAuditLog } from '@/lib/audit'
 import { generateReferralCode } from '@/lib/referrals'
+import { normalizePayoutUpdate } from '@/lib/payout'
 
 // GET /api/v1/agents/my — Get current user's agent info
 export async function GET(request: NextRequest) {
@@ -33,6 +34,9 @@ export async function GET(request: NextRequest) {
               firstName: true,
               lastName: true,
               avatar: true,
+              payoutCardNumber: true,
+              payoutSheba: true,
+              payoutAccountOwnerName: true,
             },
           },
         },
@@ -68,9 +72,22 @@ export async function PUT(request: NextRequest) {
     businessName?: string
     description?: string
   }
+  const payout = normalizePayoutUpdate(body as {
+    cardNumber?: string | null
+    sheba?: string | null
+    accountOwnerName?: string | null
+  })
 
-  if (businessName === undefined && description === undefined) {
-    return errorResponse('VALIDATION_ERROR', 'At least one field (businessName or description) is required', 400)
+  if (payout.errors.length > 0) {
+    return errorResponse('VALIDATION_ERROR', payout.errors.join(', '), 400)
+  }
+
+  if (
+    businessName === undefined &&
+    description === undefined &&
+    Object.keys(payout.values).length === 0
+  ) {
+    return errorResponse('VALIDATION_ERROR', 'At least one profile field is required', 400)
   }
 
   // Verify agent record exists
@@ -85,9 +102,22 @@ export async function PUT(request: NextRequest) {
   if (businessName !== undefined) updateData.businessName = businessName
   if (description !== undefined) updateData.description = description
 
-  const updatedAgent = await db.agent.update({
-    where: { userId: payload!.sub },
-    data: updateData,
+  const updatedAgent = await db.$transaction(async (tx) => {
+    if (Object.keys(payout.values).length > 0) {
+      await tx.userProfile.upsert({
+        where: { userId: payload!.sub },
+        create: {
+          userId: payload!.sub,
+          ...payout.values,
+        },
+        update: payout.values,
+      })
+    }
+
+    return tx.agent.update({
+      where: { userId: payload!.sub },
+      data: updateData,
+    })
   })
 
   // Create audit log
@@ -98,7 +128,11 @@ export async function PUT(request: NextRequest) {
     action: 'AGENT_UPDATED',
     entity: 'Agent',
     entityId: updatedAgent.id,
-    details: { businessName, description },
+    details: {
+      businessName,
+      description,
+      payoutUpdated: Object.keys(payout.values).length > 0,
+    },
     ip,
     device,
   })

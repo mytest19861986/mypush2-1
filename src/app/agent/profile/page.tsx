@@ -12,11 +12,12 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
+import { normalizeCardNumber, normalizePayoutUpdate } from '@/lib/payout'
 import {
   Save,
   Loader2,
   User,
-  Building,
+  CreditCard,
   Mail,
   Phone,
   Copy,
@@ -37,10 +38,14 @@ export default function AgentProfilePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [origin, setOrigin] = useState('')
 
   // Form state
   const [businessName, setBusinessName] = useState('')
   const [description, setDescription] = useState('')
+  const [cardNumber, setCardNumber] = useState('')
+  const [sheba, setSheba] = useState('')
+  const [accountOwnerName, setAccountOwnerName] = useState('')
 
   // ---------- Fetch Data ----------
 
@@ -53,6 +58,9 @@ export default function AgentProfilePage() {
         setAgentData(agent)
         setBusinessName(agent.businessName || '')
         setDescription(agent.description || '')
+        setCardNumber(agent.user?.profile?.payoutCardNumber || '')
+        setSheba(agent.user?.profile?.payoutSheba || '')
+        setAccountOwnerName(agent.user?.profile?.payoutAccountOwnerName || '')
       }
     } catch {
       toast({
@@ -69,13 +77,32 @@ export default function AgentProfilePage() {
     fetchData()
   }, [fetchData])
 
+  useEffect(() => {
+    setOrigin(window.location.origin)
+  }, [])
+
   // ---------- Save Profile ----------
 
   const handleSave = async () => {
     if (!businessName.trim()) {
       toast({
         title: 'خطا',
-        description: 'نام کسب‌وکار نمی‌تواند خالی باشد',
+        description: 'نام همکار فروش نمی‌تواند خالی باشد',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    const payout = normalizePayoutUpdate({
+      cardNumber,
+      sheba,
+      accountOwnerName,
+    })
+
+    if (payout.errors.length > 0) {
+      toast({
+        title: 'خطا',
+        description: payout.errors[0],
         variant: 'destructive',
       })
       return
@@ -86,6 +113,9 @@ export default function AgentProfilePage() {
       await agentsService.updateMyProfile({
         businessName: businessName.trim(),
         description: description.trim() || undefined,
+        cardNumber: payout.values.payoutCardNumber,
+        sheba: payout.values.payoutSheba,
+        accountOwnerName: payout.values.payoutAccountOwnerName,
       })
 
       toast({
@@ -107,11 +137,10 @@ export default function AgentProfilePage() {
   // ---------- Copy Referral Link ----------
 
   const referralCode = agentData?.referralCode || ''
-  const referralLink = typeof window !== 'undefined'
-    ? referralCode
-      ? `${window.location.origin}/auth/login?ref=${encodeURIComponent(referralCode)}`
+  const referralLink =
+    referralCode && origin
+      ? `${origin}/auth/login?ref=${encodeURIComponent(referralCode)}`
       : ''
-    : ''
 
   const handleCopyLink = async () => {
     try {
@@ -169,8 +198,8 @@ export default function AgentProfilePage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <PageHeader
-        title="پروفایل نماینده"
-        description="مشاهده و ویرایش اطلاعات نمایندگی"
+        title="پروفایل همکار فروش"
+        description="مشاهده و ویرایش اطلاعات همکار فروش"
       />
 
       {/* User Info (Read-only) */}
@@ -228,26 +257,26 @@ export default function AgentProfilePage() {
         </CardContent>
       </Card>
 
-      {/* Business Info (Editable) */}
+      {/* Sales Partner Info (Editable) */}
       <Card className="rounded-2xl border bg-card shadow-sm">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <Building className="size-4 text-muted-foreground" />
-            اطلاعات کسب‌وکار
+            <User className="size-4 text-muted-foreground" />
+            اطلاعات همکار فروش
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Business Name (editable) */}
+          {/* Display Name (editable) */}
           <div className="space-y-2">
-            <Label htmlFor="businessName">نام کسب‌وکار</Label>
+            <Label htmlFor="businessName">نام همکار فروش</Label>
             <div className="relative">
-              <Building className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <User className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
                 id="businessName"
                 value={businessName}
                 onChange={(e) => setBusinessName(e.target.value)}
                 className="border border-input bg-background pr-10 shadow-sm focus-visible:ring-1 focus-visible:ring-primary"
-                placeholder="نام کسب‌وکار را وارد کنید"
+                placeholder="نام همکار فروش را وارد کنید"
               />
             </div>
           </div>
@@ -259,10 +288,62 @@ export default function AgentProfilePage() {
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="توضیحات مربوط به کسب‌وکار خود را وارد کنید..."
+              placeholder="توضیحات تکمیلی درباره تجربه فروش یا شیوه معرفی خود را وارد کنید..."
               rows={4}
               className="border border-input bg-background shadow-sm focus-visible:ring-1 focus-visible:ring-primary"
             />
+          </div>
+
+          <Separator />
+
+          <div className="space-y-4">
+            <CardTitle className="text-base flex items-center gap-2">
+              <CreditCard className="size-4 text-muted-foreground" />
+              اطلاعات مالی همکار فروش
+            </CardTitle>
+            <div className="space-y-2">
+              <Label htmlFor="cardNumber">شماره کارت</Label>
+              <div className="relative">
+                <CreditCard className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input
+                  id="cardNumber"
+                  value={cardNumber}
+                  onChange={(e) => setCardNumber(normalizeCardNumber(e.target.value).slice(0, 16))}
+                  className="border border-input bg-background pr-10 font-mono shadow-sm focus-visible:ring-1 focus-visible:ring-primary"
+                  placeholder="6037990000000000"
+                  dir="ltr"
+                  inputMode="numeric"
+                  maxLength={16}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="sheba">شماره شبا</Label>
+              <div className="relative">
+                <CreditCard className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input
+                  id="sheba"
+                  value={sheba}
+                  onChange={(e) => setSheba(e.target.value.toUpperCase())}
+                  className="border border-input bg-background pr-10 font-mono shadow-sm focus-visible:ring-1 focus-visible:ring-primary"
+                  placeholder="IR000000000000000000000000"
+                  dir="ltr"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="accountOwnerName">نام صاحب حساب</Label>
+              <div className="relative">
+                <User className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input
+                  id="accountOwnerName"
+                  value={accountOwnerName}
+                  onChange={(e) => setAccountOwnerName(e.target.value)}
+                  className="border border-input bg-background pr-10 shadow-sm focus-visible:ring-1 focus-visible:ring-primary"
+                  placeholder="نام و نام خانوادگی صاحب حساب"
+                />
+              </div>
+            </div>
           </div>
 
           <Separator />
@@ -300,7 +381,7 @@ export default function AgentProfilePage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            با اشتراک‌گذاری این لینک، کاربرانی که از طریق شما ثبت‌نام کنند در پنل شما نمایش داده می‌شوند و پورسانت آن‌ها به حساب شما واریز خواهد شد.
+            با اشتراک‌گذاری این لینک، کاربرانی که از طریق شما ثبت‌نام کنند در پنل شما نمایش داده می‌شوند و پورسانت آن‌ها برای تسویه دستی مدیریت ثبت می‌شود.
           </p>
 
           <div className="flex items-center gap-2">
@@ -337,7 +418,7 @@ export default function AgentProfilePage() {
             <div className="flex items-center gap-2 pt-1">
               <Shield className="size-3.5 text-muted-foreground" />
               <span className="text-xs text-muted-foreground">
-                وضعیت نمایندگی:{' '}
+                وضعیت همکاری فروش:{' '}
                 {AGENT_STATUS_LABELS[agentData.status as keyof typeof AGENT_STATUS_LABELS] || agentData.status}
               </span>
             </div>

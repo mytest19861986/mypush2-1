@@ -57,17 +57,20 @@ model User {
 }
 
 model UserProfile {
-  id           String    @id @default(cuid())
-  userId       String    @unique
-  firstName    String?   @default("")
-  lastName     String?   @default("")
-  nationalCode String?   @unique
-  avatar       String?
-  birthDate    DateTime?
-  gender       String? // MALE, FEMALE
-  address      String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id                     String    @id @default(cuid())
+  userId                 String    @unique
+  firstName              String?   @default("")
+  lastName               String?   @default("")
+  nationalCode           String?   @unique
+  avatar                 String?
+  birthDate              DateTime?
+  gender                 String? // MALE, FEMALE
+  address                String?
+  payoutCardNumber       String?
+  payoutSheba            String?
+  payoutAccountOwnerName String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -157,19 +160,19 @@ model Doctor {
 // ============================================
 
 model DiscountPlan {
-  id              String   @id @default(cuid())
-  name            String // نام طرح
-  description     String? // توضیحات
-  price           Int      @default(0) // قیمت (تومان)
-  discountPercent Int      @default(0) // درصد تخفیف
-  durationDays    Int      @default(30) // مدت طرح (روز)
-  maxUses         Int      @default(-1) // حداکثر دفعات استفاده (-1 = نامحدود)
-  salesPartnerCommissionPercent Int @default(0)
-  referralCommissionPercent     Int @default(0)
-  status          String   @default("ACTIVE") // ACTIVE, INACTIVE
-  features        String? // ویژگی‌های طرح (JSON array)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                            String   @id @default(cuid())
+  name                          String // نام طرح
+  description                   String? // توضیحات
+  price                         Int      @default(0) // قیمت (تومان)
+  discountPercent               Int      @default(0) // درصد تخفیف
+  durationDays                  Int      @default(30) // مدت طرح (روز)
+  maxUses                       Int      @default(-1) // حداکثر دفعات استفاده (-1 = نامحدود)
+  salesPartnerCommissionPercent Int      @default(0)
+  referralCommissionPercent     Int      @default(0)
+  status                        String   @default("ACTIVE") // ACTIVE, INACTIVE
+  features                      String? // ویژگی‌های طرح (JSON array)
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
 
   userPlans      UserPlan[]
   payments       Payment[]
