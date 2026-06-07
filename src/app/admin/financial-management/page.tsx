@@ -33,6 +33,13 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -48,12 +55,18 @@ import { PageHeader, StatusBadge } from '@/components/shared'
 import { useToast } from '@/hooks/use-toast'
 import { ApiError, apiClient } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
-import { formatDateTime, formatPriceWithUnit } from '@/utils/formatters'
+import { formatDateTime, formatJalaliDateRange, formatPriceWithUnit } from '@/utils/formatters'
+import {
+  getCurrentJalaliYearMonth,
+  jalaliMonthToGregorianRange,
+  JALALI_MONTHS,
+} from '@/utils/jalali-date'
 
 type WalletStatus = 'ACTIVE' | 'SUSPENDED' | 'CLOSED' | string
 type SettlementStatus = 'PENDING' | 'APPROVED' | 'PAID' | 'REJECTED' | 'CANCELLED'
 type SettlementFilter = 'all' | Exclude<SettlementStatus, 'CANCELLED'>
 type SettlementAction = 'approve' | 'reject' | 'paid'
+type ReportQuickFilter = 'today' | 'last7' | 'last30' | 'currentJalaliMonth' | 'previousJalaliMonth'
 
 interface PersonProfile {
   firstName?: string | null
@@ -145,6 +158,14 @@ const settlementFilters: { value: SettlementFilter; label: string }[] = [
   { value: 'REJECTED', label: 'رد شده' },
 ]
 
+const reportQuickFilters: { value: ReportQuickFilter; label: string }[] = [
+  { value: 'today', label: 'امروز' },
+  { value: 'last7', label: '۷ روز اخیر' },
+  { value: 'last30', label: '۳۰ روز اخیر' },
+  { value: 'currentJalaliMonth', label: 'ماه جاری شمسی' },
+  { value: 'previousJalaliMonth', label: 'ماه قبل شمسی' },
+]
+
 const settlementStatusLabels: Record<SettlementStatus, string> = {
   PENDING: 'در انتظار بررسی',
   APPROVED: 'تأیید شده',
@@ -186,19 +207,57 @@ function getDateOrDash(value?: string | null) {
   return value ? formatDateTime(value) : '-'
 }
 
-function toDateInputValue(date: Date) {
-  return date.toISOString().slice(0, 10)
+function toIsoDate(date: Date) {
+  const year = date.getFullYear()
+  const month = `${date.getMonth() + 1}`.padStart(2, '0')
+  const day = `${date.getDate()}`.padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
-function getDefaultReportRange() {
-  const to = new Date()
-  const from = new Date()
-  from.setDate(to.getDate() - 30)
+function startOfLocalDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+}
 
-  return {
-    from: toDateInputValue(from),
-    to: toDateInputValue(to),
+function addLocalDays(date: Date, days: number) {
+  const next = startOfLocalDay(date)
+  next.setDate(next.getDate() + days)
+  return next
+}
+
+function getPreviousJalaliYearMonth(year: number, month: number) {
+  return month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 }
+}
+
+function getReportQuickRange(filter: ReportQuickFilter) {
+  const today = startOfLocalDay(new Date())
+
+  if (filter === 'today') {
+    return { from: toIsoDate(today), to: toIsoDate(today) }
   }
+
+  if (filter === 'last7') {
+    return { from: toIsoDate(addLocalDays(today, -6)), to: toIsoDate(today) }
+  }
+
+  if (filter === 'last30') {
+    return { from: toIsoDate(addLocalDays(today, -29)), to: toIsoDate(today) }
+  }
+
+  const currentJalaliMonth = getCurrentJalaliYearMonth(today)
+
+  if (filter === 'currentJalaliMonth') {
+    return jalaliMonthToGregorianRange(currentJalaliMonth.year, currentJalaliMonth.month)
+  }
+
+  const previousJalaliMonth = getPreviousJalaliYearMonth(
+    currentJalaliMonth.year,
+    currentJalaliMonth.month
+  )
+  return jalaliMonthToGregorianRange(previousJalaliMonth.year, previousJalaliMonth.month)
+}
+
+function getJalaliMonthRange(year: number, month: number) {
+  return jalaliMonthToGregorianRange(year, month)
 }
 
 function formatNullableCount(value: number | null) {
@@ -254,12 +313,21 @@ function LoadingState() {
 
 export default function FinancialManagementPage() {
   const { toast } = useToast()
-  const defaultReportRange = useMemo(() => getDefaultReportRange(), [])
+  const defaultJalaliMonth = useMemo(() => getCurrentJalaliYearMonth(), [])
+  const defaultReportRange = useMemo(
+    () => getJalaliMonthRange(defaultJalaliMonth.year, defaultJalaliMonth.month),
+    [defaultJalaliMonth]
+  )
   const [wallets, setWallets] = useState<WalletItem[]>([])
   const [settlements, setSettlements] = useState<SettlementItem[]>([])
   const [financialReport, setFinancialReport] = useState<FinancialReport | null>(null)
+  const [selectedJalaliYear, setSelectedJalaliYear] = useState(defaultJalaliMonth.year)
+  const [selectedJalaliMonth, setSelectedJalaliMonth] = useState(defaultJalaliMonth.month)
   const [reportFrom, setReportFrom] = useState(defaultReportRange.from)
   const [reportTo, setReportTo] = useState(defaultReportRange.to)
+  const [activeReportQuickFilter, setActiveReportQuickFilter] = useState<ReportQuickFilter | null>(
+    'currentJalaliMonth'
+  )
   const [settlementFilter, setSettlementFilter] = useState<SettlementFilter>('all')
   const [isLoading, setIsLoading] = useState(true)
   const [isReportLoading, setIsReportLoading] = useState(true)
@@ -397,6 +465,61 @@ export default function FinancialManagementPage() {
     () => Math.max(1, ...(financialReport?.dailyRevenue.map((item) => item.amount) ?? [])),
     [financialReport]
   )
+
+  const jalaliYearOptions = useMemo(() => {
+    const yearWindow = Array.from({ length: 12 }, (_, index) => defaultJalaliMonth.year + 1 - index)
+    return yearWindow.includes(selectedJalaliYear)
+      ? yearWindow
+      : [...yearWindow, selectedJalaliYear].sort((a, b) => b - a)
+  }, [defaultJalaliMonth.year, selectedJalaliYear])
+
+  const selectedReportRangeText = useMemo(() => {
+    if (!reportFrom || !reportTo) return 'تاریخ شروع و پایان را انتخاب کنید.'
+    return formatJalaliDateRange(reportFrom, reportTo)
+  }, [reportFrom, reportTo])
+
+  const applyJalaliMonthRange = (year: number, month: number) => {
+    const range = getJalaliMonthRange(year, month)
+    setReportFrom(range.from)
+    setReportTo(range.to)
+  }
+
+  const handleJalaliYearChange = (value: string) => {
+    const year = Number(value)
+    if (!Number.isInteger(year)) return
+
+    setSelectedJalaliYear(year)
+    applyJalaliMonthRange(year, selectedJalaliMonth)
+    setActiveReportQuickFilter(null)
+  }
+
+  const handleJalaliMonthChange = (value: string) => {
+    const month = Number(value)
+    if (!Number.isInteger(month) || month < 1 || month > 12) return
+
+    setSelectedJalaliMonth(month)
+    applyJalaliMonthRange(selectedJalaliYear, month)
+    setActiveReportQuickFilter(null)
+  }
+
+  const handleReportQuickFilter = (filter: ReportQuickFilter) => {
+    const range = getReportQuickRange(filter)
+    setReportFrom(range.from)
+    setReportTo(range.to)
+
+    if (filter === 'currentJalaliMonth' || filter === 'previousJalaliMonth') {
+      const currentJalaliMonth = getCurrentJalaliYearMonth()
+      const selectedMonth =
+        filter === 'currentJalaliMonth'
+          ? currentJalaliMonth
+          : getPreviousJalaliYearMonth(currentJalaliMonth.year, currentJalaliMonth.month)
+
+      setSelectedJalaliYear(selectedMonth.year)
+      setSelectedJalaliMonth(selectedMonth.month)
+    }
+
+    setActiveReportQuickFilter(filter)
+  }
 
   const updateSettlement = (updatedSettlement: SettlementItem) => {
     setSettlements((current) => {
@@ -605,7 +728,7 @@ export default function FinancialManagementPage() {
       />
 
       <Card className="rounded-2xl border border-border/50 bg-card shadow-sm" dir="rtl">
-        <CardHeader className="gap-4 border-b border-border/60 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+        <CardHeader className="gap-4 border-b border-border/60 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-1">
             <CardTitle className="flex items-center gap-2 text-base">
               <BarChart3 className="size-5 text-emerald-600" />
@@ -615,46 +738,83 @@ export default function FinancialManagementPage() {
               بر اساس پرداخت‌های موفق، فروش‌های تاییدشده و پورسانت‌های ثبت‌شده
             </p>
           </div>
-          <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-            <div className="space-y-1">
-              <Label htmlFor="financial-report-from" className="text-xs">
-                از تاریخ
-              </Label>
-              <Input
-                id="financial-report-from"
-                type="date"
-                value={reportFrom}
-                onChange={(event) => setReportFrom(event.target.value)}
-                className="h-9"
-              />
+          <div className="w-full space-y-3 lg:w-auto lg:min-w-[540px]">
+            <div className="flex flex-wrap gap-2">
+              {reportQuickFilters.map((filter) => (
+                <Button
+                  key={filter.value}
+                  type="button"
+                  size="sm"
+                  variant={activeReportQuickFilter === filter.value ? 'default' : 'outline'}
+                  className="h-8 text-xs"
+                  onClick={() => handleReportQuickFilter(filter.value)}
+                >
+                  {filter.label}
+                </Button>
+              ))}
             </div>
-            <div className="space-y-1">
-              <Label htmlFor="financial-report-to" className="text-xs">
-                تا تاریخ
-              </Label>
-              <Input
-                id="financial-report-to"
-                type="date"
-                value={reportTo}
-                onChange={(event) => setReportTo(event.target.value)}
-                className="h-9"
-              />
+            <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
+              <div className="space-y-1">
+                <Label htmlFor="financial-report-jalali-year" className="text-xs">
+                  سال گزارش
+                </Label>
+                <Select
+                  value={String(selectedJalaliYear)}
+                  onValueChange={handleJalaliYearChange}
+                  dir="rtl"
+                >
+                  <SelectTrigger id="financial-report-jalali-year" className="h-9 w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {jalaliYearOptions.map((year) => (
+                      <SelectItem key={year} value={String(year)}>
+                        سال {year.toLocaleString('fa-IR', { useGrouping: false })}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="financial-report-jalali-month" className="text-xs">
+                  ماه گزارش
+                </Label>
+                <Select
+                  value={String(selectedJalaliMonth)}
+                  onValueChange={handleJalaliMonthChange}
+                  dir="rtl"
+                >
+                  <SelectTrigger id="financial-report-jalali-month" className="h-9 w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {JALALI_MONTHS.map((month) => (
+                      <SelectItem key={month.value} value={String(month.value)}>
+                        {month.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-9 w-9"
+                onClick={() => void fetchFinancialReport()}
+                disabled={isReportLoading}
+                aria-label="به‌روزرسانی گزارش مالی"
+              >
+                {isReportLoading ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="size-4" />
+                )}
+              </Button>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-9 w-9"
-              onClick={() => void fetchFinancialReport()}
-              disabled={isReportLoading}
-              aria-label="به‌روزرسانی گزارش مالی"
-            >
-              {isReportLoading ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <RefreshCw className="size-4" />
-              )}
-            </Button>
+            <p className="text-xs font-medium text-muted-foreground">
+              بازه گزارش: <span className="text-foreground">{selectedReportRangeText}</span>
+            </p>
           </div>
         </CardHeader>
 

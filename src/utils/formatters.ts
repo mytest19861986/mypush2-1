@@ -1,3 +1,5 @@
+import { formatJalaliDate } from './jalali-date'
+
 /**
  * Convert Latin digits to Persian/Arabic digits
  */
@@ -25,6 +27,15 @@ export function formatPriceWithUnit(amount: number): string {
  */
 export function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('fa-IR')
+}
+
+export { formatJalaliDate }
+
+/**
+ * Format date range to Jalali/Persian calendar for display only.
+ */
+export function formatJalaliDateRange(from: string | Date, to: string | Date): string {
+  return `${formatJalaliDate(from)} تا ${formatJalaliDate(to)}`
 }
 
 /**
