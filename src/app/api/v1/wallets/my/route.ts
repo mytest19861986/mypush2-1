@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { authenticateRequest } from '@/lib/auth'
 import { successResponse, errorResponse } from '@/lib/api-response'
 import { getOrCreateWallet, parseBoundedInteger, toSafeWalletResponse } from '@/lib/wallets'
+import { getWalletCommissionSummary } from '@/lib/commission-settlements'
 
 // GET /api/v1/wallets/my - Current user's wallet and recent transactions
 export async function GET(request: NextRequest) {
@@ -29,7 +30,12 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    return successResponse(toSafeWalletResponse(walletWithTransactions))
+    const commissionSummary = await getWalletCommissionSummary(payload.sub)
+
+    return successResponse({
+      ...toSafeWalletResponse(walletWithTransactions),
+      commissionSummary,
+    })
   } catch (err) {
     console.error('[GET /api/v1/wallets/my]', err)
     return errorResponse('INTERNAL_ERROR', 'Internal server error', 500)

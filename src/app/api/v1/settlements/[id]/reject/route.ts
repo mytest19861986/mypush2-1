@@ -50,7 +50,7 @@ export async function PATCH(
     }
 
     if (existingSettlement.status !== 'PENDING') {
-      return errorResponse('CONFLICT', 'Only pending settlements can be rejected', 409)
+      return errorResponse('CONFLICT', 'فقط درخواست‌های تسویه در انتظار بررسی قابل رد هستند.', 409)
     }
 
     const ip = getClientIp(request)
@@ -84,7 +84,7 @@ export async function PATCH(
       return updatedSettlement
     })
 
-    return successResponse(toSafeSettlementResponse(settlement), 'Settlement rejected successfully')
+    return successResponse(toSafeSettlementResponse(settlement), 'درخواست تسویه رد شد.')
   } catch (err) {
     if (err instanceof SyntaxError) {
       return errorResponse('VALIDATION_ERROR', 'Invalid request body', 400)

@@ -198,8 +198,6 @@ export function toSafeWalletTransaction(transaction: {
 }) {
   return {
     id: transaction.id,
-    walletId: transaction.walletId,
-    userId: transaction.userId,
     type: transaction.type,
     amount: transaction.amount,
     balanceAfter: transaction.balanceAfter,
@@ -224,7 +222,6 @@ export function toSafeWalletResponse(wallet: {
 }) {
   return {
     id: wallet.id,
-    userId: wallet.userId,
     balance: wallet.balance,
     pendingBalance: wallet.pendingBalance,
     currency: wallet.currency,
@@ -252,8 +249,6 @@ export function toSafeSettlementResponse(settlement: {
 }) {
   return {
     id: settlement.id,
-    walletId: settlement.walletId,
-    userId: settlement.userId,
     amount: settlement.amount,
     status: settlement.status,
     trackingCode: settlement.trackingCode,

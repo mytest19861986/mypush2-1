@@ -35,25 +35,22 @@ import {
 } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
 import { PageHeader, StatusBadge } from '@/components/shared'
+import {
+  JalaliDateRangeFilter,
+  type JalaliDateRangeValue,
+} from '@/components/shared/jalali-date-range-filter'
 import { useToast } from '@/hooks/use-toast'
 import { ApiError, apiClient } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
-import { formatDateTime } from '@/utils/formatters'
+import { formatDateTime, formatJalaliDateRange } from '@/utils/formatters'
+import {
+  getCurrentJalaliYearMonth,
+  gregorianDateToJalaliParts,
+  jalaliDatePartsToIsoDate,
+} from '@/utils/jalali-date'
 
 type CommissionStatus = 'PENDING' | 'APPROVED' | 'PAID' | 'CANCELLED'
 type SettlementStatus = 'PENDING' | 'APPROVED' | 'PAID' | 'REJECTED' | 'CANCELLED'
-
-interface WalletInfo {
-  // Internal identifiers from the API shape; do not render.
-  id: string
-  userId: string
-  balance: number
-  pendingBalance: number
-  currency: string
-  status: string
-  createdAt: string
-  updatedAt: string
-}
 
 interface CommissionItem {
   // Internal, used for React key only.
@@ -87,10 +84,18 @@ interface CommissionItem {
 
 interface CommissionResponse {
   commissions: CommissionItem[]
+  walletSummary: WalletCommissionSummary
   totals: {
     pending: number
+    approved: number
+    available: number
     paid: number
     total: number
+    pendingSettlement?: number
+    paidSettlement?: number
+    openSettlement?: number
+    deductedSettlement?: number
+    minimumSettlementAmount?: number
   }
   summary: {
     totalCount: number
@@ -102,9 +107,6 @@ interface CommissionResponse {
 interface SettlementItem {
   // Internal, used for React key only.
   id: string
-  // Internal identifiers from the API shape; do not render.
-  walletId?: string
-  userId?: string
   amount: number
   status: SettlementStatus
   // Payment/transfer internals from the API shape; do not render in agent UI.
@@ -114,6 +116,16 @@ interface SettlementItem {
   settledAt: string | null
   createdAt: string
   updatedAt?: string
+}
+
+interface WalletCommissionSummary {
+  totalCommissionAmount: number
+  pendingCommissionAmount: number
+  approvedCommissionAmount: number
+  availableBalance: number
+  pendingSettlementAmount: number
+  paidSettlementAmount: number
+  minimumSettlementAmount: number
 }
 
 const commissionStatusLabels: Record<CommissionStatus, string> = {
@@ -153,6 +165,71 @@ function formatMoney(amount: number | null | undefined) {
   return `${formatNumber(amount ?? 0)} تومان`
 }
 
+function normalizeIntegerInput(value: string) {
+  const persianDigits = '۰۱۲۳۴۵۶۷۸۹'
+  const arabicDigits = '٠١٢٣٤٥٦٧٨٩'
+
+  return value
+    .replace(/[۰-۹]/g, (digit) => String(persianDigits.indexOf(digit)))
+    .replace(/[٠-٩]/g, (digit) => String(arabicDigits.indexOf(digit)))
+    .replace(/\D/g, '')
+    .slice(0, 12)
+}
+
+function startOfLocalDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+}
+
+const emptyWalletSummary: WalletCommissionSummary = {
+  totalCommissionAmount: 0,
+  pendingCommissionAmount: 0,
+  approvedCommissionAmount: 0,
+  availableBalance: 0,
+  pendingSettlementAmount: 0,
+  paidSettlementAmount: 0,
+  minimumSettlementAmount: 0,
+}
+
+const duplicateSettlementMessage =
+  'یک درخواست تسویه باز برای شما وجود دارد. پس از تعیین تکلیف آن می‌توانید درخواست جدید ثبت کنید.'
+
+function toSafeAmount(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0
+}
+
+function normalizeWalletSummary(summary?: Partial<WalletCommissionSummary> | null) {
+  return {
+    totalCommissionAmount: toSafeAmount(summary?.totalCommissionAmount),
+    pendingCommissionAmount: toSafeAmount(summary?.pendingCommissionAmount),
+    approvedCommissionAmount: toSafeAmount(summary?.approvedCommissionAmount),
+    availableBalance: toSafeAmount(summary?.availableBalance),
+    pendingSettlementAmount: toSafeAmount(summary?.pendingSettlementAmount),
+    paidSettlementAmount: toSafeAmount(summary?.paidSettlementAmount),
+    minimumSettlementAmount: toSafeAmount(summary?.minimumSettlementAmount),
+  }
+}
+
+function addLocalDays(date: Date, days: number) {
+  const next = startOfLocalDay(date)
+  next.setDate(next.getDate() + days)
+  return next
+}
+
+function getRecentJalaliRange(days: number): JalaliDateRangeValue {
+  const today = startOfLocalDay(new Date())
+  return {
+    from: gregorianDateToJalaliParts(addLocalDays(today, -(days - 1))),
+    to: gregorianDateToJalaliParts(today),
+  }
+}
+
+function toIsoRange(range: JalaliDateRangeValue) {
+  return {
+    from: jalaliDatePartsToIsoDate(range.from.year, range.from.month, range.from.day),
+    to: jalaliDatePartsToIsoDate(range.to.year, range.to.month, range.to.day),
+  }
+}
+
 function getDateOrDash(value?: string | null) {
   return value ? formatDateTime(value) : '-'
 }
@@ -186,13 +263,12 @@ function LoadingDashboard() {
 
 export default function AgentCommissionsPage() {
   const { toast } = useToast()
-  const [wallet, setWallet] = useState<WalletInfo | null>(null)
+  const currentJalaliMonth = useMemo(() => getCurrentJalaliYearMonth(), [])
+  const [commissionRange, setCommissionRange] = useState<JalaliDateRangeValue>(() =>
+    getRecentJalaliRange(30)
+  )
   const [commissions, setCommissions] = useState<CommissionItem[]>([])
-  const [commissionTotals, setCommissionTotals] = useState<CommissionResponse['totals']>({
-    pending: 0,
-    paid: 0,
-    total: 0,
-  })
+  const [walletSummary, setWalletSummary] = useState<WalletCommissionSummary>(emptyWalletSummary)
   const [settlements, setSettlements] = useState<SettlementItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -201,36 +277,53 @@ export default function AgentCommissionsPage() {
   const [settlementDescription, setSettlementDescription] = useState('')
   const [isRequestingSettlement, setIsRequestingSettlement] = useState(false)
 
-  const paidSettlementTotal = useMemo(
-    () =>
-      settlements
-        .filter((settlement) => settlement.status === 'PAID')
-        .reduce((total, settlement) => total + settlement.amount, 0),
-    [settlements]
-  )
+  const pendingSettlementTotal = walletSummary.pendingSettlementAmount
+  const availableBalance = walletSummary.availableBalance
+  const minimumSettlementAmount = walletSummary.minimumSettlementAmount
+  const minimumSettlementMessage = `حداقل مبلغ قابل درخواست تسویه ${formatMoney(minimumSettlementAmount)} است.`
 
-  const pendingSettlementTotal = useMemo(
-    () =>
-      settlements
-        .filter((settlement) => settlement.status === 'PENDING' || settlement.status === 'APPROVED')
-        .reduce((total, settlement) => total + settlement.amount, 0),
-    [settlements]
-  )
+  const settlementRequestBlockMessage = useMemo(() => {
+    if (pendingSettlementTotal > 0) return duplicateSettlementMessage
+    if (minimumSettlementAmount > 0 && availableBalance < minimumSettlementAmount) {
+      return minimumSettlementMessage
+    }
+    if (availableBalance <= 0) {
+      return 'موجودی قابل برداشت از پورسانت تاییدشده وجود ندارد.'
+    }
+    return null
+  }, [availableBalance, minimumSettlementAmount, minimumSettlementMessage, pendingSettlementTotal])
+
+  const commissionYearOptions = useMemo(() => {
+    const selectedYears = [commissionRange.from.year, commissionRange.to.year]
+    const yearWindow = Array.from({ length: 12 }, (_, index) => currentJalaliMonth.year + 1 - index)
+    return Array.from(new Set([...yearWindow, ...selectedYears])).sort((a, b) => b - a)
+  }, [commissionRange, currentJalaliMonth.year])
+
+  const selectedCommissionRangeText = useMemo(() => {
+    try {
+      const range = toIsoRange(commissionRange)
+      return formatJalaliDateRange(range.from, range.to)
+    } catch {
+      return 'بازه تاریخ پورسانت معتبر نیست.'
+    }
+  }, [commissionRange])
 
   const fetchFinancialData = useCallback(async () => {
     setIsLoading(true)
     setErrorMessage(null)
 
     try {
-      const [walletRes, commissionsRes, settlementsRes] = await Promise.all([
-        apiClient.get<WalletInfo>('/wallets/my?take=20'),
-        apiClient.get<CommissionResponse>('/commissions/my'),
+      const commissionIsoRange = toIsoRange(commissionRange)
+      if (commissionIsoRange.from > commissionIsoRange.to) {
+        throw new Error('تاریخ شروع باید قبل از تاریخ پایان باشد.')
+      }
+
+      const commissionParams = new URLSearchParams(commissionIsoRange)
+      const [commissionsRes, settlementsRes] = await Promise.all([
+        apiClient.get<CommissionResponse>(`/commissions/my?${commissionParams.toString()}`),
         apiClient.get<SettlementItem[]>('/settlements/my?take=50'),
       ])
 
-      if (!walletRes.success) {
-        throw new Error(walletRes.error?.message || walletRes.message || 'خطا در دریافت کیف پول')
-      }
       if (!commissionsRes.success) {
         throw new Error(commissionsRes.error?.message || commissionsRes.message || 'خطا در دریافت پورسانت‌ها')
       }
@@ -238,20 +331,19 @@ export default function AgentCommissionsPage() {
         throw new Error(settlementsRes.error?.message || settlementsRes.message || 'خطا در دریافت تسویه‌ها')
       }
 
-      setWallet(walletRes.data ?? null)
-      setCommissions(commissionsRes.data?.commissions ?? [])
-      setCommissionTotals(commissionsRes.data?.totals ?? { pending: 0, paid: 0, total: 0 })
+      const commissionData = commissionsRes.data
+      setCommissions(Array.isArray(commissionData?.commissions) ? commissionData.commissions : [])
+      setWalletSummary(normalizeWalletSummary(commissionData?.walletSummary))
       setSettlements(Array.isArray(settlementsRes.data) ? settlementsRes.data : [])
     } catch (error) {
-      setWallet(null)
       setCommissions([])
-      setCommissionTotals({ pending: 0, paid: 0, total: 0 })
+      setWalletSummary(emptyWalletSummary)
       setSettlements([])
       setErrorMessage(getErrorMessage(error, 'خطا در دریافت اطلاعات مالی'))
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [commissionRange])
 
   useEffect(() => {
     void fetchFinancialData()
@@ -260,8 +352,28 @@ export default function AgentCommissionsPage() {
   const handleSettlementRequest = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    const amount = Number(settlementAmount)
-    if (!Number.isInteger(amount) || amount <= 0) {
+    if (settlementRequestBlockMessage) {
+      toast({
+        title: 'درخواست تسویه',
+        description: settlementRequestBlockMessage,
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (pendingSettlementTotal > 0) {
+      toast({
+        title: 'درخواست تسویه باز',
+        description:
+          'یک درخواست تسویه در حال بررسی یا تاییدشده دارید. پس از تعیین تکلیف آن می‌توانید درخواست جدید ثبت کنید.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    const normalizedSettlementAmount = normalizeIntegerInput(settlementAmount)
+    const amount = Number(normalizedSettlementAmount)
+    if (normalizedSettlementAmount === '' || !Number.isInteger(amount) || amount <= 0) {
       toast({
         title: 'خطا',
         description: 'مبلغ تسویه باید عددی بزرگ‌تر از صفر باشد.',
@@ -270,7 +382,16 @@ export default function AgentCommissionsPage() {
       return
     }
 
-    if (wallet && amount > wallet.balance) {
+    if (amount < minimumSettlementAmount) {
+      toast({
+        title: 'خطا',
+        description: minimumSettlementMessage,
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (amount > availableBalance) {
       toast({
         title: 'خطا',
         description: 'مبلغ تسویه نمی‌تواند بیشتر از موجودی قابل برداشت باشد.',
@@ -287,12 +408,10 @@ export default function AgentCommissionsPage() {
         description: description || undefined,
       })
       setSettlements((currentSettlements) => [createdSettlement, ...currentSettlements])
-      setWallet((current) =>
-        current ? { ...current, balance: Math.max(0, current.balance - amount) } : current
-      )
       setSettlementAmount('')
       setSettlementDescription('')
       setRequestOpen(false)
+      await fetchFinancialData()
       toast({
         title: 'موفق',
         description: 'درخواست تسویه با موفقیت ثبت شد.',
@@ -327,25 +446,37 @@ export default function AgentCommissionsPage() {
   const walletCards = [
     {
       title: 'موجودی قابل برداشت',
-      value: formatMoney(wallet?.balance ?? 0),
+      value: formatMoney(walletSummary.availableBalance),
       icon: Wallet,
       tone: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
     },
     {
       title: 'کل پورسانت ثبت‌شده',
-      value: formatMoney(commissionTotals.total),
+      value: formatMoney(walletSummary.totalCommissionAmount),
       icon: Banknote,
       tone: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
     },
     {
-      title: 'در انتظار پرداخت',
-      value: formatMoney(wallet?.pendingBalance ?? 0),
+      title: 'در انتظار تایید',
+      value: formatMoney(walletSummary.pendingCommissionAmount),
       icon: Clock,
       tone: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
     },
     {
+      title: 'تایید شده',
+      value: formatMoney(walletSummary.approvedCommissionAmount),
+      icon: CheckCircle2,
+      tone: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+    },
+    {
+      title: 'درخواست تسویه در انتظار پرداخت',
+      value: formatMoney(walletSummary.pendingSettlementAmount),
+      icon: Clock,
+      tone: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
+    },
+    {
       title: 'تسویه پرداخت‌شده',
-      value: formatMoney(paidSettlementTotal),
+      value: formatMoney(walletSummary.paidSettlementAmount),
       icon: CheckCircle2,
       tone: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
     },
@@ -357,9 +488,35 @@ export default function AgentCommissionsPage() {
         title="پورسانت‌ها و کیف پول"
         description="موجودی کیف پول، پورسانت‌ها و درخواست‌های تسویه خود را مشاهده کنید."
         action={
-          <Dialog open={requestOpen} onOpenChange={setRequestOpen}>
+          <Dialog
+            open={requestOpen}
+            onOpenChange={(open) => {
+              if (open && settlementRequestBlockMessage) {
+                toast({
+                  title: 'درخواست تسویه',
+                  description: settlementRequestBlockMessage,
+                  variant: 'destructive',
+                })
+                return
+              }
+
+              if (open && pendingSettlementTotal > 0) {
+                toast({
+                  title: 'درخواست تسویه باز',
+                  description:
+                    'یک درخواست تسویه در حال بررسی یا تاییدشده دارید. پس از تعیین تکلیف آن می‌توانید درخواست جدید ثبت کنید.',
+                })
+                return
+              }
+
+              setRequestOpen(open)
+              if (open && !settlementAmount && availableBalance > 0) {
+                setSettlementAmount(String(availableBalance))
+              }
+            }}
+          >
             <DialogTrigger asChild>
-              <Button disabled={!wallet || wallet.balance <= 0}>
+              <Button disabled={isLoading}>
                 <Send className="ml-2 size-4" />
                 درخواست تسویه
               </Button>
@@ -375,7 +532,11 @@ export default function AgentCommissionsPage() {
                 <div className="space-y-4 py-4">
                   <div className="rounded-lg bg-muted p-3 text-sm">
                     موجودی قابل برداشت:{' '}
-                    <span className="font-semibold">{formatMoney(wallet?.balance ?? 0)}</span>
+                    <span className="font-semibold">{formatMoney(availableBalance)}</span>
+                  </div>
+                  <div className="rounded-lg bg-muted p-3 text-sm">
+                    حداقل مبلغ قابل درخواست تسویه:{' '}
+                    <span className="font-semibold">{formatMoney(minimumSettlementAmount)}</span>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="settlement-amount">مبلغ</Label>
@@ -383,7 +544,7 @@ export default function AgentCommissionsPage() {
                       id="settlement-amount"
                       value={settlementAmount}
                       onChange={(event) =>
-                        setSettlementAmount(event.target.value.replace(/\D/g, '').slice(0, 12))
+                        setSettlementAmount(normalizeIntegerInput(event.target.value))
                       }
                       inputMode="numeric"
                       dir="ltr"
@@ -441,30 +602,52 @@ export default function AgentCommissionsPage() {
         </Card>
       ) : (
         <>
-          {!wallet ? (
-            <Card className="border-0 shadow-sm">
-              <CardContent className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-                <Wallet className="size-10 text-muted-foreground" />
-                <p className="text-sm font-medium">کیف پولی برای شما ثبت نشده است.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {walletCards.map((card) => (
-                <Card key={card.title} className="rounded-2xl border border-slate-100/60 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-slate-800/60">
-                  <CardContent className="min-h-28 p-5">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-medium text-muted-foreground">{card.title}</p>
-                      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary/70">
-                        <card.icon className="size-4" />
-                      </div>
+          <Card className="border-0 shadow-sm" dir="rtl">
+            <CardHeader className="gap-3 pb-3 md:flex-row md:items-start md:justify-between">
+              <div className="space-y-1">
+                <CardTitle className="text-base">گزارش پورسانت</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  بازه انتخابی: <span className="text-foreground">{selectedCommissionRangeText}</span>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  پورسانت در انتظار تایید قابل تسویه محسوب نمی‌شود؛ قابل تسویه فعلی از پورسانت تاییدشده منهای درخواست‌های تسویه باز یا پرداخت‌شده محاسبه می‌شود.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => void fetchFinancialData()}
+                disabled={isLoading}
+              >
+                <RefreshCw className="ml-2 size-4" />
+                اعمال فیلتر
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <JalaliDateRangeFilter
+                value={commissionRange}
+                onChange={setCommissionRange}
+                yearOptions={commissionYearOptions}
+              />
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+            {walletCards.map((card) => (
+              <Card key={card.title} className="rounded-2xl border border-slate-100/60 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-slate-800/60">
+                <CardContent className="min-h-28 p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium text-muted-foreground">{card.title}</p>
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary/70">
+                      <card.icon className="size-4" />
                     </div>
-                    <p className="mt-2 truncate text-3xl font-bold text-foreground">{card.value}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+                  </div>
+                  <p className="mt-2 truncate text-3xl font-bold text-foreground">{card.value}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
           {pendingSettlementTotal > 0 && (
             <Card className="border-0 bg-amber-50 shadow-sm dark:bg-amber-950/20">

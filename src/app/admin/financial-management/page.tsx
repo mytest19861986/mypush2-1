@@ -52,13 +52,19 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { PageHeader, StatusBadge } from '@/components/shared'
+import {
+  JalaliDateRangeFilter,
+  type JalaliDateRangeValue,
+} from '@/components/shared/jalali-date-range-filter'
 import { useToast } from '@/hooks/use-toast'
 import { ApiError, apiClient } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
 import { formatDateTime, formatJalaliDateRange, formatPriceWithUnit } from '@/utils/formatters'
 import {
   getCurrentJalaliYearMonth,
+  gregorianDateToJalaliParts,
   jalaliMonthToGregorianRange,
+  jalaliDatePartsToIsoDate,
   JALALI_MONTHS,
 } from '@/utils/jalali-date'
 
@@ -83,7 +89,6 @@ interface SafePerson {
 interface WalletItem {
   // Internal identifiers from the API shape; do not render.
   id: string
-  userId: string
   balance: number
   pendingBalance: number
   currency: string
@@ -99,8 +104,6 @@ interface WalletItem {
 interface SettlementItem {
   // Internal identifiers from the API shape; do not render.
   id: string
-  walletId: string
-  userId: string
   amount: number
   status: SettlementStatus
   trackingCode: string | null
@@ -117,6 +120,10 @@ interface SettlementItem {
   agent?: {
     businessName?: string | null
   } | null
+}
+
+interface SettlementSettings {
+  minimumSettlementAmount: number
 }
 
 interface FinancialChannelBreakdown {
@@ -148,6 +155,41 @@ interface FinancialReport {
   channelBreakdown: FinancialChannelBreakdown[]
   dailyRevenue: FinancialTimeBucket[]
   unsupportedMetrics?: string[]
+}
+
+interface SalesPartnerCommissionSummary {
+  range: {
+    from: string
+    to: string
+  }
+  totals: {
+    total: number
+    pending: number
+    approved: number
+    paid: number
+    cancelled: number
+    commissionCount: number
+    availableCurrent: number
+    pendingSettlementAmount: number
+    paidSettlementAmount: number
+    openSettlementAmount: number
+  }
+  partners: {
+    key: string
+    displayName: string
+    businessName: string | null
+    commissionCount: number
+    total: number
+    pending: number
+    approved: number
+    paid: number
+    cancelled: number
+    availableCurrent: number
+    pendingSettlementAmount: number
+    paidSettlementAmount: number
+    openSettlementAmount: number
+    lastCommissionAt: string | null
+  }[]
 }
 
 const settlementFilters: { value: SettlementFilter; label: string }[] = [
@@ -207,6 +249,17 @@ function getDateOrDash(value?: string | null) {
   return value ? formatDateTime(value) : '-'
 }
 
+function normalizeIntegerInput(value: string) {
+  const persianDigits = '۰۱۲۳۴۵۶۷۸۹'
+  const arabicDigits = '٠١٢٣٤٥٦٧٨٩'
+
+  return value
+    .replace(/[۰-۹]/g, (digit) => String(persianDigits.indexOf(digit)))
+    .replace(/[٠-٩]/g, (digit) => String(arabicDigits.indexOf(digit)))
+    .replace(/\D/g, '')
+    .slice(0, 12)
+}
+
 function toIsoDate(date: Date) {
   const year = date.getFullYear()
   const month = `${date.getMonth() + 1}`.padStart(2, '0')
@@ -222,6 +275,21 @@ function addLocalDays(date: Date, days: number) {
   const next = startOfLocalDay(date)
   next.setDate(next.getDate() + days)
   return next
+}
+
+function getRecentJalaliRange(days: number): JalaliDateRangeValue {
+  const today = startOfLocalDay(new Date())
+  return {
+    from: gregorianDateToJalaliParts(addLocalDays(today, -(days - 1))),
+    to: gregorianDateToJalaliParts(today),
+  }
+}
+
+function toIsoRange(range: JalaliDateRangeValue) {
+  return {
+    from: jalaliDatePartsToIsoDate(range.from.year, range.from.month, range.from.day),
+    to: jalaliDatePartsToIsoDate(range.to.year, range.to.month, range.to.day),
+  }
 }
 
 function getPreviousJalaliYearMonth(year: number, month: number) {
@@ -320,7 +388,20 @@ export default function FinancialManagementPage() {
   )
   const [wallets, setWallets] = useState<WalletItem[]>([])
   const [settlements, setSettlements] = useState<SettlementItem[]>([])
+  const [settlementSettings, setSettlementSettings] = useState<SettlementSettings>({
+    minimumSettlementAmount: 0,
+  })
+  const [minimumSettlementAmountInput, setMinimumSettlementAmountInput] = useState('0')
+  const [isSettlementSettingsLoaded, setIsSettlementSettingsLoaded] = useState(false)
+  const [settlementSettingsErrorMessage, setSettlementSettingsErrorMessage] = useState<string | null>(
+    null
+  )
   const [financialReport, setFinancialReport] = useState<FinancialReport | null>(null)
+  const [salesPartnerCommissionSummary, setSalesPartnerCommissionSummary] =
+    useState<SalesPartnerCommissionSummary | null>(null)
+  const [commissionRange, setCommissionRange] = useState<JalaliDateRangeValue>(() =>
+    getRecentJalaliRange(30)
+  )
   const [selectedJalaliYear, setSelectedJalaliYear] = useState(defaultJalaliMonth.year)
   const [selectedJalaliMonth, setSelectedJalaliMonth] = useState(defaultJalaliMonth.month)
   const [reportFrom, setReportFrom] = useState(defaultReportRange.from)
@@ -330,14 +411,50 @@ export default function FinancialManagementPage() {
   )
   const [settlementFilter, setSettlementFilter] = useState<SettlementFilter>('all')
   const [isLoading, setIsLoading] = useState(true)
+  const [isSettingsLoading, setIsSettingsLoading] = useState(true)
+  const [isSavingSettlementSettings, setIsSavingSettlementSettings] = useState(false)
   const [isReportLoading, setIsReportLoading] = useState(true)
+  const [isCommissionSummaryLoading, setIsCommissionSummaryLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [reportErrorMessage, setReportErrorMessage] = useState<string | null>(null)
+  const [commissionSummaryErrorMessage, setCommissionSummaryErrorMessage] = useState<string | null>(
+    null
+  )
   const [processing, setProcessing] = useState<{ id: string; action: SettlementAction } | null>(null)
   const [rejectTarget, setRejectTarget] = useState<SettlementItem | null>(null)
   const [paidTarget, setPaidTarget] = useState<SettlementItem | null>(null)
   const [rejectReason, setRejectReason] = useState('')
   const [trackingCode, setTrackingCode] = useState('')
+
+  const fetchSettlementSettings = useCallback(async () => {
+    setIsSettingsLoading(true)
+    setSettlementSettingsErrorMessage(null)
+
+    try {
+      const settingsRes = await apiClient.get<SettlementSettings>('/admin/settings/settlement')
+
+      if (!settingsRes.success || !settingsRes.data) {
+        throw new Error(
+          settingsRes.error?.message || settingsRes.message || 'خطا در دریافت تنظیمات تسویه'
+        )
+      }
+
+      setSettlementSettings(settingsRes.data)
+      setMinimumSettlementAmountInput(String(settingsRes.data.minimumSettlementAmount))
+      setIsSettlementSettingsLoaded(true)
+    } catch (error) {
+      const message = getErrorMessage(error, 'خطا در دریافت تنظیمات تسویه')
+      setIsSettlementSettingsLoaded(false)
+      setSettlementSettingsErrorMessage(message)
+      toast({
+        title: 'خطا',
+        description: message,
+        variant: 'destructive',
+      })
+    } finally {
+      setIsSettingsLoading(false)
+    }
+  }, [toast])
 
   const fetchFinancialData = useCallback(async () => {
     setIsLoading(true)
@@ -397,20 +514,135 @@ export default function FinancialManagementPage() {
     }
   }, [reportFrom, reportTo])
 
+  const fetchSalesPartnerCommissionSummary = useCallback(async () => {
+    let isoRange: { from: string; to: string }
+
+    try {
+      isoRange = toIsoRange(commissionRange)
+    } catch {
+      setSalesPartnerCommissionSummary(null)
+      setCommissionSummaryErrorMessage('بازه تاریخ پورسانت معتبر نیست.')
+      return
+    }
+
+    if (isoRange.from > isoRange.to) {
+      setSalesPartnerCommissionSummary(null)
+      setCommissionSummaryErrorMessage('تاریخ شروع باید قبل از تاریخ پایان باشد.')
+      return
+    }
+
+    setIsCommissionSummaryLoading(true)
+    setCommissionSummaryErrorMessage(null)
+
+    try {
+      const params = new URLSearchParams(isoRange)
+      const summaryRes = await apiClient.get<SalesPartnerCommissionSummary>(
+        `/admin/sales-partner-commission-summary?${params.toString()}`
+      )
+
+      if (!summaryRes.success || !summaryRes.data) {
+        throw new Error(
+          summaryRes.error?.message ||
+            summaryRes.message ||
+            'خطا در دریافت خلاصه پورسانت همکاران فروش'
+        )
+      }
+
+      setSalesPartnerCommissionSummary(summaryRes.data)
+    } catch (error) {
+      setSalesPartnerCommissionSummary(null)
+      setCommissionSummaryErrorMessage(
+        getErrorMessage(error, 'خطا در دریافت خلاصه پورسانت همکاران فروش')
+      )
+    } finally {
+      setIsCommissionSummaryLoading(false)
+    }
+  }, [commissionRange])
+
   useEffect(() => {
     void fetchFinancialData()
   }, [fetchFinancialData])
 
   useEffect(() => {
+    void fetchSettlementSettings()
+  }, [fetchSettlementSettings])
+
+  useEffect(() => {
     void fetchFinancialReport()
   }, [fetchFinancialReport])
+
+  useEffect(() => {
+    void fetchSalesPartnerCommissionSummary()
+  }, [fetchSalesPartnerCommissionSummary])
+
+  const handleSaveSettlementSettings = async () => {
+    if (!isSettlementSettingsLoaded) {
+      toast({
+        title: 'خطا',
+        description: 'تنظیمات تسویه هنوز با موفقیت بارگذاری نشده است.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    const normalizedMinimumSettlementAmount = normalizeIntegerInput(minimumSettlementAmountInput)
+    const minimumSettlementAmount = Number(normalizedMinimumSettlementAmount)
+
+    if (
+      normalizedMinimumSettlementAmount === '' ||
+      !Number.isInteger(minimumSettlementAmount) ||
+      minimumSettlementAmount < 0
+    ) {
+      toast({
+        title: 'خطا',
+        description: 'حداقل مبلغ درخواست تسویه باید عدد صحیح و بزرگ‌تر یا مساوی صفر باشد.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setIsSavingSettlementSettings(true)
+    try {
+      const updatedSettings = await apiClient.patch<SettlementSettings>(
+        '/admin/settings/settlement',
+        { minimumSettlementAmount }
+      )
+
+      if (
+        !updatedSettings ||
+        !Number.isInteger(updatedSettings.minimumSettlementAmount) ||
+        updatedSettings.minimumSettlementAmount < 0
+      ) {
+        throw new Error('پاسخ ذخیره تنظیمات تسویه معتبر نیست.')
+      }
+
+      setSettlementSettings({
+        minimumSettlementAmount: updatedSettings.minimumSettlementAmount,
+      })
+      setMinimumSettlementAmountInput(String(updatedSettings.minimumSettlementAmount))
+      setIsSettlementSettingsLoaded(true)
+      setSettlementSettingsErrorMessage(null)
+      toast({ title: 'موفق', description: 'حداقل مبلغ تسویه با موفقیت ذخیره شد.' })
+    } catch (error) {
+      toast({
+        title: 'خطا',
+        description: getErrorMessage(error, 'خطا در ذخیره تنظیمات تسویه'),
+        variant: 'destructive',
+      })
+    } finally {
+      setIsSavingSettlementSettings(false)
+    }
+  }
 
   const totals = useMemo(
     () => ({
       walletBalance: wallets.reduce((total, wallet) => total + wallet.balance, 0),
       walletPending: wallets.reduce((total, wallet) => total + wallet.pendingBalance, 0),
       pendingSettlements: settlements
-        .filter((settlement) => settlement.status === 'PENDING')
+        .filter((settlement) => settlement.status === 'PENDING' || settlement.status === 'APPROVED')
+        .reduce((total, settlement) => total + settlement.amount, 0),
+      paidSettlements: settlements
+        .filter((settlement) => settlement.status === 'PAID')
         .reduce((total, settlement) => total + settlement.amount, 0),
     }),
     [settlements, wallets]
@@ -473,10 +705,25 @@ export default function FinancialManagementPage() {
       : [...yearWindow, selectedJalaliYear].sort((a, b) => b - a)
   }, [defaultJalaliMonth.year, selectedJalaliYear])
 
+  const commissionYearOptions = useMemo(() => {
+    const selectedYears = [commissionRange.from.year, commissionRange.to.year]
+    const yearWindow = Array.from({ length: 12 }, (_, index) => defaultJalaliMonth.year + 1 - index)
+    return Array.from(new Set([...yearWindow, ...selectedYears])).sort((a, b) => b - a)
+  }, [commissionRange, defaultJalaliMonth.year])
+
   const selectedReportRangeText = useMemo(() => {
     if (!reportFrom || !reportTo) return 'تاریخ شروع و پایان را انتخاب کنید.'
     return formatJalaliDateRange(reportFrom, reportTo)
   }, [reportFrom, reportTo])
+
+  const selectedCommissionRangeText = useMemo(() => {
+    try {
+      const range = toIsoRange(commissionRange)
+      return formatJalaliDateRange(range.from, range.to)
+    } catch {
+      return 'بازه تاریخ پورسانت معتبر نیست.'
+    }
+  }, [commissionRange])
 
   const applyJalaliMonthRange = (year: number, month: number) => {
     const range = getJalaliMonthRange(year, month)
@@ -542,6 +789,7 @@ export default function FinancialManagementPage() {
         `/settlements/${settlement.id}/approve`
       )
       updateSettlement(updatedSettlement)
+      await fetchSalesPartnerCommissionSummary()
       toast({ title: 'موفق', description: 'درخواست تسویه تأیید شد.' })
     } catch (error) {
       toast({
@@ -567,6 +815,7 @@ export default function FinancialManagementPage() {
         body
       )
       updateSettlement(updatedSettlement)
+      await fetchSalesPartnerCommissionSummary()
       setRejectTarget(null)
       setRejectReason('')
       toast({ title: 'موفق', description: 'درخواست تسویه رد شد.' })
@@ -594,6 +843,7 @@ export default function FinancialManagementPage() {
         body
       )
       updateSettlement(updatedSettlement)
+      await fetchSalesPartnerCommissionSummary()
       setPaidTarget(null)
       setTrackingCode('')
       toast({ title: 'موفق', description: 'پرداخت تسویه ثبت شد.' })
@@ -718,6 +968,51 @@ export default function FinancialManagementPage() {
       icon: Banknote,
       tone: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
     },
+    {
+      title: 'تسویه پرداخت‌شده',
+      value: formatPriceWithUnit(totals.paidSettlements),
+      icon: Check,
+      tone: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
+    },
+  ]
+
+  const commissionSummaryCards = [
+    {
+      title: 'کل پورسانت بازه',
+      value: formatPriceWithUnit(salesPartnerCommissionSummary?.totals.total ?? 0),
+      icon: Banknote,
+      tone: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
+    },
+    {
+      title: 'در انتظار تایید',
+      value: formatPriceWithUnit(salesPartnerCommissionSummary?.totals.pending ?? 0),
+      icon: Clock,
+      tone: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    },
+    {
+      title: 'تایید شده',
+      value: formatPriceWithUnit(salesPartnerCommissionSummary?.totals.approved ?? 0),
+      icon: Check,
+      tone: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+    },
+    {
+      title: 'تسویه شده',
+      value: formatPriceWithUnit(salesPartnerCommissionSummary?.totals.paidSettlementAmount ?? 0),
+      icon: Wallet,
+      tone: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
+    },
+    {
+      title: 'قابل تسویه فعلی',
+      value: formatPriceWithUnit(salesPartnerCommissionSummary?.totals.availableCurrent ?? 0),
+      icon: TrendingUp,
+      tone: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
+    },
+    {
+      title: 'درخواست تسویه باز',
+      value: formatPriceWithUnit(salesPartnerCommissionSummary?.totals.openSettlementAmount ?? 0),
+      icon: CalendarDays,
+      tone: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
+    },
   ]
 
   return (
@@ -726,6 +1021,52 @@ export default function FinancialManagementPage() {
         title="مدیریت مالی"
         description="مدیریت کیف پول‌ها، درخواست‌های تسویه و وضعیت‌های مالی سامانه"
       />
+
+      <Card className="rounded-2xl border border-border/50 bg-card shadow-sm" dir="rtl">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Wallet className="size-5 text-teal-600" />
+            تنظیمات تسویه
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3 sm:grid-cols-[minmax(0,280px)_auto_1fr] sm:items-end">
+          <div className="space-y-2">
+            <Label htmlFor="minimum-settlement-amount">حداقل مبلغ درخواست تسویه</Label>
+            <Input
+              id="minimum-settlement-amount"
+              value={minimumSettlementAmountInput}
+              onChange={(event) =>
+                setMinimumSettlementAmountInput(normalizeIntegerInput(event.target.value))
+              }
+              inputMode="numeric"
+              dir="ltr"
+              disabled={
+                isSettingsLoading || isSavingSettlementSettings || !isSettlementSettingsLoaded
+              }
+              placeholder="0"
+            />
+          </div>
+          <Button
+            type="button"
+            onClick={() => void handleSaveSettlementSettings()}
+            disabled={
+              isSettingsLoading || isSavingSettlementSettings || !isSettlementSettingsLoaded
+            }
+          >
+            {isSavingSettlementSettings ? (
+              <Loader2 className="ml-2 size-4 animate-spin" />
+            ) : (
+              <Check className="ml-2 size-4" />
+            )}
+            ذخیره
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            {isSettlementSettingsLoaded
+              ? `مقدار فعلی: ${formatPriceWithUnit(settlementSettings.minimumSettlementAmount)}`
+              : settlementSettingsErrorMessage || 'در حال دریافت تنظیمات تسویه...'}
+          </p>
+        </CardContent>
+      </Card>
 
       <Card className="rounded-2xl border border-border/50 bg-card shadow-sm" dir="rtl">
         <CardHeader className="gap-4 border-b border-border/60 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
@@ -953,7 +1294,7 @@ export default function FinancialManagementPage() {
         </Card>
       ) : (
         <>
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-4">
             {summaryCards.map((card) => (
               <Card key={card.title} className="rounded-2xl border border-border/50 bg-card shadow-sm">
                 <CardContent className="flex items-center gap-3 p-4">
@@ -969,11 +1310,197 @@ export default function FinancialManagementPage() {
             ))}
           </div>
 
-          <Tabs defaultValue="settlements" className="gap-4" dir="rtl">
+          <Tabs defaultValue="commission-summary" className="gap-4" dir="rtl">
             <TabsList className="w-full justify-start sm:w-fit">
+              <TabsTrigger value="commission-summary">خلاصه پورسانت و تسویه همکاران فروش</TabsTrigger>
               <TabsTrigger value="settlements">درخواست‌های تسویه</TabsTrigger>
-              <TabsTrigger value="wallets">کیف پول‌ها</TabsTrigger>
+              <TabsTrigger value="wallets">کیف پول تراکنشی</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="commission-summary" className="mt-0">
+              <Card className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm">
+                <CardHeader className="gap-4 border-b pb-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="space-y-1">
+                    <CardTitle className="text-base">خلاصه پورسانت و تسویه همکاران فروش</CardTitle>
+                    <p className="text-xs text-muted-foreground">
+                      این بخش از داده واقعی پورسانت و تسویه ساخته شده است؛ موجودی قابل تسویه از پورسانت تاییدشده منهای درخواست‌های تسویه باز یا پرداخت‌شده محاسبه می‌شود.
+                    </p>
+                    <p className="text-xs font-medium text-muted-foreground">
+                      بازه انتخابی: <span className="text-foreground">{selectedCommissionRangeText}</span>
+                    </p>
+                  </div>
+                  <div className="w-full space-y-3 lg:max-w-xl">
+                    <JalaliDateRangeFilter
+                      value={commissionRange}
+                      onChange={setCommissionRange}
+                      yearOptions={commissionYearOptions}
+                    />
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void fetchSalesPartnerCommissionSummary()}
+                        disabled={isCommissionSummaryLoading}
+                      >
+                        {isCommissionSummaryLoading ? (
+                          <Loader2 className="ml-2 size-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="ml-2 size-4" />
+                        )}
+                        اعمال فیلتر
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4 p-4 sm:p-5">
+                  {commissionSummaryErrorMessage ? (
+                    <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-destructive/20 bg-destructive/5 p-6 text-center">
+                      <XCircle className="size-8 text-destructive" />
+                      <p className="text-sm font-medium">دریافت خلاصه پورسانت ناموفق بود.</p>
+                      <p className="text-xs text-muted-foreground">{commissionSummaryErrorMessage}</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+                        {commissionSummaryCards.map((card) => (
+                          <div key={card.title} className="rounded-lg border bg-background/50 p-3">
+                            <div className="flex items-center gap-2">
+                              <span className={cn('flex size-9 items-center justify-center rounded-lg', card.tone)}>
+                                <card.icon className="size-4" />
+                              </span>
+                              <span className="text-xs text-muted-foreground">{card.title}</span>
+                            </div>
+                            {isCommissionSummaryLoading ? (
+                              <Skeleton className="mt-3 h-5 w-24" />
+                            ) : (
+                              <p className="mt-3 text-sm font-bold leading-6">{card.value}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {isCommissionSummaryLoading ? (
+                        <div className="space-y-2">
+                          <Skeleton className="h-12 w-full" />
+                          <Skeleton className="h-12 w-full" />
+                          <Skeleton className="h-12 w-full" />
+                        </div>
+                      ) : !salesPartnerCommissionSummary?.partners.length ? (
+                        <div className="flex flex-col items-center justify-center gap-3 px-4 py-14 text-center">
+                          <Wallet className="size-10 text-muted-foreground" />
+                          <p className="text-sm font-medium">پورسانتی برای همکاران فروش در این بازه یافت نشد.</p>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="hidden overflow-x-auto md:block">
+                            <Table className="min-w-[1220px] table-fixed w-full">
+                              <colgroup>
+                                <col className="w-[20%]" />
+                                <col className="w-[12%]" />
+                                <col className="w-[12%]" />
+                                <col className="w-[12%]" />
+                                <col className="w-[12%]" />
+                                <col className="w-[12%]" />
+                                <col className="w-[10%]" />
+                                <col className="w-[10%]" />
+                              </colgroup>
+                              <TableHeader>
+                                <TableRow className="border-b bg-transparent hover:bg-transparent">
+                                  <TableHead className="px-4 py-3 text-right">همکار فروش</TableHead>
+                                  <TableHead className="px-4 py-3 text-right">کل بازه</TableHead>
+                                  <TableHead className="px-4 py-3 text-right">در انتظار</TableHead>
+                                  <TableHead className="px-4 py-3 text-right">تایید شده</TableHead>
+                                  <TableHead className="px-4 py-3 text-right">تسویه شده</TableHead>
+                                  <TableHead className="px-4 py-3 text-right">قابل تسویه فعلی</TableHead>
+                                  <TableHead className="px-4 py-3 text-right">تسویه باز</TableHead>
+                                  <TableHead className="px-4 py-3 text-right">آخرین پورسانت</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {salesPartnerCommissionSummary.partners.map((partner) => (
+                                  <TableRow key={partner.key}>
+                                    <TableCell className="px-4 py-3 text-right">
+                                      <div className="min-w-0">
+                                        <span className="block truncate text-sm font-medium">
+                                          {partner.displayName}
+                                        </span>
+                                        {partner.businessName && partner.businessName !== partner.displayName && (
+                                          <span className="block truncate text-xs text-muted-foreground">
+                                            {partner.businessName}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3 text-right text-sm font-semibold">
+                                      {formatPriceWithUnit(partner.total)}
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3 text-right text-sm">
+                                      {formatPriceWithUnit(partner.pending)}
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3 text-right text-sm">
+                                      {formatPriceWithUnit(partner.approved)}
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3 text-right text-sm">
+                                      {formatPriceWithUnit(partner.paidSettlementAmount)}
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3 text-right text-sm">
+                                      {formatPriceWithUnit(partner.availableCurrent)}
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3 text-right text-sm">
+                                      {formatPriceWithUnit(partner.openSettlementAmount)}
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3 text-right text-sm text-muted-foreground">
+                                      {getDateOrDash(partner.lastCommissionAt)}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+
+                          <div className="space-y-3 md:hidden">
+                            {salesPartnerCommissionSummary.partners.map((partner) => (
+                              <div key={partner.key} className="rounded-lg border p-3">
+                                <p className="text-sm font-semibold">{partner.displayName}</p>
+                                <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                                  <div>
+                                    <p className="text-muted-foreground">کل بازه</p>
+                                    <p className="mt-1 font-semibold">{formatPriceWithUnit(partner.total)}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-muted-foreground">در انتظار</p>
+                                    <p className="mt-1">{formatPriceWithUnit(partner.pending)}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-muted-foreground">تایید شده</p>
+                                    <p className="mt-1">{formatPriceWithUnit(partner.approved)}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-muted-foreground">تسویه شده</p>
+                                    <p className="mt-1">{formatPriceWithUnit(partner.paidSettlementAmount)}</p>
+                                  </div>
+                                  <div className="col-span-2">
+                                    <p className="text-muted-foreground">قابل تسویه فعلی</p>
+                                    <p className="mt-1">
+                                      {formatPriceWithUnit(partner.availableCurrent)}
+                                    </p>
+                                  </div>
+                                  <div className="col-span-2">
+                                    <p className="text-muted-foreground">درخواست تسویه باز</p>
+                                    <p className="mt-1">{formatPriceWithUnit(partner.openSettlementAmount)}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
 
             <TabsContent value="wallets" className="mt-0">
               <Card className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm">
@@ -984,7 +1511,9 @@ export default function FinancialManagementPage() {
                 {wallets.length === 0 ? (
                   <div className="flex flex-col items-center justify-center gap-3 px-4 py-14 text-center">
                     <Wallet className="size-10 text-muted-foreground" />
-                    <p className="text-sm font-medium">کیف پولی یافت نشد.</p>
+                    <p className="text-sm font-medium">
+                      کیف پول تراکنشی ثبت نشده است؛ پورسانت‌ها را از بخش مدیریت کمیسیون‌ها بررسی کنید.
+                    </p>
                   </div>
                 ) : (
                   <>
@@ -1101,13 +1630,12 @@ export default function FinancialManagementPage() {
                 ) : (
                   <>
                     <div className="hidden overflow-x-auto md:block">
-                      <Table className="min-w-[900px] table-fixed w-full">
+                      <Table className="min-w-[760px] table-fixed w-full">
                         <colgroup>
-                          <col className="w-[26%]" />
+                          <col className="w-[30%]" />
                           <col className="w-[18%]" />
                           <col className="w-[16%]" />
-                          <col className="w-[18%]" />
-                          <col className="w-[14%]" />
+                          <col className="w-[28%]" />
                           <col className="w-[8%]" />
                         </colgroup>
                         <TableHeader>
@@ -1116,7 +1644,6 @@ export default function FinancialManagementPage() {
                             <TableHead className="px-4 py-3 text-right">مبلغ</TableHead>
                             <TableHead className="px-4 py-3 text-right">وضعیت</TableHead>
                             <TableHead className="px-4 py-3 text-right">تاریخ درخواست</TableHead>
-                            <TableHead className="px-4 py-3 text-right">کد پیگیری</TableHead>
                             <TableHead className="w-[80px] px-4 py-3 text-left">عملیات</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -1137,11 +1664,6 @@ export default function FinancialManagementPage() {
                               <TableCell className="px-4 py-3 text-right">
                                 <span className="whitespace-nowrap text-sm text-muted-foreground">
                                   {getDateOrDash(settlement.requestedAt || settlement.createdAt)}
-                                </span>
-                              </TableCell>
-                              <TableCell className="px-4 py-3 text-right">
-                                <span dir="ltr" className="inline-block max-w-full truncate text-sm text-muted-foreground">
-                                  {settlement.trackingCode || '-'}
                                 </span>
                               </TableCell>
                               <TableCell className="w-[80px] px-4 py-3 text-left">
@@ -1173,10 +1695,6 @@ export default function FinancialManagementPage() {
                             <div>
                               <p className="text-muted-foreground">پرداخت</p>
                               <p className="mt-1">{getDateOrDash(settlement.paidAt || settlement.settledAt)}</p>
-                            </div>
-                            <div>
-                              <p className="text-muted-foreground">کد پیگیری</p>
-                              <p className="mt-1">{settlement.trackingCode || '-'}</p>
                             </div>
                             {settlement.rejectionReason && (
                               <div>

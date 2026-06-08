@@ -51,6 +51,7 @@ export const AuditActions = {
   SETTLEMENT_APPROVED: 'SETTLEMENT_APPROVED',
   SETTLEMENT_REJECTED: 'SETTLEMENT_REJECTED',
   SETTLEMENT_PAID: 'SETTLEMENT_PAID',
+  SETTLEMENT_SETTINGS_UPDATED: 'SETTLEMENT_SETTINGS_UPDATED',
 } as const
 
 export type AuditAction = (typeof AuditActions)[keyof typeof AuditActions]

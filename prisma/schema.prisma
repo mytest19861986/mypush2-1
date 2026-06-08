@@ -560,6 +560,14 @@ model PageContent {
   @@index([slug])
 }
 
+model AppSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 // ============================================
 // Uploads
 // ============================================

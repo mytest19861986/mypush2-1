@@ -1,20 +1,37 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import Link from 'next/link'
 import { apiClient } from '@/lib/api-client'
 import { useAuthStore } from '@/stores/auth-store'
+import { useToast } from '@/hooks/use-toast'
 import { EmptyState, StatusBadge } from '@/components/shared'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
-import { formatDate, getDisplayName, toPersianNum } from '@/utils/formatters'
+import { formatDate, formatPriceWithUnit, getDisplayName, toPersianNum } from '@/utils/formatters'
+import {
+  getCurrentJalaliYearMonth,
+  getJalaliMonthLength,
+  jalaliDatePartsToIsoDate,
+  JALALI_MONTHS,
+} from '@/utils/jalali-date'
 import type { UserPlanItem } from '@/types'
 import {
   AlertCircle,
   ArrowLeft,
+  Banknote,
   CalendarDays,
   CheckCircle2,
   ClipboardList,
@@ -22,6 +39,7 @@ import {
   CreditCard,
   HeartPulse,
   IdCard,
+  Loader2,
   MessageSquareText,
   RefreshCw,
   Route,
@@ -59,6 +77,46 @@ type ReviewItem = {
   comment: string | null
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | string
   createdAt: string
+}
+
+type ReferralCommissionStatus = 'PENDING' | 'APPROVED' | 'PAID' | 'CANCELLED' | string
+
+type ReferralCommissionItem = {
+  id: string
+  amount: number
+  percent: number
+  status: ReferralCommissionStatus
+  paidAt?: string | null
+  createdAt: string
+  userPlan?: {
+    plan?: {
+      name?: string | null
+      price?: number
+    } | null
+  } | null
+}
+
+type ReferralCommissionResponse = {
+  commissions: ReferralCommissionItem[]
+  totals: {
+    pending: number
+    approved: number
+    paid: number
+    available: number
+    total: number
+  }
+  summary: {
+    totalCount: number
+    pendingCount: number
+    approvedCount: number
+    paidCount: number
+  }
+}
+
+type JalaliDateInput = {
+  year: number
+  month: number
+  day: number
 }
 
 const quickActions: {
@@ -579,6 +637,7 @@ function ProfileCompletionCard({ nationalCode }: { nationalCode?: string | null 
 }
 
 function ReferralCodeCard({ referralCode }: { referralCode?: string | null }) {
+  const { toast } = useToast()
   const [copied, setCopied] = useState(false)
   const [origin, setOrigin] = useState('')
 
@@ -596,11 +655,32 @@ function ReferralCodeCard({ referralCode }: { referralCode?: string | null }) {
     if (!referralLink) return
 
     try {
-      await navigator.clipboard.writeText(referralLink)
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(referralLink)
+      } else {
+        const textArea = document.createElement('textarea')
+        textArea.value = referralLink
+        textArea.setAttribute('readonly', 'true')
+        textArea.style.position = 'fixed'
+        textArea.style.opacity = '0'
+        document.body.appendChild(textArea)
+        textArea.select()
+        const didCopy = document.execCommand('copy')
+        document.body.removeChild(textArea)
+
+        if (!didCopy) throw new Error('COPY_FAILED')
+      }
+
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1800)
+      toast({ title: 'موفق', description: 'لینک معرفی کپی شد.' })
     } catch {
       setCopied(false)
+      toast({
+        title: 'خطا',
+        description: 'کپی لینک معرفی ناموفق بود. لطفا دوباره تلاش کنید.',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -634,6 +714,241 @@ function ReferralCodeCard({ referralCode }: { referralCode?: string | null }) {
             )}
           </Button>
         </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+const referralCommissionStatusLabels: Record<string, string> = {
+  PENDING: 'در انتظار تایید',
+  APPROVED: 'تایید شده',
+  PAID: 'تسویه شده',
+  CANCELLED: 'لغو شده',
+}
+
+function getSafeMonthLength(date: JalaliDateInput) {
+  try {
+    return getJalaliMonthLength(date.year, date.month)
+  } catch {
+    return 31
+  }
+}
+
+function clampJalaliDay(date: JalaliDateInput) {
+  const maxDay = getSafeMonthLength(date)
+  return {
+    ...date,
+    day: Math.min(Math.max(date.day, 1), maxDay),
+  }
+}
+
+function JalaliDateFields({
+  title,
+  value,
+  onChange,
+}: {
+  title: string
+  value: JalaliDateInput
+  onChange: (value: JalaliDateInput) => void
+}) {
+  const dayCount = getSafeMonthLength(value)
+  const days = Array.from({ length: dayCount }, (_, index) => index + 1)
+
+  const updateValue = (next: Partial<JalaliDateInput>) => {
+    onChange(clampJalaliDay({ ...value, ...next }))
+  }
+
+  return (
+    <div className="space-y-2">
+      <Label>{title}</Label>
+      <div className="grid grid-cols-[1fr_1.2fr_1fr] gap-2">
+        <Input
+          value={value.year}
+          onChange={(event) => {
+            const year = Number(event.target.value.replace(/\D/g, '').slice(0, 4))
+            if (Number.isInteger(year) && year > 0) updateValue({ year })
+          }}
+          inputMode="numeric"
+          dir="ltr"
+          aria-label={`${title} - سال`}
+        />
+        <Select
+          value={String(value.month)}
+          onValueChange={(selectedMonth) => updateValue({ month: Number(selectedMonth) })}
+        >
+          <SelectTrigger aria-label={`${title} - ماه`}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {JALALI_MONTHS.map((month) => (
+              <SelectItem key={month.value} value={String(month.value)}>
+                {month.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={String(value.day)}
+          onValueChange={(selectedDay) => updateValue({ day: Number(selectedDay) })}
+        >
+          <SelectTrigger aria-label={`${title} - روز`}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {days.map((day) => (
+              <SelectItem key={day} value={String(day)}>
+                {toPersianNum(day)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  )
+}
+
+function ReferralCommissionReport() {
+  const currentJalaliMonth = useMemo(() => getCurrentJalaliYearMonth(), [])
+  const defaultToDay = useMemo(
+    () => getSafeMonthLength({ ...currentJalaliMonth, day: 1 }),
+    [currentJalaliMonth]
+  )
+  const [fromDate, setFromDate] = useState<JalaliDateInput>({
+    ...currentJalaliMonth,
+    day: 1,
+  })
+  const [toDate, setToDate] = useState<JalaliDateInput>({
+    ...currentJalaliMonth,
+    day: defaultToDay,
+  })
+  const [report, setReport] = useState<ReferralCommissionResponse | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchReport = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const from = jalaliDatePartsToIsoDate(fromDate.year, fromDate.month, fromDate.day)
+      const to = jalaliDatePartsToIsoDate(toDate.year, toDate.month, toDate.day)
+      const response = await apiClient.get<ReferralCommissionResponse>(
+        `/commissions/my?sourceType=USER_REFERRAL&from=${from}&to=${to}`
+      )
+
+      if (!response.success || !response.data) {
+        throw new Error(response.error?.message || response.message || 'خطا در دریافت گزارش پورسانت')
+      }
+
+      setReport(response.data)
+    } catch (err) {
+      setReport(null)
+      setError(err instanceof Error ? err.message : 'خطا در دریافت گزارش پورسانت')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [fromDate, toDate])
+
+  useEffect(() => {
+    void fetchReport()
+  }, [fetchReport])
+
+  const totals = report?.totals ?? {
+    pending: 0,
+    approved: 0,
+    paid: 0,
+    available: 0,
+    total: 0,
+  }
+  const commissions = report?.commissions ?? []
+
+  return (
+    <Card className="rounded-2xl border border-slate-100/60 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-slate-800/60">
+      <CardHeader className="pb-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Banknote className="size-5 text-primary" />
+              گزارش پورسانت رفرال
+            </CardTitle>
+            <p className="mt-1 text-sm text-muted-foreground">
+              مبالغ در انتظار تایید در مانده قابل تسویه محاسبه نمی‌شوند.
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => void fetchReport()} disabled={isLoading}>
+            {isLoading ? (
+              <Loader2 className="ml-2 size-4 animate-spin" />
+            ) : (
+              <RefreshCw className="ml-2 size-4" />
+            )}
+            اعمال فیلتر
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid gap-3 lg:grid-cols-2">
+          <JalaliDateFields title="از تاریخ" value={fromDate} onChange={setFromDate} />
+          <JalaliDateFields title="تا تاریخ" value={toDate} onChange={setToDate} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+          {[
+            { title: 'کل پورسانت', value: totals.total },
+            { title: 'در انتظار تایید', value: totals.pending },
+            { title: 'تایید شده', value: totals.approved },
+            { title: 'تسویه شده', value: totals.paid },
+            { title: 'مانده قابل تسویه', value: totals.available },
+          ].map((item) => (
+            <div key={item.title} className="rounded-2xl border border-slate-100/70 bg-background/70 p-4 dark:border-slate-800/70">
+              <p className="text-xs text-muted-foreground">{item.title}</p>
+              <p className="mt-2 truncate text-sm font-bold sm:text-base">
+                {formatPriceWithUnit(item.value)}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {error ? (
+          <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+            {error}
+          </div>
+        ) : isLoading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
+        ) : commissions.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-200/80 bg-background/70 p-5 text-center text-sm text-muted-foreground dark:border-slate-800/80">
+            پورسانت رفرالی در این بازه ثبت نشده است.
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-2xl border border-slate-100/70 bg-background dark:border-slate-800/70">
+            <div className="hidden grid-cols-[1fr_1fr_1fr_1fr] gap-3 border-b border-slate-100/70 bg-muted/20 px-4 py-3 text-xs font-medium text-muted-foreground dark:border-slate-800/70 md:grid">
+              <span>تاریخ</span>
+              <span>طرح</span>
+              <span>مبلغ</span>
+              <span>وضعیت</span>
+            </div>
+            <div className="divide-y">
+              {commissions.map((commission) => (
+                <div
+                  key={commission.id}
+                  className="grid gap-3 p-4 md:grid-cols-[1fr_1fr_1fr_1fr] md:items-center"
+                >
+                  <span className="text-sm text-muted-foreground">{formatDate(commission.createdAt)}</span>
+                  <span className="truncate text-sm font-medium">
+                    {commission.userPlan?.plan?.name || 'طرح ثبت‌شده'}
+                  </span>
+                  <span className="text-sm font-semibold">{formatPriceWithUnit(commission.amount)}</span>
+                  <StatusBadge
+                    status={commission.status}
+                    label={referralCommissionStatusLabels[commission.status] || commission.status}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   )
@@ -804,6 +1119,7 @@ export default function UserDashboardPage() {
           />
           <RecentVisitsCard visits={visits} reviewsByVisit={reviewsByVisit} />
           <PlanSummaryCard plans={plans} />
+          <ReferralCommissionReport />
         </main>
 
         <aside className="space-y-5">

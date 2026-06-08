@@ -59,6 +59,12 @@ export async function PATCH(
         salesPartner: {
           select: {
             id: true,
+            status: true,
+            agent: {
+              select: {
+                status: true,
+              },
+            },
           },
         },
       },
@@ -86,6 +92,13 @@ export async function PATCH(
 
     if (salesCustomer.plan.status !== 'ACTIVE') {
       return errorResponse('BAD_REQUEST', 'Plan is not active', 400)
+    }
+
+    if (
+      salesCustomer.salesPartner.status !== 'ACTIVE' ||
+      salesCustomer.salesPartner.agent?.status !== 'APPROVED'
+    ) {
+      return errorResponse('BAD_REQUEST', 'Sales partner must be approved before final confirmation', 400)
     }
 
     const now = new Date()
@@ -169,8 +182,13 @@ export async function PATCH(
       })
 
       const commissionPercent = getPlanCommissionPercent(salesCustomer.plan, 'SALES_PARTNER')
+      const existingCommission = await tx.commission.findFirst({
+        where: { userPlanId: userPlan.id },
+        select: { id: true, amount: true, percent: true, status: true },
+      })
       const commission = commissionPercent
-        ? await tx.commission.create({
+        ? existingCommission ??
+          (await tx.commission.create({
             data: {
               agentId: salesCustomer.salesPartnerId,
               userPlanId: userPlan.id,
@@ -178,7 +196,7 @@ export async function PATCH(
               amount: calculateCommissionAmount(salesCustomer.plan.price, commissionPercent),
               status: 'PENDING',
             },
-          })
+          }))
         : null
 
       if (!commissionPercent) {

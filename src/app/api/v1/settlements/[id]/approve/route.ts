@@ -31,7 +31,7 @@ export async function PATCH(
     }
 
     if (existingSettlement.status !== 'PENDING') {
-      return errorResponse('CONFLICT', 'Only pending settlements can be approved', 409)
+      return errorResponse('CONFLICT', 'فقط درخواست‌های تسویه در انتظار بررسی قابل تایید هستند.', 409)
     }
 
     const ip = getClientIp(request)
@@ -64,7 +64,7 @@ export async function PATCH(
       return updatedSettlement
     })
 
-    return successResponse(toSafeSettlementResponse(settlement), 'Settlement approved successfully')
+    return successResponse(toSafeSettlementResponse(settlement), 'درخواست تسویه با موفقیت تایید شد.')
   } catch (err) {
     console.error('[PATCH /api/v1/settlements/[id]/approve]', err)
     return errorResponse('INTERNAL_ERROR', 'Internal server error', 500)

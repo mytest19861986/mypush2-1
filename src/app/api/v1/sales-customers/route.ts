@@ -29,6 +29,30 @@ const createSalesCustomerSchema = z.object({
 })
 
 const statusSchema = z.enum(SALES_CUSTOMER_STATUSES)
+const isoDatePattern = /^\d{4}-\d{2}-\d{2}$/
+
+function parseIsoDateRange(request: NextRequest) {
+  const from = request.nextUrl.searchParams.get('from')?.trim()
+  const to = request.nextUrl.searchParams.get('to')?.trim()
+
+  if (!from && !to) return { ok: true as const, filter: undefined }
+  if (!from || !to || !isoDatePattern.test(from) || !isoDatePattern.test(to)) {
+    return { ok: false as const }
+  }
+
+  const fromDate = new Date(`${from}T00:00:00.000Z`)
+  const toDate = new Date(`${to}T23:59:59.999Z`)
+
+  if (
+    Number.isNaN(fromDate.getTime()) ||
+    Number.isNaN(toDate.getTime()) ||
+    fromDate.getTime() > toDate.getTime()
+  ) {
+    return { ok: false as const }
+  }
+
+  return { ok: true as const, filter: { gte: fromDate, lte: toDate } }
+}
 
 // POST /api/v1/sales-customers - Create a sales customer lead without plan/payment side effects
 export async function POST(request: NextRequest) {
@@ -149,9 +173,19 @@ export async function GET(request: NextRequest) {
       return errorResponse('VALIDATION_ERROR', 'Invalid status', 400)
     }
 
+    const dateRange = parseIsoDateRange(request)
+    if (!dateRange.ok) {
+      return errorResponse('VALIDATION_ERROR', 'Invalid date range', 400)
+    }
+
     const where: Prisma.SalesCustomerWhereInput = {
       ...(!hasListAllAccess && { salesPartnerId: payload.sub }),
       ...(statusResult?.success && { status: statusResult.data }),
+      ...(dateRange.filter && statusResult?.success && statusResult.data === 'RETURNED'
+        ? { returnedAt: dateRange.filter }
+        : dateRange.filter
+          ? { createdAt: dateRange.filter }
+          : {}),
     }
 
     const salesCustomers = await db.salesCustomer.findMany({

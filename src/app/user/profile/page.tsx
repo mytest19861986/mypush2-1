@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useToast } from '@/hooks/use-toast'
 import { PageHeader } from '@/components/shared'
-import { apiClient } from '@/lib/api-client'
+import { ApiError, apiClient } from '@/lib/api-client'
 import { useAuthStore } from '@/stores/auth-store'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -132,6 +132,7 @@ function getProfileSaveErrorMessage(res: ProfileSaveResult) {
 }
 
 function ReferralCodePanel({ referralCode }: { referralCode?: string | null }) {
+  const { toast } = useToast()
   const [copied, setCopied] = useState(false)
   const [origin, setOrigin] = useState('')
 
@@ -149,11 +150,32 @@ function ReferralCodePanel({ referralCode }: { referralCode?: string | null }) {
     if (!referralLink) return
 
     try {
-      await navigator.clipboard.writeText(referralLink)
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(referralLink)
+      } else {
+        const textArea = document.createElement('textarea')
+        textArea.value = referralLink
+        textArea.setAttribute('readonly', 'true')
+        textArea.style.position = 'fixed'
+        textArea.style.opacity = '0'
+        document.body.appendChild(textArea)
+        textArea.select()
+        const didCopy = document.execCommand('copy')
+        document.body.removeChild(textArea)
+
+        if (!didCopy) throw new Error('COPY_FAILED')
+      }
+
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1800)
+      toast({ title: 'موفق', description: 'لینک معرفی کپی شد.' })
     } catch {
       setCopied(false)
+      toast({
+        title: 'خطا',
+        description: 'کپی لینک معرفی ناموفق بود. لطفا دوباره تلاش کنید.',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -327,6 +349,12 @@ export default function UserProfilePage() {
       toast({ title: 'موفق', description: message })
     } catch (err) {
       const msg = err instanceof Error ? err.message : PROFILE_SAVE_ERROR_MESSAGE
+      if (
+        err instanceof ApiError &&
+        (err.code === 'DUPLICATE' || err.code === 'PLAN_HOLDER_LINK_CONFLICT')
+      ) {
+        setNationalCodeError(msg)
+      }
       setFeedback({ type: 'error', message: msg })
       toast({ title: 'خطا', description: msg, variant: 'destructive' })
     } finally {

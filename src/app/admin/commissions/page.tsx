@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Banknote, Check, Filter, Inbox, Loader2, MoreHorizontal, XCircle } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -45,6 +46,7 @@ import type { CommissionItem, CommissionStatus, UserProfile } from '@/types'
 import { formatDateTime, formatPriceWithUnit, getDisplayName, toPersianNum } from '@/utils/formatters'
 
 type StatusFilter = 'all' | CommissionStatus
+type SourceTypeFilter = 'all' | 'SALES_PARTNER' | 'USER_REFERRAL'
 
 interface CommissionUser {
   id: string
@@ -59,6 +61,8 @@ interface CommissionUser {
 }
 
 type AdminCommissionItem = CommissionItem & {
+  sourceType?: 'SALES_PARTNER' | 'USER_REFERRAL'
+  sourceLabel?: string
   agent?: CommissionUser | null
   userPlan?: CommissionItem['userPlan'] & {
     user?: CommissionUser | null
@@ -71,6 +75,12 @@ const statusOptions: { value: StatusFilter; label: string }[] = [
   { value: 'APPROVED', label: 'تایید شده' },
   { value: 'PAID', label: 'پرداخت شده' },
   { value: 'CANCELLED', label: 'لغو شده' },
+]
+
+const sourceTypeOptions: { value: SourceTypeFilter; label: string }[] = [
+  { value: 'all', label: 'همه نوع‌ها' },
+  { value: 'SALES_PARTNER', label: 'همکار فروش' },
+  { value: 'USER_REFERRAL', label: 'رفرال کاربر' },
 ]
 
 const commissionStatusClasses: Record<CommissionStatus, string> = {
@@ -87,6 +97,8 @@ export default function AdminCommissionsPage() {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [sourceTypeFilter, setSourceTypeFilter] = useState<SourceTypeFilter>('all')
+  const [ownerSearch, setOwnerSearch] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [processingAction, setProcessingAction] = useState<'approve' | 'cancel' | 'pay' | null>(null)
@@ -103,6 +115,8 @@ export default function AdminCommissionsPage() {
         page,
         limit: 20,
         status: statusFilter === 'all' ? undefined : statusFilter,
+        sourceType: sourceTypeFilter === 'all' ? undefined : sourceTypeFilter,
+        ownerSearch: ownerSearch.trim() || undefined,
       })
 
       if (res.success && res.data) {
@@ -125,7 +139,7 @@ export default function AdminCommissionsPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [page, statusFilter, toast])
+  }, [ownerSearch, page, sourceTypeFilter, statusFilter, toast])
 
   useEffect(() => {
     fetchCommissions()
@@ -342,6 +356,17 @@ export default function AdminCommissionsPage() {
       ),
     },
     {
+      key: 'sourceType',
+      header: 'نوع',
+      className: 'px-4 py-3 text-right',
+      render: (row) => (
+        <Badge variant="outline" className="w-fit whitespace-nowrap">
+          {row.sourceLabel ||
+            (row.sourceType === 'SALES_PARTNER' ? 'همکار فروش' : 'رفرال کاربر')}
+        </Badge>
+      ),
+    },
+    {
       key: 'agent',
       header: 'نماینده',
       className: 'px-4 py-3 text-right',
@@ -404,6 +429,7 @@ export default function AdminCommissionsPage() {
     'w-[140px]',
     'w-[90px]',
     'w-[130px]',
+    'w-[130px]',
     'w-[190px]',
     'w-[190px]',
     'w-[160px]',
@@ -437,7 +463,7 @@ export default function AdminCommissionsPage() {
 
     return (
       <div className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm">
-        <Table className="min-w-[1320px] table-fixed w-full">
+        <Table className="min-w-[1450px] table-fixed w-full">
           <colgroup>
             {commissionColumnWidths.map((width, index) => (
               <col key={`${width}-${index}`} className={width} />
@@ -531,7 +557,7 @@ export default function AdminCommissionsPage() {
             <Filter className="size-4" />
             <span>فیلترها</span>
           </div>
-          <div className="grid max-w-sm grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="space-y-1.5">
               <Label className="text-xs">وضعیت</Label>
               <Select
@@ -552,6 +578,41 @@ export default function AdminCommissionsPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">نوع پورسانت</Label>
+              <Select
+                value={sourceTypeFilter}
+                onValueChange={(value) => {
+                  setSourceTypeFilter(value as SourceTypeFilter)
+                  setPage(1)
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="همه نوع‌ها" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sourceTypeOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="commission-owner-search" className="text-xs">
+                جستجوی دریافت‌کننده
+              </Label>
+              <Input
+                id="commission-owner-search"
+                value={ownerSearch}
+                onChange={(event) => {
+                  setOwnerSearch(event.target.value)
+                  setPage(1)
+                }}
+                placeholder="نام، نام خانوادگی یا نام کسب‌وکار"
+              />
             </div>
           </div>
         </CardContent>

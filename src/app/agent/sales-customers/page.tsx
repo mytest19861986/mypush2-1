@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useCallback, useEffect, useState } from 'react'
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { Loader2, Plus, RefreshCw, ShoppingBag, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -32,10 +32,19 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { PageHeader, StatusBadge } from '@/components/shared'
+import {
+  JalaliDateRangeFilter,
+  type JalaliDateRangeValue,
+} from '@/components/shared/jalali-date-range-filter'
 import { useToast } from '@/hooks/use-toast'
 import { ApiError, apiClient } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
-import { formatDateTime } from '@/utils/formatters'
+import { formatDateTime, formatJalaliDateRange } from '@/utils/formatters'
+import {
+  getCurrentJalaliYearMonth,
+  gregorianDateToJalaliParts,
+  jalaliDatePartsToIsoDate,
+} from '@/utils/jalali-date'
 
 type SalesCustomerStatus =
   | 'PENDING_REVIEW'
@@ -149,6 +158,31 @@ function getDateOrDash(value: string | null) {
   return value ? formatDateTime(value) : '-'
 }
 
+function startOfLocalDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+}
+
+function addLocalDays(date: Date, days: number) {
+  const next = startOfLocalDay(date)
+  next.setDate(next.getDate() + days)
+  return next
+}
+
+function getRecentJalaliRange(days: number): JalaliDateRangeValue {
+  const today = startOfLocalDay(new Date())
+  return {
+    from: gregorianDateToJalaliParts(addLocalDays(today, -(days - 1))),
+    to: gregorianDateToJalaliParts(today),
+  }
+}
+
+function toIsoRange(range: JalaliDateRangeValue) {
+  return {
+    from: jalaliDatePartsToIsoDate(range.from.year, range.from.month, range.from.day),
+    to: jalaliDatePartsToIsoDate(range.to.year, range.to.month, range.to.day),
+  }
+}
+
 function LoadingCustomers() {
   return (
     <>
@@ -182,11 +216,18 @@ function LoadingCustomers() {
 
 export default function AgentSalesCustomersPage() {
   const { toast } = useToast()
+  const currentJalaliMonth = useMemo(() => getCurrentJalaliYearMonth(), [])
   const [customers, setCustomers] = useState<SalesCustomer[]>([])
+  const [returnedCustomers, setReturnedCustomers] = useState<SalesCustomer[]>([])
   const [plans, setPlans] = useState<PlanOption[]>([])
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [returnedRange, setReturnedRange] = useState<JalaliDateRangeValue>(() =>
+    getRecentJalaliRange(20)
+  )
   const [isLoading, setIsLoading] = useState(true)
+  const [isReturnedLoading, setIsReturnedLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [returnedErrorMessage, setReturnedErrorMessage] = useState<string | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [createForm, setCreateForm] = useState<CreateFormState>(initialCreateForm)
@@ -218,6 +259,52 @@ export default function AgentSalesCustomersPage() {
     }
   }, [statusFilter])
 
+  const returnedYearOptions = useMemo(() => {
+    const selectedYears = [returnedRange.from.year, returnedRange.to.year]
+    const yearWindow = Array.from({ length: 12 }, (_, index) => currentJalaliMonth.year + 1 - index)
+    return Array.from(new Set([...yearWindow, ...selectedYears])).sort((a, b) => b - a)
+  }, [currentJalaliMonth.year, returnedRange])
+
+  const selectedReturnedRangeText = useMemo(() => {
+    try {
+      const range = toIsoRange(returnedRange)
+      return formatJalaliDateRange(range.from, range.to)
+    } catch {
+      return 'بازه برگشتی‌ها معتبر نیست.'
+    }
+  }, [returnedRange])
+
+  const fetchReturnedCustomers = useCallback(async () => {
+    setIsReturnedLoading(true)
+    setReturnedErrorMessage(null)
+
+    try {
+      const isoRange = toIsoRange(returnedRange)
+      if (isoRange.from > isoRange.to) {
+        throw new Error('تاریخ شروع باید قبل از تاریخ پایان باشد.')
+      }
+
+      const params = new URLSearchParams({
+        take: '50',
+        status: 'RETURNED',
+        from: isoRange.from,
+        to: isoRange.to,
+      })
+      const res = await apiClient.get<SalesCustomer[]>(`/sales-customers?${params.toString()}`)
+
+      if (res.success && Array.isArray(res.data)) {
+        setReturnedCustomers(res.data)
+      } else {
+        throw new Error(res.error?.message || res.message || 'خطا در دریافت برگشتی‌ها')
+      }
+    } catch (error) {
+      setReturnedCustomers([])
+      setReturnedErrorMessage(getErrorMessage(error, 'خطا در دریافت برگشتی‌ها'))
+    } finally {
+      setIsReturnedLoading(false)
+    }
+  }, [returnedRange])
+
   const fetchPlans = useCallback(async () => {
     try {
       const res = await apiClient.get<PlanOption[]>('/plans')
@@ -232,6 +319,10 @@ export default function AgentSalesCustomersPage() {
   useEffect(() => {
     void fetchCustomers()
   }, [fetchCustomers])
+
+  useEffect(() => {
+    void fetchReturnedCustomers()
+  }, [fetchReturnedCustomers])
 
   useEffect(() => {
     void fetchPlans()
@@ -327,7 +418,7 @@ export default function AgentSalesCustomersPage() {
         <div className="grid grid-cols-2 gap-3 text-xs">
           <div>
             <p className="text-muted-foreground">کد ملی</p>
-            <p className="mt-1 font-medium" dir="ltr">{getMaskedNationalCode(customer.nationalCode)}</p>
+            <p className="mt-1 font-medium">-</p>
           </div>
           <div>
             <p className="text-muted-foreground">طرح</p>
@@ -344,6 +435,30 @@ export default function AgentSalesCustomersPage() {
         </div>
       </CardContent>
     </Card>
+  )
+
+  const renderReturnedCustomerCard = (customer: SalesCustomer) => (
+    <div key={customer.id} className="rounded-lg border p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold">{getFullName(customer)}</p>
+          <p className="mt-1 text-xs text-muted-foreground" dir="ltr">
+            {customer.mobile || '-'}
+          </p>
+        </div>
+        {renderStatus(customer.status)}
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+        <div>
+          <p className="text-muted-foreground">طرح</p>
+          <p className="mt-1 font-medium">{getPlanName(customer)}</p>
+        </div>
+        <div>
+          <p className="text-muted-foreground">تاریخ برگشت</p>
+          <p className="mt-1 font-medium">{getDateOrDash(customer.returnedAt)}</p>
+        </div>
+      </div>
+    </div>
   )
 
   return (
@@ -453,6 +568,100 @@ export default function AgentSalesCustomersPage() {
         }
       />
 
+      <Card className="border-0 shadow-sm" dir="rtl">
+        <CardContent className="space-y-4 p-4 sm:p-5">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="space-y-1">
+              <h2 className="text-base font-semibold">برگشتی‌های بازه انتخابی</h2>
+              <p className="text-xs text-muted-foreground">
+                بازه انتخابی: <span className="text-foreground">{selectedReturnedRangeText}</span>
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => void fetchReturnedCustomers()}
+              disabled={isReturnedLoading}
+            >
+              {isReturnedLoading ? (
+                <Loader2 className="ml-2 size-4 animate-spin" />
+              ) : (
+                <RefreshCw className="ml-2 size-4" />
+              )}
+              اعمال فیلتر
+            </Button>
+          </div>
+
+          <JalaliDateRangeFilter
+            value={returnedRange}
+            onChange={setReturnedRange}
+            yearOptions={returnedYearOptions}
+          />
+
+          {returnedErrorMessage ? (
+            <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive">
+              {returnedErrorMessage}
+            </div>
+          ) : isReturnedLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          ) : returnedCustomers.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
+              <ShoppingBag className="size-9 text-muted-foreground" />
+              <p className="text-sm font-medium">برگشتی‌ای در این بازه یافت نشد.</p>
+            </div>
+          ) : (
+            <>
+              <div className="hidden overflow-x-auto md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50 hover:bg-muted/50">
+                      <TableHead>مشتری</TableHead>
+                      <TableHead>موبایل</TableHead>
+                      <TableHead>طرح</TableHead>
+                      <TableHead>وضعیت</TableHead>
+                      <TableHead>تاریخ برگشت</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {returnedCustomers.map((customer) => (
+                      <TableRow key={customer.id}>
+                        <TableCell>
+                          <span className="whitespace-nowrap text-sm font-medium">
+                            {getFullName(customer)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="whitespace-nowrap text-sm" dir="ltr">
+                            {customer.mobile || '-'}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="whitespace-nowrap text-sm">{getPlanName(customer)}</span>
+                        </TableCell>
+                        <TableCell>{renderStatus(customer.status)}</TableCell>
+                        <TableCell>
+                          <span className="whitespace-nowrap text-sm text-muted-foreground">
+                            {getDateOrDash(customer.returnedAt)}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div className="space-y-3 md:hidden">
+                {returnedCustomers.map(renderReturnedCustomerCard)}
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
       <div
         role="tablist"
         aria-label="فیلتر وضعیت مشتریان"
@@ -538,7 +747,7 @@ export default function AgentSalesCustomersPage() {
                         </TableCell>
                         <TableCell>
                           <span className="whitespace-nowrap text-sm" dir="ltr">
-                            {getMaskedNationalCode(customer.nationalCode)}
+                            -
                           </span>
                         </TableCell>
                         <TableCell>

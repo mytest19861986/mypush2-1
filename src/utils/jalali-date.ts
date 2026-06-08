@@ -235,3 +235,10 @@ export function getCurrentJalaliMonthRange(date = new Date()): IsoDateRange {
 export function formatJalaliDate(value: string | Date): string {
   return jalaliDateFormatter.format(toDisplayDate(value))
 }
+
+export function gregorianDateToJalaliParts(value: string | Date): JalaliDateParts {
+  const date = toDisplayDate(value)
+  return dayNumberToJalali(
+    gregorianToDayNumber(date.getFullYear(), date.getMonth() + 1, date.getDate())
+  )
+}

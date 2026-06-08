@@ -34,12 +34,34 @@ export async function GET(request: NextRequest) {
 
     const wallets = await db.wallet.findMany({
       where,
+      include: {
+        user: {
+          select: {
+            profile: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
+            },
+            agent: {
+              select: {
+                businessName: true,
+              },
+            },
+          },
+        },
+      },
       orderBy: { updatedAt: 'desc' },
       take,
       skip,
     })
 
-    return successResponse(wallets.map(toSafeWalletResponse))
+    return successResponse(
+      wallets.map((wallet) => ({
+        ...toSafeWalletResponse(wallet),
+        user: wallet.user,
+      }))
+    )
   } catch (err) {
     console.error('[GET /api/v1/wallets]', err)
     return errorResponse('INTERNAL_ERROR', 'Internal server error', 500)

@@ -8,9 +8,12 @@ import { AuditActions } from '@/lib/audit'
 import {
   canViewSettlements,
   getOrCreateWallet,
+  isSafeId,
   parseBoundedInteger,
   toSafeSettlementResponse,
 } from '@/lib/wallets'
+import { formatTomanAmount, getMinimumSettlementAmount } from '@/lib/app-settings'
+import { getCommissionAvailability, OPEN_SETTLEMENT_STATUSES } from '@/lib/commission-settlements'
 import { getClientIp } from '@/app/api/v1/auth/_helpers'
 
 const requestSettlementSchema = z.object({
@@ -19,6 +22,15 @@ const requestSettlementSchema = z.object({
 })
 
 const statusSchema = z.enum(['PENDING', 'APPROVED', 'PAID', 'REJECTED', 'CANCELLED'])
+
+class MinimumSettlementAmountError extends Error {
+  minimumSettlementAmount: number
+
+  constructor(minimumSettlementAmount: number) {
+    super('MINIMUM_SETTLEMENT_AMOUNT_NOT_MET')
+    this.minimumSettlementAmount = minimumSettlementAmount
+  }
+}
 
 // POST /api/v1/settlements - Current user requests manual settlement
 export async function POST(request: NextRequest) {
@@ -38,24 +50,37 @@ export async function POST(request: NextRequest) {
     }
 
     const { amount, description } = parsed.data
-    const wallet = await getOrCreateWallet(payload.sub)
-
-    if (wallet.balance < amount) {
-      return errorResponse('BAD_REQUEST', 'Insufficient wallet balance', 400)
-    }
 
     const ip = getClientIp(request)
     const device = request.headers.get('user-agent') || undefined
     const settlement = await db.$transaction(async (tx) => {
-      const currentWallet = await tx.wallet.findUniqueOrThrow({
-        where: { id: wallet.id },
-        select: { id: true, userId: true, balance: true },
+      const existingOpenSettlement = await tx.settlement.findFirst({
+        where: {
+          userId: payload.sub,
+          status: { in: [...OPEN_SETTLEMENT_STATUSES] },
+        },
+        select: { id: true, status: true },
       })
 
-      if (currentWallet.balance < amount) {
-        throw new Error('INSUFFICIENT_WALLET_BALANCE')
+      if (existingOpenSettlement) {
+        throw new Error('OPEN_SETTLEMENT_EXISTS')
       }
 
+      const availability = await getCommissionAvailability(payload.sub, tx)
+      if (availability.availableBalance <= 0) {
+        throw new Error('NO_WITHDRAWABLE_COMMISSION')
+      }
+
+      if (amount > availability.availableBalance) {
+        throw new Error('AMOUNT_EXCEEDS_AVAILABLE_COMMISSION')
+      }
+
+      const minimumSettlementAmount = await getMinimumSettlementAmount(tx)
+      if (amount < minimumSettlementAmount) {
+        throw new MinimumSettlementAmountError(minimumSettlementAmount)
+      }
+
+      const currentWallet = await getOrCreateWallet(payload.sub, tx)
       const createdSettlement = await tx.settlement.create({
         data: {
           walletId: currentWallet.id,
@@ -76,6 +101,9 @@ export async function POST(request: NextRequest) {
             walletId: currentWallet.id,
             amount,
             description,
+            availableBeforeRequest: availability.availableBalance,
+            approvedCommissionAmount: availability.approvedCommissionAmount,
+            deductedSettlementAmount: availability.deductedSettlementAmount,
           }),
           ip,
           device,
@@ -85,14 +113,34 @@ export async function POST(request: NextRequest) {
       return createdSettlement
     })
 
-    return successResponse(toSafeSettlementResponse(settlement), 'Settlement requested successfully', 201)
+    return successResponse(toSafeSettlementResponse(settlement), 'درخواست تسویه با موفقیت ثبت شد.', 201)
   } catch (err) {
     if (err instanceof SyntaxError) {
       return errorResponse('VALIDATION_ERROR', 'Invalid request body', 400)
     }
 
-    if ((err as Error).message === 'INSUFFICIENT_WALLET_BALANCE') {
-      return errorResponse('BAD_REQUEST', 'Insufficient wallet balance', 400)
+    if ((err as Error).message === 'OPEN_SETTLEMENT_EXISTS') {
+      return errorResponse(
+        'CONFLICT',
+        'یک درخواست تسویه باز برای شما وجود دارد. پس از تعیین تکلیف آن می‌توانید درخواست جدید ثبت کنید.',
+        409
+      )
+    }
+
+    if ((err as Error).message === 'NO_WITHDRAWABLE_COMMISSION') {
+      return errorResponse('BAD_REQUEST', 'موجودی قابل برداشت از پورسانت تاییدشده وجود ندارد.', 400)
+    }
+
+    if ((err as Error).message === 'AMOUNT_EXCEEDS_AVAILABLE_COMMISSION') {
+      return errorResponse('BAD_REQUEST', 'مبلغ درخواستی بیشتر از موجودی قابل برداشت است.', 400)
+    }
+
+    if (err instanceof MinimumSettlementAmountError) {
+      return errorResponse(
+        'BAD_REQUEST',
+        `حداقل مبلغ قابل درخواست تسویه ${formatTomanAmount(err.minimumSettlementAmount)} است.`,
+        400
+      )
     }
 
     console.error('[POST /api/v1/settlements]', err)
@@ -113,6 +161,8 @@ export async function GET(request: NextRequest) {
     const take = parseBoundedInteger(request.nextUrl.searchParams.get('take'), 50, 100)
     const skip = parseBoundedInteger(request.nextUrl.searchParams.get('skip'), 0, 10000)
     const rawStatus = request.nextUrl.searchParams.get('status')
+    const rawUserId = request.nextUrl.searchParams.get('userId')
+    const userId = rawUserId === null ? undefined : rawUserId.trim()
 
     if (take === null || skip === null) {
       return errorResponse('VALIDATION_ERROR', 'Invalid pagination parameters', 400)
@@ -123,18 +173,45 @@ export async function GET(request: NextRequest) {
       return errorResponse('VALIDATION_ERROR', 'Invalid status', 400)
     }
 
+    if (rawUserId !== null && (!userId || !isSafeId(userId))) {
+      return errorResponse('VALIDATION_ERROR', 'Invalid userId', 400)
+    }
+
     const where: Prisma.SettlementWhereInput = {
       ...(statusResult?.success && { status: statusResult.data }),
+      ...(userId && { userId }),
     }
 
     const settlements = await db.settlement.findMany({
       where,
+      include: {
+        user: {
+          select: {
+            profile: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
+            },
+            agent: {
+              select: {
+                businessName: true,
+              },
+            },
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
       take,
       skip,
     })
 
-    return successResponse(settlements.map(toSafeSettlementResponse))
+    return successResponse(
+      settlements.map((settlement) => ({
+        ...toSafeSettlementResponse(settlement),
+        user: settlement.user,
+      }))
+    )
   } catch (err) {
     console.error('[GET /api/v1/settlements]', err)
     return errorResponse('INTERNAL_ERROR', 'Internal server error', 500)

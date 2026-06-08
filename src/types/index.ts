@@ -272,6 +272,16 @@ export interface CommissionItem {
 
 export type CommissionStatus = 'PENDING' | 'APPROVED' | 'PAID' | 'CANCELLED'
 
+export interface WalletCommissionSummary {
+  totalCommissionAmount: number
+  pendingCommissionAmount: number
+  approvedCommissionAmount: number
+  availableBalance: number
+  pendingSettlementAmount: number
+  paidSettlementAmount: number
+  minimumSettlementAmount: number
+}
+
 // ─── Audit Logs ───
 export interface AuditLogItem {
   id: string

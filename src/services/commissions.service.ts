@@ -37,11 +37,21 @@ export class CommissionsService extends BaseService {
     return this.get<CommissionItem[]>('/commissions/my')
   }
 
-  async getAll(params: { page?: number; limit?: number; status?: string } = {}) {
+  async getAll(params: {
+    page?: number
+    limit?: number
+    status?: string
+    ownerSearch?: string
+    sourceType?: string
+  } = {}) {
     const searchParams = new URLSearchParams()
     if (params.page) searchParams.set('page', String(params.page))
     if (params.limit) searchParams.set('limit', String(params.limit))
     if (params.status) searchParams.set('status', params.status)
+    if (params.ownerSearch) searchParams.set('ownerSearch', params.ownerSearch)
+    if (params.sourceType && params.sourceType !== 'all') {
+      searchParams.set('sourceType', params.sourceType)
+    }
     return this.get<CommissionItem[]>(`/commissions?${searchParams.toString()}`)
   }
 

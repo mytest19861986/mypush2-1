@@ -5,13 +5,11 @@ import { authenticateRequest } from '@/lib/auth'
 import { successResponse, errorResponse } from '@/lib/api-response'
 import { AuditActions } from '@/lib/audit'
 import {
-  DuplicateWalletTransactionError,
-  InsufficientWalletBalanceError,
   canManageSettlements,
-  debitWallet,
   isSafeId,
   toSafeSettlementResponse,
 } from '@/lib/wallets'
+import { getCommissionAvailability } from '@/lib/commission-settlements'
 import { getClientIp } from '@/app/api/v1/auth/_helpers'
 
 const paidSettlementSchema = z.object({
@@ -56,11 +54,11 @@ export async function PATCH(
     }
 
     if (existingSettlement.status === 'PAID') {
-      return errorResponse('CONFLICT', 'Settlement is already paid', 409)
+      return errorResponse('CONFLICT', 'این درخواست تسویه قبلا پرداخت شده است.', 409)
     }
 
     if (existingSettlement.status !== 'APPROVED') {
-      return errorResponse('CONFLICT', 'Only approved settlements can be paid', 409)
+      return errorResponse('CONFLICT', 'فقط درخواست تسویه تاییدشده قابل ثبت پرداخت است.', 409)
     }
 
     const ip = getClientIp(request)
@@ -71,23 +69,14 @@ export async function PATCH(
         where: { id },
       })
 
-      if (currentSettlement.status === 'PAID') {
-        throw new DuplicateWalletTransactionError()
-      }
-
       if (currentSettlement.status !== 'APPROVED') {
         throw new Error('SETTLEMENT_NOT_APPROVED')
       }
 
-      const debit = await debitWallet({
-        tx,
-        userId: currentSettlement.userId,
-        amount: currentSettlement.amount,
-        type: 'DEBIT',
-        referenceType: 'SETTLEMENT',
-        referenceId: currentSettlement.id,
-        description: parsed.data.description ?? 'Settlement paid',
-      })
+      const availability = await getCommissionAvailability(currentSettlement.userId, tx)
+      if (availability.approvedCommissionAmount < availability.deductedSettlementAmount) {
+        throw new Error('SETTLEMENT_COMMISSION_COVERAGE_INVALID')
+      }
 
       const updatedSettlement = await tx.settlement.update({
         where: { id },
@@ -99,67 +88,49 @@ export async function PATCH(
         },
       })
 
-      await tx.auditLog.createMany({
-        data: [
-          {
-            userId: payload.sub,
-            action: AuditActions.SETTLEMENT_PAID,
-            entity: 'Settlement',
-            entityId: id,
-            details: JSON.stringify({
-              settlementId: id,
-              walletId: debit.wallet.id,
-              walletTransactionId: debit.transaction.id,
-              userId: currentSettlement.userId,
-              amount: currentSettlement.amount,
-              previousStatus: currentSettlement.status,
-              newStatus: 'PAID',
-              trackingCode: parsed.data.trackingCode,
-              receiptUrl: parsed.data.receiptUrl,
-              description: parsed.data.description,
-            }),
-            ip,
-            device,
-          },
-          {
-            userId: payload.sub,
-            action: AuditActions.WALLET_DEBITED,
-            entity: 'Wallet',
-            entityId: debit.wallet.id,
-            details: JSON.stringify({
-              walletId: debit.wallet.id,
-              walletTransactionId: debit.transaction.id,
-              userId: currentSettlement.userId,
-              amount: currentSettlement.amount,
-              balanceAfter: debit.wallet.balance,
-              referenceType: 'SETTLEMENT',
-              referenceId: currentSettlement.id,
-            }),
-            ip,
-            device,
-          },
-        ],
+      await tx.auditLog.create({
+        data: {
+          userId: payload.sub,
+          action: AuditActions.SETTLEMENT_PAID,
+          entity: 'Settlement',
+          entityId: id,
+          details: JSON.stringify({
+            settlementId: id,
+            walletId: currentSettlement.walletId,
+            userId: currentSettlement.userId,
+            amount: currentSettlement.amount,
+            previousStatus: currentSettlement.status,
+            newStatus: 'PAID',
+            trackingCode: parsed.data.trackingCode,
+            receiptUrl: parsed.data.receiptUrl,
+            description: parsed.data.description,
+            approvedCommissionAmount: availability.approvedCommissionAmount,
+            deductedSettlementAmount: availability.deductedSettlementAmount,
+          }),
+          ip,
+          device,
+        },
       })
 
       return updatedSettlement
     })
 
-    return successResponse(toSafeSettlementResponse(settlement), 'Settlement marked as paid successfully')
+    return successResponse(toSafeSettlementResponse(settlement), 'پرداخت تسویه با موفقیت ثبت شد.')
   } catch (err) {
     if (err instanceof SyntaxError) {
       return errorResponse('VALIDATION_ERROR', 'Invalid request body', 400)
     }
 
-    if (err instanceof InsufficientWalletBalanceError) {
-      return errorResponse('BAD_REQUEST', 'Insufficient wallet balance', 400)
-    }
-
-    if (err instanceof DuplicateWalletTransactionError) {
-      return errorResponse('CONFLICT', 'Settlement payment has already been recorded', 409)
-    }
-
     if ((err as Error).message === 'SETTLEMENT_NOT_APPROVED') {
-      return errorResponse('CONFLICT', 'Only approved settlements can be paid', 409)
+      return errorResponse('CONFLICT', 'فقط درخواست تسویه تاییدشده قابل ثبت پرداخت است.', 409)
+    }
+
+    if ((err as Error).message === 'SETTLEMENT_COMMISSION_COVERAGE_INVALID') {
+      return errorResponse(
+        'CONFLICT',
+        'مبلغ تسویه با پورسانت تاییدشده قابل برداشت همخوانی ندارد.',
+        409
+      )
     }
 
     console.error('[PATCH /api/v1/settlements/[id]/paid]', err)
