@@ -633,17 +633,19 @@ export default function AgentCommissionsPage() {
             </CardContent>
           </Card>
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {walletCards.map((card) => (
-              <Card key={card.title} className="rounded-2xl border border-slate-100/60 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-slate-800/60">
-                <CardContent className="min-h-28 p-5">
+              <Card key={card.title} className="min-w-0 rounded-2xl border border-slate-100/60 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-slate-800/60">
+                <CardContent className="min-h-28 min-w-0 p-5">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-medium text-muted-foreground">{card.title}</p>
+                    <p className="min-w-0 text-sm font-medium text-muted-foreground">{card.title}</p>
                     <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary/70">
                       <card.icon className="size-4" />
                     </div>
                   </div>
-                  <p className="mt-2 truncate text-3xl font-bold text-foreground">{card.value}</p>
+                  <p className="mt-3 min-w-0 overflow-visible whitespace-normal break-words text-2xl font-bold leading-8 text-foreground sm:text-[1.65rem] lg:text-3xl lg:leading-9">
+                    {card.value}
+                  </p>
                 </CardContent>
               </Card>
             ))}

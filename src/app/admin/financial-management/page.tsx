@@ -1294,16 +1294,18 @@ export default function FinancialManagementPage() {
         </Card>
       ) : (
         <>
-          <div className="grid gap-3 md:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {summaryCards.map((card) => (
-              <Card key={card.title} className="rounded-2xl border border-border/50 bg-card shadow-sm">
-                <CardContent className="flex items-center gap-3 p-4">
-                  <div className={cn('flex size-11 items-center justify-center rounded-lg', card.tone)}>
+              <Card key={card.title} className="min-w-0 rounded-2xl border border-border/50 bg-card shadow-sm">
+                <CardContent className="flex min-w-0 items-center gap-3 p-4">
+                  <div className={cn('flex size-11 shrink-0 items-center justify-center rounded-lg', card.tone)}>
                     <card.icon className="size-5" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs text-muted-foreground">{card.title}</p>
-                    <p className="mt-1 text-base font-bold">{card.value}</p>
+                    <p className="mt-1 min-w-0 overflow-visible whitespace-normal break-words text-base font-bold leading-6">
+                      {card.value}
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -1362,19 +1364,21 @@ export default function FinancialManagementPage() {
                     </div>
                   ) : (
                     <>
-                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                         {commissionSummaryCards.map((card) => (
-                          <div key={card.title} className="rounded-lg border bg-background/50 p-3">
-                            <div className="flex items-center gap-2">
-                              <span className={cn('flex size-9 items-center justify-center rounded-lg', card.tone)}>
+                          <div key={card.title} className="min-w-0 rounded-lg border bg-background/50 p-3">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-lg', card.tone)}>
                                 <card.icon className="size-4" />
                               </span>
-                              <span className="text-xs text-muted-foreground">{card.title}</span>
+                              <span className="min-w-0 text-xs text-muted-foreground">{card.title}</span>
                             </div>
                             {isCommissionSummaryLoading ? (
                               <Skeleton className="mt-3 h-5 w-24" />
                             ) : (
-                              <p className="mt-3 text-sm font-bold leading-6">{card.value}</p>
+                              <p className="mt-3 min-w-0 overflow-visible whitespace-normal break-words text-sm font-bold leading-6">
+                                {card.value}
+                              </p>
                             )}
                           </div>
                         ))}
