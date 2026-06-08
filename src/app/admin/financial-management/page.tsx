@@ -59,7 +59,12 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { ApiError, apiClient } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
-import { formatDateTime, formatJalaliDateRange, formatPriceWithUnit } from '@/utils/formatters'
+import {
+  formatDateTime,
+  formatJalaliDateRange,
+  formatPrice,
+  formatPriceWithUnit,
+} from '@/utils/formatters'
 import {
   getCurrentJalaliYearMonth,
   gregorianDateToJalaliParts,
@@ -258,6 +263,50 @@ function normalizeIntegerInput(value: string) {
     .replace(/[٠-٩]/g, (digit) => String(arabicDigits.indexOf(digit)))
     .replace(/\D/g, '')
     .slice(0, 12)
+}
+
+function formatAmountInputValue(value: string) {
+  const normalizedValue = normalizeIntegerInput(value)
+  return normalizedValue ? formatPrice(Number(normalizedValue)) : ''
+}
+
+function getSalesChannelLabel(label: string) {
+  return label === 'فروش تلفنی/همکار فروش' ? 'همکاران فروش تلفنی' : label
+}
+
+function MetricValue({
+  value,
+  amountClassName = 'text-base sm:text-lg',
+}: {
+  value: string
+  amountClassName?: string
+}) {
+  const currencyUnit = 'تومان'
+  const unitSuffix = ` ${currencyUnit}`
+
+  if (!value.endsWith(unitSuffix)) {
+    return (
+      <p className="mt-3 min-w-0 text-right text-sm font-bold leading-6 text-foreground">
+        {value}
+      </p>
+    )
+  }
+
+  return (
+    <p className="mt-3 flex min-w-0 flex-wrap items-baseline justify-start gap-x-1.5 gap-y-1 text-right leading-none">
+      <span
+        className={cn(
+          'break-words font-bold leading-7 text-foreground tabular-nums',
+          amountClassName
+        )}
+      >
+        {value.slice(0, -unitSuffix.length)}
+      </span>
+      <span className="shrink-0 text-xs font-medium leading-5 text-muted-foreground">
+        {currencyUnit}
+      </span>
+    </p>
+  )
 }
 
 function toIsoDate(date: Date) {
@@ -651,7 +700,7 @@ export default function FinancialManagementPage() {
   const reportKpis = useMemo(
     () => [
       {
-        title: 'کاربران پرداخت‌کرده',
+        title: 'کاربران با پرداخت موفق',
         value: formatNullableCount(financialReport?.paidUsersCount ?? null),
         icon: Users,
         tone: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
@@ -1029,22 +1078,28 @@ export default function FinancialManagementPage() {
             تنظیمات تسویه
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-[minmax(0,280px)_auto_1fr] sm:items-end">
+        <CardContent className="grid gap-3 sm:grid-cols-[minmax(0,320px)_auto_1fr] sm:items-end">
           <div className="space-y-2">
             <Label htmlFor="minimum-settlement-amount">حداقل مبلغ درخواست تسویه</Label>
-            <Input
-              id="minimum-settlement-amount"
-              value={minimumSettlementAmountInput}
-              onChange={(event) =>
-                setMinimumSettlementAmountInput(normalizeIntegerInput(event.target.value))
-              }
-              inputMode="numeric"
-              dir="ltr"
-              disabled={
-                isSettingsLoading || isSavingSettlementSettings || !isSettlementSettingsLoaded
-              }
-              placeholder="0"
-            />
+            <div className="flex items-center gap-2">
+              <Input
+                id="minimum-settlement-amount"
+                value={formatAmountInputValue(minimumSettlementAmountInput)}
+                onChange={(event) =>
+                  setMinimumSettlementAmountInput(normalizeIntegerInput(event.target.value))
+                }
+                inputMode="numeric"
+                dir="ltr"
+                className="text-left font-medium tabular-nums"
+                disabled={
+                  isSettingsLoading || isSavingSettlementSettings || !isSettlementSettingsLoaded
+                }
+                placeholder="0"
+              />
+              <span className="shrink-0 rounded-md border bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground">
+                تومان
+              </span>
+            </div>
           </div>
           <Button
             type="button"
@@ -1069,7 +1124,7 @@ export default function FinancialManagementPage() {
       </Card>
 
       <Card className="rounded-2xl border border-border/50 bg-card shadow-sm" dir="rtl">
-        <CardHeader className="gap-4 border-b border-border/60 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
+        <CardHeader className="gap-4 border-b border-border/60 p-4 sm:p-5">
           <div className="space-y-1">
             <CardTitle className="flex items-center gap-2 text-base">
               <BarChart3 className="size-5 text-emerald-600" />
@@ -1079,81 +1134,83 @@ export default function FinancialManagementPage() {
               بر اساس پرداخت‌های موفق، فروش‌های تاییدشده و پورسانت‌های ثبت‌شده
             </p>
           </div>
-          <div className="w-full space-y-3 lg:w-auto lg:min-w-[540px]">
-            <div className="flex flex-wrap gap-2">
-              {reportQuickFilters.map((filter) => (
+          <div className="rounded-lg border bg-background/50 p-3">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+              <div className="flex flex-wrap justify-start gap-2 lg:max-w-[48%]">
+                {reportQuickFilters.map((filter) => (
+                  <Button
+                    key={filter.value}
+                    type="button"
+                    size="sm"
+                    variant={activeReportQuickFilter === filter.value ? 'default' : 'outline'}
+                    className="h-8 text-xs"
+                    onClick={() => handleReportQuickFilter(filter.value)}
+                  >
+                    {filter.label}
+                  </Button>
+                ))}
+              </div>
+              <div className="grid gap-2 sm:grid-cols-[minmax(0,150px)_minmax(0,170px)_auto] sm:items-end lg:min-w-[390px]">
+                <div className="space-y-1">
+                  <Label htmlFor="financial-report-jalali-year" className="text-xs">
+                    سال گزارش
+                  </Label>
+                  <Select
+                    value={String(selectedJalaliYear)}
+                    onValueChange={handleJalaliYearChange}
+                    dir="rtl"
+                  >
+                    <SelectTrigger id="financial-report-jalali-year" className="h-9 w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {jalaliYearOptions.map((year) => (
+                        <SelectItem key={year} value={String(year)}>
+                          سال {year.toLocaleString('fa-IR', { useGrouping: false })}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="financial-report-jalali-month" className="text-xs">
+                    ماه گزارش
+                  </Label>
+                  <Select
+                    value={String(selectedJalaliMonth)}
+                    onValueChange={handleJalaliMonthChange}
+                    dir="rtl"
+                  >
+                    <SelectTrigger id="financial-report-jalali-month" className="h-9 w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {JALALI_MONTHS.map((month) => (
+                        <SelectItem key={month.value} value={String(month.value)}>
+                          {month.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <Button
-                  key={filter.value}
                   type="button"
-                  size="sm"
-                  variant={activeReportQuickFilter === filter.value ? 'default' : 'outline'}
-                  className="h-8 text-xs"
-                  onClick={() => handleReportQuickFilter(filter.value)}
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-full sm:w-9"
+                  onClick={() => void fetchFinancialReport()}
+                  disabled={isReportLoading}
+                  aria-label="به‌روزرسانی گزارش مالی"
                 >
-                  {filter.label}
+                  {isReportLoading ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="size-4" />
+                  )}
                 </Button>
-              ))}
-            </div>
-            <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
-              <div className="space-y-1">
-                <Label htmlFor="financial-report-jalali-year" className="text-xs">
-                  سال گزارش
-                </Label>
-                <Select
-                  value={String(selectedJalaliYear)}
-                  onValueChange={handleJalaliYearChange}
-                  dir="rtl"
-                >
-                  <SelectTrigger id="financial-report-jalali-year" className="h-9 w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {jalaliYearOptions.map((year) => (
-                      <SelectItem key={year} value={String(year)}>
-                        سال {year.toLocaleString('fa-IR', { useGrouping: false })}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
-              <div className="space-y-1">
-                <Label htmlFor="financial-report-jalali-month" className="text-xs">
-                  ماه گزارش
-                </Label>
-                <Select
-                  value={String(selectedJalaliMonth)}
-                  onValueChange={handleJalaliMonthChange}
-                  dir="rtl"
-                >
-                  <SelectTrigger id="financial-report-jalali-month" className="h-9 w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {JALALI_MONTHS.map((month) => (
-                      <SelectItem key={month.value} value={String(month.value)}>
-                        {month.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="h-9 w-9"
-                onClick={() => void fetchFinancialReport()}
-                disabled={isReportLoading}
-                aria-label="به‌روزرسانی گزارش مالی"
-              >
-                {isReportLoading ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="size-4" />
-                )}
-              </Button>
             </div>
-            <p className="text-xs font-medium text-muted-foreground">
+            <p className="mt-3 text-xs font-medium text-muted-foreground">
               بازه گزارش: <span className="text-foreground">{selectedReportRangeText}</span>
             </p>
           </div>
@@ -1170,17 +1227,19 @@ export default function FinancialManagementPage() {
             <>
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
                 {reportKpis.map((card) => (
-                  <div key={card.title} className="rounded-lg border bg-background/50 p-3">
-                    <div className="flex items-center gap-2">
-                      <span className={cn('flex size-9 items-center justify-center rounded-lg', card.tone)}>
+                  <div key={card.title} className="min-w-0 rounded-lg border bg-background/50 p-3">
+                    <div className="flex min-w-0 items-start justify-between gap-3">
+                      <span className="min-w-0 text-right text-xs leading-5 text-muted-foreground">
+                        {card.title}
+                      </span>
+                      <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-lg', card.tone)}>
                         <card.icon className="size-4" />
                       </span>
-                      <span className="text-xs text-muted-foreground">{card.title}</span>
                     </div>
                     {isReportLoading ? (
                       <Skeleton className="mt-3 h-5 w-28" />
                     ) : (
-                      <p className="mt-3 text-sm font-bold leading-6">{card.value}</p>
+                      <MetricValue value={card.value} amountClassName="text-base sm:text-lg" />
                     )}
                   </div>
                 ))}
@@ -1204,15 +1263,20 @@ export default function FinancialManagementPage() {
                     <div className="space-y-4">
                       {financialReport.channelBreakdown.map((channel) => {
                         const width = Math.max(4, Math.round((channel.amount / maxChannelAmount) * 100))
+                        const channelLabel = getSalesChannelLabel(channel.label)
                         return (
-                          <div key={channel.key} className="space-y-2">
-                            <div className="flex items-center justify-between gap-3 text-xs">
-                              <span className="font-medium">{channel.label}</span>
-                              <span className="text-muted-foreground">
-                                {formatPriceWithUnit(channel.amount)} / {channel.count.toLocaleString('fa-IR')} پرداخت
+                          <div key={channel.key} className="space-y-2.5">
+                            <div className="flex min-w-0 flex-col gap-1 text-xs sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                              <span className="min-w-0 text-right font-medium leading-5">
+                                {channelLabel}
+                              </span>
+                              <span className="shrink-0 whitespace-nowrap text-left leading-5 text-muted-foreground tabular-nums">
+                                {formatPriceWithUnit(channel.amount)}
+                                <span className="px-1 text-muted-foreground/70">/</span>
+                                {channel.count.toLocaleString('fa-IR')} پرداخت
                               </span>
                             </div>
-                            <div className="h-2 overflow-hidden rounded-full bg-muted">
+                            <div className="h-3 overflow-hidden rounded-full bg-muted">
                               <div
                                 className="h-full rounded-full bg-emerald-600"
                                 style={{ width: `${width}%` }}
@@ -1297,16 +1361,16 @@ export default function FinancialManagementPage() {
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {summaryCards.map((card) => (
               <Card key={card.title} className="min-w-0 rounded-2xl border border-border/50 bg-card shadow-sm">
-                <CardContent className="flex min-w-0 items-center gap-3 p-4">
-                  <div className={cn('flex size-11 shrink-0 items-center justify-center rounded-lg', card.tone)}>
-                    <card.icon className="size-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs text-muted-foreground">{card.title}</p>
-                    <p className="mt-1 min-w-0 overflow-visible whitespace-normal break-words text-base font-bold leading-6">
-                      {card.value}
+                <CardContent className="min-w-0 p-4">
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <p className="min-w-0 text-right text-xs leading-5 text-muted-foreground">
+                      {card.title}
                     </p>
+                    <div className={cn('flex size-11 shrink-0 items-center justify-center rounded-lg', card.tone)}>
+                      <card.icon className="size-5" />
+                    </div>
                   </div>
+                  <MetricValue value={card.value} amountClassName="text-lg sm:text-xl" />
                 </CardContent>
               </Card>
             ))}
@@ -1367,18 +1431,18 @@ export default function FinancialManagementPage() {
                       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                         {commissionSummaryCards.map((card) => (
                           <div key={card.title} className="min-w-0 rounded-lg border bg-background/50 p-3">
-                            <div className="flex min-w-0 items-center gap-2">
+                            <div className="flex min-w-0 items-start justify-between gap-3">
+                              <span className="min-w-0 text-right text-xs leading-5 text-muted-foreground">
+                                {card.title}
+                              </span>
                               <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-lg', card.tone)}>
                                 <card.icon className="size-4" />
                               </span>
-                              <span className="min-w-0 text-xs text-muted-foreground">{card.title}</span>
                             </div>
                             {isCommissionSummaryLoading ? (
                               <Skeleton className="mt-3 h-5 w-24" />
                             ) : (
-                              <p className="mt-3 min-w-0 overflow-visible whitespace-normal break-words text-sm font-bold leading-6">
-                                {card.value}
-                              </p>
+                              <MetricValue value={card.value} amountClassName="text-base sm:text-lg" />
                             )}
                           </div>
                         ))}
