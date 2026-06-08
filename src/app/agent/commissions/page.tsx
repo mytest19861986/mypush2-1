@@ -3,8 +3,11 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Banknote,
-  CheckCircle2,
-  Clock,
+  BadgeCheck,
+  CircleDollarSign,
+  HandCoins,
+  Hourglass,
+  Landmark,
   Loader2,
   RefreshCw,
   Send,
@@ -129,16 +132,16 @@ interface WalletCommissionSummary {
 }
 
 const commissionStatusLabels: Record<CommissionStatus, string> = {
-  PENDING: 'در انتظار بررسی',
-  APPROVED: 'تأیید شده',
-  PAID: 'پرداخت شده',
+  PENDING: 'در انتظار تایید',
+  APPROVED: 'پورسانت تایید شده',
+  PAID: 'پورسانت پرداخت شده',
   CANCELLED: 'لغو شده',
 }
 
 const settlementStatusLabels: Record<SettlementStatus, string> = {
   PENDING: 'در انتظار بررسی',
-  APPROVED: 'تأیید شده',
-  PAID: 'پرداخت شده',
+  APPROVED: 'تسویه تایید شده',
+  PAID: 'تسویه پرداخت شده',
   REJECTED: 'رد شده',
   CANCELLED: 'لغو شده',
 }
@@ -146,7 +149,7 @@ const settlementStatusLabels: Record<SettlementStatus, string> = {
 const statusClasses: Record<string, string> = {
   PENDING: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
   APPROVED: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
-  PAID: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+  PAID: 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300',
   CONFIRMED: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
   CANCELLED: 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
   REJECTED: 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
@@ -163,6 +166,28 @@ function formatNumber(value: number) {
 
 function formatMoney(amount: number | null | undefined) {
   return `${formatNumber(amount ?? 0)} تومان`
+}
+
+function MoneyValue({
+  amount,
+  className,
+}: {
+  amount: number | null | undefined
+  className?: string
+}) {
+  return (
+    <span
+      className={cn(
+        'flex flex-wrap items-baseline justify-start gap-x-2 gap-y-1 whitespace-normal break-words text-right',
+        className
+      )}
+    >
+      <span className="text-[1.65rem] font-bold leading-9 text-foreground sm:text-3xl">
+        {formatNumber(amount ?? 0)}
+      </span>
+      <span className="shrink-0 text-sm font-medium text-muted-foreground">تومان</span>
+    </span>
+  )
 }
 
 function normalizeIntegerInput(value: string) {
@@ -253,7 +278,7 @@ function LoadingDashboard() {
           <Skeleton key={index} className="h-28 w-full" />
         ))}
       </div>
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="space-y-4">
         <Skeleton className="h-80 w-full" />
         <Skeleton className="h-80 w-full" />
       </div>
@@ -431,7 +456,7 @@ export default function AgentCommissionsPage() {
     <StatusBadge
       status={status}
       label={commissionStatusLabels[status] || status}
-      className={cn('text-xs', statusClasses[status])}
+      className={cn('whitespace-nowrap text-xs', statusClasses[status])}
     />
   )
 
@@ -439,45 +464,51 @@ export default function AgentCommissionsPage() {
     <StatusBadge
       status={status}
       label={settlementStatusLabels[status] || status}
-      className={cn('text-xs', statusClasses[status])}
+      className={cn('whitespace-nowrap text-xs', statusClasses[status])}
     />
   )
 
   const walletCards = [
     {
       title: 'موجودی قابل برداشت',
-      value: formatMoney(walletSummary.availableBalance),
+      description: 'آماده ثبت درخواست تسویه',
+      amount: walletSummary.availableBalance,
       icon: Wallet,
       tone: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
     },
     {
       title: 'کل پورسانت ثبت‌شده',
-      value: formatMoney(walletSummary.totalCommissionAmount),
-      icon: Banknote,
+      description: 'مجموع پورسانت‌های ثبت‌شده',
+      amount: walletSummary.totalCommissionAmount,
+      icon: CircleDollarSign,
       tone: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
     },
     {
       title: 'در انتظار تایید',
-      value: formatMoney(walletSummary.pendingCommissionAmount),
-      icon: Clock,
+      description: 'هنوز وارد موجودی قابل برداشت نشده',
+      amount: walletSummary.pendingCommissionAmount,
+      icon: Hourglass,
       tone: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
     },
     {
-      title: 'تایید شده',
-      value: formatMoney(walletSummary.approvedCommissionAmount),
-      icon: CheckCircle2,
+      title: 'پورسانت تایید شده',
+      description: 'مبنای محاسبه موجودی قابل برداشت',
+      amount: walletSummary.approvedCommissionAmount,
+      icon: BadgeCheck,
       tone: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
     },
     {
       title: 'درخواست تسویه در انتظار پرداخت',
-      value: formatMoney(walletSummary.pendingSettlementAmount),
-      icon: Clock,
+      description: 'ثبت شده و هنوز پرداخت نهایی نشده',
+      amount: walletSummary.pendingSettlementAmount,
+      icon: HandCoins,
       tone: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
     },
     {
       title: 'تسویه پرداخت‌شده',
-      value: formatMoney(walletSummary.paidSettlementAmount),
-      icon: CheckCircle2,
+      description: 'مبلغ تسویه‌هایی که پرداخت شده‌اند',
+      amount: walletSummary.paidSettlementAmount,
+      icon: Landmark,
       tone: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
     },
   ]
@@ -603,49 +634,74 @@ export default function AgentCommissionsPage() {
       ) : (
         <>
           <Card className="border-0 shadow-sm" dir="rtl">
-            <CardHeader className="gap-3 pb-3 md:flex-row md:items-start md:justify-between">
-              <div className="space-y-1">
+            <CardHeader className="pb-3">
+              <div className="space-y-1.5">
                 <CardTitle className="text-base">گزارش پورسانت</CardTitle>
-                <p className="text-xs text-muted-foreground">
-                  بازه انتخابی: <span className="text-foreground">{selectedCommissionRangeText}</span>
-                </p>
-                <p className="text-xs text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                  <span>بازه انتخابی:</span>
+                  <span className="rounded-md bg-muted px-2 py-1 font-medium text-foreground">
+                    {selectedCommissionRangeText}
+                  </span>
+                </div>
+                <p className="max-w-4xl text-xs leading-6 text-muted-foreground">
                   پورسانت در انتظار تایید قابل تسویه محسوب نمی‌شود؛ قابل تسویه فعلی از پورسانت تاییدشده منهای درخواست‌های تسویه باز یا پرداخت‌شده محاسبه می‌شود.
                 </p>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => void fetchFinancialData()}
-                disabled={isLoading}
-              >
-                <RefreshCw className="ml-2 size-4" />
-                اعمال فیلتر
-              </Button>
             </CardHeader>
-            <CardContent>
-              <JalaliDateRangeFilter
-                value={commissionRange}
-                onChange={setCommissionRange}
-                yearOptions={commissionYearOptions}
-              />
+            <CardContent className="space-y-3">
+              <div className="rounded-lg border bg-muted/25 p-3">
+                <JalaliDateRangeFilter
+                  value={commissionRange}
+                  onChange={setCommissionRange}
+                  yearOptions={commissionYearOptions}
+                />
+              </div>
+              <div className="flex flex-col gap-3 border-t pt-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs text-muted-foreground">
+                  فیلتر بر اساس تاریخ ثبت پورسانت اعمال می‌شود.
+                </p>
+                <div className="flex flex-col-reverse gap-2 sm:flex-row">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCommissionRange(getRecentJalaliRange(30))}
+                    disabled={isLoading}
+                  >
+                    بازنشانی بازه
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void fetchFinancialData()}
+                    disabled={isLoading}
+                  >
+                    <RefreshCw className="ml-2 size-4" />
+                    اعمال و به‌روزرسانی
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {walletCards.map((card) => (
-              <Card key={card.title} className="min-w-0 rounded-2xl border border-slate-100/60 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-slate-800/60">
-                <CardContent className="min-h-28 min-w-0 p-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="min-w-0 text-sm font-medium text-muted-foreground">{card.title}</p>
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary/70">
+              <Card
+                key={card.title}
+                className="min-w-0 rounded-xl border border-slate-100/70 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-slate-800/70"
+              >
+                <CardContent className="flex min-h-36 min-w-0 flex-col justify-between gap-4 p-5 text-right">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0 space-y-1">
+                      <p className="text-sm font-semibold leading-6 text-foreground">{card.title}</p>
+                      <p className="text-xs leading-5 text-muted-foreground">{card.description}</p>
+                    </div>
+                    <div className={cn('ml-1 flex size-10 shrink-0 items-center justify-center rounded-xl', card.tone)}>
                       <card.icon className="size-4" />
                     </div>
                   </div>
-                  <p className="mt-3 min-w-0 overflow-visible whitespace-normal break-words text-2xl font-bold leading-8 text-foreground sm:text-[1.65rem] lg:text-3xl lg:leading-9">
-                    {card.value}
-                  </p>
+                  <MoneyValue amount={card.amount} />
                 </CardContent>
               </Card>
             ))}
@@ -653,19 +709,19 @@ export default function AgentCommissionsPage() {
 
           {pendingSettlementTotal > 0 && (
             <Card className="border-0 bg-amber-50 shadow-sm dark:bg-amber-950/20">
-              <CardContent className="flex items-center justify-between gap-3 p-4 text-sm">
-                <span className="text-amber-800 dark:text-amber-300">
+              <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
+                <span className="leading-6 text-amber-800 dark:text-amber-300">
                   درخواست‌های تسویه در جریان
                 </span>
-                <span className="font-semibold text-amber-900 dark:text-amber-200">
+                <span className="whitespace-nowrap font-semibold text-amber-900 dark:text-amber-200">
                   {formatMoney(pendingSettlementTotal)}
                 </span>
               </CardContent>
             </Card>
           )}
 
-          <div className="grid gap-4 xl:grid-cols-2">
-            <Card className="border-0 shadow-sm">
+          <div className="space-y-4">
+            <Card className="min-w-0 border-0 shadow-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">پورسانت‌ها</CardTitle>
               </CardHeader>
@@ -677,16 +733,16 @@ export default function AgentCommissionsPage() {
                   </div>
                 ) : (
                   <>
-                    <div className="hidden overflow-x-auto md:block">
-                      <Table className="min-w-[1010px] table-fixed w-full">
+                    <div className="hidden max-w-full overflow-x-auto md:block">
+                      <Table className="w-full min-w-[1080px] table-fixed">
                         <colgroup>
+                          <col className="w-[180px]" />
+                          <col className="w-[180px]" />
                           <col className="w-[160px]" />
-                          <col className="w-[160px]" />
-                          <col className="w-[150px]" />
                           <col className="w-[90px]" />
                           <col className="w-[140px]" />
-                          <col className="w-[155px]" />
-                          <col className="w-[155px]" />
+                          <col className="w-[165px]" />
+                          <col className="w-[165px]" />
                         </colgroup>
                         <TableHeader>
                           <TableRow className="border-b bg-muted/50 hover:bg-muted/50">
@@ -703,12 +759,14 @@ export default function AgentCommissionsPage() {
                           {commissions.map((commission) => (
                             <TableRow key={commission.id}>
                               <TableCell className="px-4 py-3 text-right">
-                                <span className="block truncate text-sm font-medium">
+                                <span className="block whitespace-normal break-words text-sm font-medium leading-6">
                                   {getCustomerName(commission)}
                                 </span>
                               </TableCell>
                               <TableCell className="px-4 py-3 text-right">
-                                <span className="block truncate text-sm">{getPlanName(commission)}</span>
+                                <span className="block whitespace-normal break-words text-sm leading-6">
+                                  {getPlanName(commission)}
+                                </span>
                               </TableCell>
                               <TableCell className="px-4 py-3 text-right">
                                 <span className="whitespace-nowrap text-sm font-semibold tabular-nums">
@@ -740,21 +798,29 @@ export default function AgentCommissionsPage() {
                     <div className="space-y-3 p-4 md:hidden">
                       {commissions.map((commission) => (
                         <div key={commission.id} className="rounded-lg border p-3">
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className="text-sm font-semibold">{getCustomerName(commission)}</p>
-                              <p className="mt-1 text-xs text-muted-foreground">{getPlanName(commission)}</p>
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <p className="break-words text-sm font-semibold leading-6">
+                                {getCustomerName(commission)}
+                              </p>
+                              <p className="mt-1 break-words text-xs leading-5 text-muted-foreground">
+                                {getPlanName(commission)}
+                              </p>
                             </div>
                             {renderCommissionStatus(commission.status)}
                           </div>
-                          <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                          <div className="mt-3 grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
                             <div>
                               <p className="text-muted-foreground">مبلغ</p>
-                              <p className="mt-1 font-semibold">{formatMoney(commission.amount)}</p>
+                              <p className="mt-1 break-words font-semibold leading-6">
+                                {formatMoney(commission.amount)}
+                              </p>
                             </div>
                             <div>
-                              <p className="text-muted-foreground">پرداخت</p>
-                              <p className="mt-1">{getDateOrDash(commission.paidAt)}</p>
+                              <p className="text-muted-foreground">تاریخ پرداخت</p>
+                              <p className="mt-1 break-words leading-6">
+                                {getDateOrDash(commission.paidAt)}
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -765,7 +831,7 @@ export default function AgentCommissionsPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-0 shadow-sm">
+            <Card className="min-w-0 border-0 shadow-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">درخواست‌های تسویه</CardTitle>
               </CardHeader>
@@ -777,31 +843,33 @@ export default function AgentCommissionsPage() {
                   </div>
                 ) : (
                   <>
-                    <div className="hidden overflow-x-auto md:block">
-                      <Table>
+                    <div className="hidden max-w-full overflow-x-auto md:block">
+                      <Table className="w-full min-w-[760px]">
                         <TableHeader>
                           <TableRow className="bg-muted/50 hover:bg-muted/50">
-                            <TableHead>مبلغ</TableHead>
-                            <TableHead>وضعیت</TableHead>
-                            <TableHead>تاریخ درخواست</TableHead>
-                            <TableHead>تاریخ پرداخت</TableHead>
+                            <TableHead className="px-4 py-3 text-right">مبلغ</TableHead>
+                            <TableHead className="px-4 py-3 text-right">وضعیت</TableHead>
+                            <TableHead className="px-4 py-3 text-right">تاریخ درخواست</TableHead>
+                            <TableHead className="px-4 py-3 text-right">تاریخ پرداخت</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {settlements.map((settlement) => (
                             <TableRow key={settlement.id}>
-                              <TableCell>
+                              <TableCell className="px-4 py-3 text-right">
                                 <span className="whitespace-nowrap text-sm font-semibold">
                                   {formatMoney(settlement.amount)}
                                 </span>
                               </TableCell>
-                              <TableCell>{renderSettlementStatus(settlement.status)}</TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3 text-right">
+                                {renderSettlementStatus(settlement.status)}
+                              </TableCell>
+                              <TableCell className="px-4 py-3 text-right">
                                 <span className="whitespace-nowrap text-sm text-muted-foreground">
                                   {getDateOrDash(settlement.requestedAt || settlement.createdAt)}
                                 </span>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3 text-right">
                                 <span className="whitespace-nowrap text-sm text-muted-foreground">
                                   {getDateOrDash(settlement.settledAt)}
                                 </span>
@@ -815,10 +883,13 @@ export default function AgentCommissionsPage() {
                     <div className="space-y-3 p-4 md:hidden">
                       {settlements.map((settlement) => (
                         <div key={settlement.id} className="rounded-lg border p-3">
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className="text-sm font-semibold">{formatMoney(settlement.amount)}</p>
-                              <p className="mt-1 text-xs text-muted-foreground">
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <p className="break-words text-sm font-semibold leading-6">
+                                {formatMoney(settlement.amount)}
+                              </p>
+                              <p className="text-xs leading-5 text-muted-foreground">تاریخ درخواست</p>
+                              <p className="mt-1 break-words text-xs leading-5 text-muted-foreground">
                                 {getDateOrDash(settlement.requestedAt || settlement.createdAt)}
                               </p>
                             </div>
@@ -826,8 +897,10 @@ export default function AgentCommissionsPage() {
                           </div>
                           <div className="mt-3 grid grid-cols-1 gap-3 text-xs">
                             <div>
-                              <p className="text-muted-foreground">پرداخت</p>
-                              <p className="mt-1">{getDateOrDash(settlement.settledAt)}</p>
+                              <p className="text-muted-foreground">تاریخ پرداخت</p>
+                              <p className="mt-1 break-words leading-6">
+                                {getDateOrDash(settlement.settledAt)}
+                              </p>
                             </div>
                           </div>
                         </div>
