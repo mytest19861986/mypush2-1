@@ -60,6 +60,7 @@ export async function findReferrerByReferralCode(
   const now = new Date()
   const candidateUsers = await client.user.findMany({
     where: {
+      status: 'ACTIVE',
       OR: [
         { agent: { is: { status: 'APPROVED' } } },
         {
@@ -74,6 +75,7 @@ export async function findReferrerByReferralCode(
     },
     select: {
       id: true,
+      status: true,
       agent: { select: { status: true } },
       userPlans: {
         where: {
@@ -97,7 +99,7 @@ export async function findReferrerByReferralCode(
     return { id: referrer.id, type: 'SALES_PARTNER' }
   }
 
-  if (!referrer.agent && referrer.userPlans.length > 0) {
+  if (referrer.userPlans.length > 0) {
     return { id: referrer.id, type: 'USER_REFERRAL' }
   }
 

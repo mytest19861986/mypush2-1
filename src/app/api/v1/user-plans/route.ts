@@ -33,7 +33,12 @@ export async function POST(request: NextRequest) {
     }
 
     const { planId } = parsed.data
-    const referralCode = normalizeReferralCode(parsed.data.referralCode ?? parsed.data.referrerCode)
+    const rawReferralCode = (parsed.data.referralCode ?? parsed.data.referrerCode)?.trim()
+    const referralCode = normalizeReferralCode(rawReferralCode)
+
+    if (rawReferralCode && !referralCode) {
+      return errorResponse('INVALID_REFERRAL_CODE', 'کد معرف معتبر نیست.', 400)
+    }
 
     const plan = await db.discountPlan.findUnique({ where: { id: planId } })
     if (!plan) {
@@ -60,10 +65,12 @@ export async function POST(request: NextRequest) {
     if (referralCode) {
       const referrerUser = await findReferrerByReferralCode(db, referralCode, userId)
 
-      if (referrerUser) {
-        referrerId = referrerUser.id
-        referrerType = referrerUser.type
+      if (!referrerUser) {
+        return errorResponse('INVALID_REFERRAL_CODE', 'کد معرف معتبر نیست.', 400)
       }
+
+      referrerId = referrerUser.id
+      referrerType = referrerUser.type
     }
 
     const payment = await createPendingPayment({

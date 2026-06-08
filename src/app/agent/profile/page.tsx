@@ -142,9 +142,38 @@ export default function AgentProfilePage() {
       ? `${origin}/auth/login?ref=${encodeURIComponent(referralCode)}`
       : ''
 
+  const copyTextWithFallback = async (text: string) => {
+    if (!text) return false
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text)
+        return true
+      }
+    } catch {
+      // Fall through to the selection-based fallback below.
+    }
+
+    const textArea = document.createElement('textarea')
+    textArea.value = text
+    textArea.setAttribute('readonly', 'true')
+    textArea.style.position = 'fixed'
+    textArea.style.opacity = '0'
+    document.body.appendChild(textArea)
+    textArea.focus()
+    textArea.select()
+
+    try {
+      return document.execCommand('copy')
+    } finally {
+      document.body.removeChild(textArea)
+    }
+  }
+
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(referralLink)
+      const didCopy = await copyTextWithFallback(referralLink)
+      if (!didCopy) throw new Error('COPY_FAILED')
       setCopied(true)
       toast({
         title: 'کپی شد',
@@ -396,6 +425,7 @@ export default function AgentProfilePage() {
             </div>
             <Button
               onClick={handleCopyLink}
+              disabled={!referralLink}
               variant={copied ? 'default' : 'outline'}
               className={`shrink-0 min-w-[100px] ${copied ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
               size="sm"
