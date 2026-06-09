@@ -1,24 +1,32 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { requirePermission, authenticateRequest } from '@/lib/auth'
+import { requirePermission } from '@/lib/auth'
 import { successResponse, errorResponse } from '@/lib/api-response'
+import { maskNationalCode } from '@/lib/sales-customers'
 
 // GET /api/v1/agents/[id] — Get agent details
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { authorized, payload, error } = await requirePermission(request, 'manage_agents')
+  const { authorized, error } = await requirePermission(request, 'manage_agents')
   if (!authorized) return errorResponse('UNAUTHORIZED', error!, 401)
 
   const { id } = await params
 
   const agent = await db.agent.findUnique({
     where: { id },
-    include: {
+    select: {
+      id: true,
+      businessName: true,
+      status: true,
+      score: true,
+      description: true,
+      verifiedAt: true,
+      createdAt: true,
+      updatedAt: true,
       user: {
         select: {
-          id: true,
           mobile: true,
           email: true,
           status: true,
@@ -33,6 +41,9 @@ export async function GET(
               birthDate: true,
               gender: true,
               address: true,
+              payoutCardNumber: true,
+              payoutSheba: true,
+              payoutAccountOwnerName: true,
             },
           },
           roles: {
@@ -43,6 +54,13 @@ export async function GET(
         },
       },
       documents: {
+        select: {
+          id: true,
+          type: true,
+          status: true,
+          reviewedAt: true,
+          createdAt: true,
+        },
         orderBy: { createdAt: 'desc' },
       },
     },
@@ -52,5 +70,49 @@ export async function GET(
     return errorResponse('NOT_FOUND', 'Agent not found', 404)
   }
 
-  return successResponse(agent, 'Agent details retrieved')
+  const { user } = agent
+  const profile = user.profile
+  const safeProfile = profile
+    ? {
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        nationalCode: maskNationalCode(profile.nationalCode),
+        avatar: profile.avatar,
+        birthDate: profile.birthDate,
+        gender: profile.gender,
+        address: profile.address,
+      }
+    : null
+
+  return successResponse(
+    {
+      id: agent.id,
+      businessName: agent.businessName,
+      status: agent.status,
+      score: agent.score,
+      description: agent.description,
+      verifiedAt: agent.verifiedAt,
+      createdAt: agent.createdAt,
+      updatedAt: agent.updatedAt,
+      documents: agent.documents,
+      financialInfo: {
+        payoutInfoComplete: Boolean(
+          profile?.payoutCardNumber && profile?.payoutSheba && profile?.payoutAccountOwnerName
+        ),
+      },
+      user: {
+        mobile: user.mobile,
+        email: user.email,
+        status: user.status,
+        isMobileVerified: user.isMobileVerified,
+        createdAt: user.createdAt,
+        profile: safeProfile,
+        roles: user.roles.map((userRole) => ({
+          name: userRole.role.name,
+          title: userRole.role.title,
+        })),
+      },
+    },
+    'Agent details retrieved'
+  )
 }

@@ -142,7 +142,7 @@ export interface AgentItem {
     email?: string | null
     profile?: UserProfile | null
     status?: string
-    roles?: { id: string; name: string; title: string }[]
+    roles?: { name: string; title: string }[]
   }
   documents?: AgentDocumentItem[]
   documentCount?: number

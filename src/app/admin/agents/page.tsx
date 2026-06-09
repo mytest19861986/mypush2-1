@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import {
   MoreHorizontal,
   Eye,
@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   FileSearch,
   Search,
+  RefreshCw,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -38,10 +39,27 @@ import {
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import { PageHeader, StatusBadge } from '@/components/shared'
+import {
+  JalaliDateRangeFilter,
+  type JalaliDateRangeValue,
+} from '@/components/shared/jalali-date-range-filter'
+import { apiClient } from '@/lib/api-client'
 import { agentsService } from '@/services'
 import type { AgentItem } from '@/types'
-import { toPersianNum, getDisplayName, formatDate } from '@/utils/formatters'
-import { AGENT_STATUS_LABELS, DOCUMENT_TYPE_LABELS, DOCUMENT_STATUS_LABELS } from '@/constants'
+import {
+  toPersianNum,
+  getDisplayName,
+  formatDate,
+  formatDateTime,
+  formatJalaliDateRange,
+  formatPriceWithUnit,
+} from '@/utils/formatters'
+import {
+  getCurrentJalaliYearMonth,
+  gregorianDateToJalaliParts,
+  jalaliDatePartsToIsoDate,
+} from '@/utils/jalali-date'
+import { AGENT_STATUS_LABELS, DOCUMENT_TYPE_LABELS, COMMISSION_STATUS_LABELS } from '@/constants'
 
 /* ── Status filter options ───────────────────────────────── */
 
@@ -56,8 +74,111 @@ const STATUS_FILTERS = [
 
 /* ── Agents Page ─────────────────────────────────────────── */
 
+type CommissionStatus = 'PENDING' | 'APPROVED' | 'PAID' | 'CANCELLED'
+type SettlementStatus = 'PENDING' | 'APPROVED' | 'PAID' | 'REJECTED' | 'CANCELLED'
+
+interface AgentPerformance {
+  range: {
+    from: string
+    to: string
+  }
+  customerStats: {
+    registeredCustomersCount: number
+    paidCustomersCount: number
+    finalConfirmedCustomersCount: number
+    returnedCustomersCount: number
+  }
+  commissionStats: {
+    totalCommissionAmount: number
+    pendingCommissionAmount: number
+    approvedCommissionAmount: number
+    approvedWithdrawableCommissionAmount: number
+    paidCommissionAmount: number
+  }
+  settlementStats: {
+    openSettlementAmount: number
+    paidSettlementAmount: number
+  }
+  commissionRecords: Array<{
+    key: string
+    amount: number
+    percent: number
+    status: CommissionStatus
+    paidAt: string | null
+    createdAt: string
+    plan: {
+      name: string
+      price: number
+    }
+    salesCustomer: {
+      firstName: string | null
+      lastName: string | null
+      status: string
+    } | null
+  }>
+  settlementRecords: Array<{
+    key: string
+    amount: number
+    status: SettlementStatus
+    requestedAt: string
+    settledAt: string | null
+    createdAt: string
+  }>
+}
+
+type AgentDetail = AgentItem & {
+  financialInfo?: {
+    payoutInfoComplete: boolean
+  }
+}
+
+const settlementStatusLabels: Record<SettlementStatus, string> = {
+  PENDING: 'در انتظار بررسی',
+  APPROVED: 'تایید شده',
+  PAID: 'پرداخت شده',
+  REJECTED: 'رد شده',
+  CANCELLED: 'لغو شده',
+}
+
+function startOfLocalDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+}
+
+function addLocalDays(date: Date, days: number) {
+  const next = startOfLocalDay(date)
+  next.setDate(next.getDate() + days)
+  return next
+}
+
+function getRecentJalaliRange(days: number): JalaliDateRangeValue {
+  const today = startOfLocalDay(new Date())
+  return {
+    from: gregorianDateToJalaliParts(addLocalDays(today, -(days - 1))),
+    to: gregorianDateToJalaliParts(today),
+  }
+}
+
+function toIsoRange(range: JalaliDateRangeValue) {
+  return {
+    from: jalaliDatePartsToIsoDate(range.from.year, range.from.month, range.from.day),
+    to: jalaliDatePartsToIsoDate(range.to.year, range.to.month, range.to.day),
+  }
+}
+
+function getDateOrDash(value?: string | null) {
+  return value ? formatDateTime(value) : '—'
+}
+
+function getCustomerName(customer: AgentPerformance['commissionRecords'][number]['salesCustomer']) {
+  if (!customer) return 'مشتری ثبت‌شده'
+  const firstName = customer.firstName?.trim() ?? ''
+  const lastName = customer.lastName?.trim() ?? ''
+  return `${firstName} ${lastName}`.trim() || 'مشتری ثبت‌شده'
+}
+
 export default function AdminAgentsPage() {
   const { toast } = useToast()
+  const currentJalaliMonth = useMemo(() => getCurrentJalaliYearMonth(), [])
   const [agents, setAgents] = useState<AgentItem[]>([])
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
@@ -67,8 +188,29 @@ export default function AdminAgentsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
   const [isLoading, setIsLoading] = useState(true)
   const [changingId, setChangingId] = useState<string | null>(null)
-  const [selectedAgent, setSelectedAgent] = useState<AgentItem | null>(null)
+  const [selectedAgent, setSelectedAgent] = useState<AgentDetail | null>(null)
   const [isDetailLoading, setIsDetailLoading] = useState(false)
+  const [performanceRange, setPerformanceRange] = useState<JalaliDateRangeValue>(() =>
+    getRecentJalaliRange(30)
+  )
+  const [agentPerformance, setAgentPerformance] = useState<AgentPerformance | null>(null)
+  const [isPerformanceLoading, setIsPerformanceLoading] = useState(false)
+  const [performanceError, setPerformanceError] = useState<string | null>(null)
+
+  const performanceYearOptions = useMemo(() => {
+    const selectedYears = [performanceRange.from.year, performanceRange.to.year]
+    const yearWindow = Array.from({ length: 12 }, (_, index) => currentJalaliMonth.year + 1 - index)
+    return Array.from(new Set([...yearWindow, ...selectedYears])).sort((a, b) => b - a)
+  }, [currentJalaliMonth.year, performanceRange])
+
+  const selectedPerformanceRangeText = useMemo(() => {
+    try {
+      const range = toIsoRange(performanceRange)
+      return formatJalaliDateRange(range.from, range.to)
+    } catch {
+      return 'بازه تاریخ نامعتبر است'
+    }
+  }, [performanceRange])
 
   const fetchAgents = useCallback(async () => {
     setIsLoading(true)
@@ -110,13 +252,41 @@ export default function AdminAgentsPage() {
     handleSearch(searchInput)
   }
 
+  const fetchAgentPerformance = useCallback(async (agentId: string) => {
+    setIsPerformanceLoading(true)
+    setPerformanceError(null)
+    try {
+      const isoRange = toIsoRange(performanceRange)
+      if (isoRange.from > isoRange.to) {
+        throw new Error('تاریخ شروع باید قبل از تاریخ پایان باشد.')
+      }
+
+      const params = new URLSearchParams(isoRange)
+      const res = await apiClient.get<AgentPerformance>(
+        `/admin/agents/${agentId}/performance?${params.toString()}`
+      )
+      if (res.success && res.data) {
+        setAgentPerformance(res.data)
+      } else {
+        throw new Error(res.error?.message || res.message || 'خطا در دریافت عملکرد همکار فروش')
+      }
+    } catch (error) {
+      setAgentPerformance(null)
+      setPerformanceError(
+        error instanceof Error ? error.message : 'خطا در دریافت عملکرد همکار فروش'
+      )
+    } finally {
+      setIsPerformanceLoading(false)
+    }
+  }, [performanceRange])
+
   const handleStatusChange = async (agentId: string, newStatus: string) => {
     setChangingId(agentId)
     try {
       await agentsService.changeStatus(agentId, newStatus)
       toast({
         title: 'موفق',
-        description: `وضعیت نماینده به «${AGENT_STATUS_LABELS[newStatus as keyof typeof AGENT_STATUS_LABELS] || newStatus}» تغییر یافت`,
+        description: `وضعیت همکار فروش به «${AGENT_STATUS_LABELS[newStatus as keyof typeof AGENT_STATUS_LABELS] || newStatus}» تغییر یافت`,
       })
       fetchAgents()
     } catch {
@@ -133,10 +303,12 @@ export default function AdminAgentsPage() {
   const handleViewDetail = async (agentId: string) => {
     setIsDetailLoading(true)
     setSelectedAgent(null)
+    setAgentPerformance(null)
+    setPerformanceError(null)
     try {
       const res = await agentsService.getById(agentId)
       if (res.success && res.data) {
-        setSelectedAgent(res.data)
+        setSelectedAgent(res.data as AgentDetail)
       }
     } catch {
       toast({
@@ -149,6 +321,11 @@ export default function AdminAgentsPage() {
     }
   }
 
+  useEffect(() => {
+    if (!selectedAgent?.id) return
+    void fetchAgentPerformance(selectedAgent.id)
+  }, [fetchAgentPerformance, selectedAgent?.id])
+
   // ...existing code...
 
   return (
@@ -159,7 +336,7 @@ export default function AdminAgentsPage() {
           <>
             بررسی، تأیید و مدیریت همکاران فروش و وضعیت فعالیت آن‌ها —{' '}
             <span className="font-semibold text-emerald-600">{toPersianNum(total)}</span>{' '}
-            نماینده
+            همکار فروش
           </>
         }
       />
@@ -170,7 +347,7 @@ export default function AdminAgentsPage() {
             <div className="relative flex-1">
               <Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="جستجو بر اساس نام کسب‌وکار یا شماره موبایل..."
+                placeholder="جستجو بر اساس عنوان همکاری یا شماره موبایل..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit()}
@@ -211,7 +388,7 @@ export default function AdminAgentsPage() {
             <tr>
               <th className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">نام</th>
               <th className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">موبایل</th>
-              <th className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">کسب‌وکار</th>
+              <th className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">عنوان همکاری</th>
               <th className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">وضعیت</th>
               <th className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">مدارک</th>
               <th className="px-4 py-3 text-right text-sm font-semibold text-muted-foreground">تاریخ</th>
@@ -230,7 +407,7 @@ export default function AdminAgentsPage() {
             ) : agents.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
-                  نماینده‌ای یافت نشد
+                  همکار فروشی یافت نشد
                 </td>
               </tr>
             ) : (
@@ -248,13 +425,24 @@ export default function AdminAgentsPage() {
                   </td>
                   <td className="px-4 py-4 text-sm text-muted-foreground">{formatDate(agent.createdAt)}</td>
                   <td className="px-4 py-4 text-left text-sm">
-                    <DropdownMenu>
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewDetail(agent.id)}
+                        disabled={isDetailLoading}
+                        className="whitespace-nowrap"
+                      >
+                        <Eye className="ml-1.5 size-4" />
+                        مشاهده جزئیات
+                      </Button>
+                      <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
                           size="icon"
                           className="size-8"
-                          aria-label="عملیات نماینده"
+                          aria-label="عملیات همکار فروش"
                         >
                           <MoreHorizontal className="size-4" />
                         </Button>
@@ -293,7 +481,8 @@ export default function AdminAgentsPage() {
                           </DropdownMenuItem>
                         )}
                       </DropdownMenuContent>
-                    </DropdownMenu>
+                      </DropdownMenu>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -303,14 +492,20 @@ export default function AdminAgentsPage() {
         </div>
       </div>
 
-      {/* Agent detail dialog */}
+      {/* Sales partner detail dialog */}
       <Dialog
         open={!!selectedAgent || isDetailLoading}
-        onOpenChange={() => setSelectedAgent(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedAgent(null)
+            setAgentPerformance(null)
+            setPerformanceError(null)
+          }
+        }}
       >
-        <DialogContent className="max-h-[80vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="max-h-[86vh] max-w-5xl overflow-y-auto" dir="rtl">
           <DialogHeader>
-            <DialogTitle>جزئیات نماینده</DialogTitle>
+            <DialogTitle>جزئیات همکار فروش</DialogTitle>
           </DialogHeader>
           {isDetailLoading ? (
             <div className="space-y-4">
@@ -320,15 +515,15 @@ export default function AdminAgentsPage() {
             </div>
           ) : selectedAgent ? (
             <div className="space-y-4">
-              {/* Business info */}
+              {/* Sales partnership info */}
               <div className="rounded-lg border p-4 space-y-3">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="size-4 text-emerald-600" />
-                  <h3 className="font-semibold">اطلاعات کسب‌وکار</h3>
+                  <h3 className="font-semibold">اطلاعات همکاری فروش</h3>
                 </div>
                 <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
                   <div>
-                    <span className="text-muted-foreground">نام کسب‌وکار: </span>
+                    <span className="text-muted-foreground">عنوان/توضیح همکاری: </span>
                     <span>{selectedAgent.businessName || '—'}</span>
                   </div>
                   <div>
@@ -379,10 +574,23 @@ export default function AdminAgentsPage() {
                     <span>{selectedAgent.user?.email || '—'}</span>
                   </div>
                   <div>
+                    <span className="text-muted-foreground">کد ملی: </span>
+                    <span className="font-mono">{selectedAgent.user?.profile?.nationalCode || '—'}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">وضعیت اطلاعات مالی: </span>
+                    <Badge
+                      variant={selectedAgent.financialInfo?.payoutInfoComplete ? 'default' : 'outline'}
+                      className="font-medium"
+                    >
+                      {selectedAgent.financialInfo?.payoutInfoComplete ? 'تکمیل شده' : 'تکمیل نشده'}
+                    </Badge>
+                  </div>
+                  <div>
                     <span className="text-muted-foreground">نقش‌ها: </span>
                     <div className="flex flex-wrap gap-1 mt-0.5">
                       {selectedAgent.user?.roles?.map((r) => (
-                        <Badge key={r.id} variant="outline" className="text-xs">
+                        <Badge key={`${r.name}-${r.title}`} variant="outline" className="text-xs">
                           {r.title}
                         </Badge>
                       ))}
@@ -416,6 +624,214 @@ export default function AdminAgentsPage() {
                   </div>
                 </div>
               )}
+
+              <div className="space-y-4 rounded-lg border p-4">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="space-y-1">
+                    <h3 className="font-semibold">عملکرد همکار فروش</h3>
+                    <p className="text-xs leading-6 text-muted-foreground">
+                      بازه انتخابی: {selectedPerformanceRangeText}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPerformanceRange(getRecentJalaliRange(30))}
+                      disabled={isPerformanceLoading}
+                    >
+                      بازنشانی بازه
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void fetchAgentPerformance(selectedAgent.id)}
+                      disabled={isPerformanceLoading}
+                    >
+                      <RefreshCw className="ml-1.5 size-4" />
+                      به‌روزرسانی
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border bg-muted/20 p-3">
+                  <JalaliDateRangeFilter
+                    value={performanceRange}
+                    onChange={setPerformanceRange}
+                    yearOptions={performanceYearOptions}
+                  />
+                </div>
+
+                {isPerformanceLoading ? (
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {Array.from({ length: 9 }).map((_, i) => (
+                      <Skeleton key={i} className="h-24 w-full" />
+                    ))}
+                  </div>
+                ) : performanceError ? (
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+                    {performanceError}
+                  </div>
+                ) : agentPerformance ? (
+                  <div className="space-y-4">
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {[
+                        {
+                          label: 'مشتریان ثبت‌شده',
+                          value: toPersianNum(agentPerformance.customerStats.registeredCustomersCount),
+                        },
+                        {
+                          label: 'پرداخت‌شده',
+                          value: toPersianNum(agentPerformance.customerStats.paidCustomersCount),
+                        },
+                        {
+                          label: 'تایید نهایی‌شده',
+                          value: toPersianNum(agentPerformance.customerStats.finalConfirmedCustomersCount),
+                        },
+                        {
+                          label: 'برگشتی',
+                          value: toPersianNum(agentPerformance.customerStats.returnedCustomersCount),
+                        },
+                        {
+                          label: 'کل پورسانت',
+                          value: formatPriceWithUnit(agentPerformance.commissionStats.totalCommissionAmount),
+                        },
+                        {
+                          label: 'پورسانت در انتظار تایید',
+                          value: formatPriceWithUnit(agentPerformance.commissionStats.pendingCommissionAmount),
+                        },
+                        {
+                          label: 'پورسانت تاییدشده / قابل برداشت',
+                          value: formatPriceWithUnit(
+                            agentPerformance.commissionStats.approvedWithdrawableCommissionAmount
+                          ),
+                        },
+                        {
+                          label: 'پورسانت پرداخت‌شده',
+                          value: formatPriceWithUnit(agentPerformance.commissionStats.paidCommissionAmount),
+                        },
+                        {
+                          label: 'درخواست تسویه باز',
+                          value: formatPriceWithUnit(agentPerformance.settlementStats.openSettlementAmount),
+                        },
+                        {
+                          label: 'تسویه پرداخت‌شده',
+                          value: formatPriceWithUnit(agentPerformance.settlementStats.paidSettlementAmount),
+                        },
+                      ].map((stat) => (
+                        <div key={stat.label} className="min-w-0 rounded-lg border bg-background p-3">
+                          <p className="text-xs leading-5 text-muted-foreground">{stat.label}</p>
+                          <p className="mt-2 break-words text-sm font-semibold leading-7">{stat.value}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="grid gap-4 xl:grid-cols-2">
+                      <div className="min-w-0 rounded-lg border">
+                        <div className="border-b p-3">
+                          <h4 className="text-sm font-semibold">سوابق پورسانت</h4>
+                        </div>
+                        {agentPerformance.commissionRecords.length === 0 ? (
+                          <p className="p-4 text-sm text-muted-foreground">
+                            در این بازه پورسانتی برای این همکار فروش ثبت نشده است.
+                          </p>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="w-full min-w-[560px] text-sm">
+                              <thead className="bg-muted/50">
+                                <tr>
+                                  <th className="px-3 py-2 text-right font-medium">مشتری</th>
+                                  <th className="px-3 py-2 text-right font-medium">طرح</th>
+                                  <th className="px-3 py-2 text-right font-medium">مبلغ</th>
+                                  <th className="px-3 py-2 text-right font-medium">وضعیت</th>
+                                  <th className="px-3 py-2 text-right font-medium">تاریخ ثبت</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {agentPerformance.commissionRecords.map((commission) => (
+                                  <tr key={commission.key} className="border-t">
+                                    <td className="px-3 py-2">{getCustomerName(commission.salesCustomer)}</td>
+                                    <td className="px-3 py-2">{commission.plan.name}</td>
+                                    <td className="whitespace-nowrap px-3 py-2">
+                                      {formatPriceWithUnit(commission.amount)}
+                                    </td>
+                                    <td className="px-3 py-2">
+                                      <StatusBadge
+                                        status={commission.status}
+                                        label={
+                                          COMMISSION_STATUS_LABELS[commission.status] ||
+                                          commission.status
+                                        }
+                                      />
+                                    </td>
+                                    <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
+                                      {getDateOrDash(commission.createdAt)}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="min-w-0 rounded-lg border">
+                        <div className="border-b p-3">
+                          <h4 className="text-sm font-semibold">سوابق تسویه</h4>
+                        </div>
+                        {agentPerformance.settlementRecords.length === 0 ? (
+                          <p className="p-4 text-sm text-muted-foreground">
+                            در این بازه درخواست تسویه‌ای برای این همکار فروش ثبت نشده است.
+                          </p>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="w-full min-w-[460px] text-sm">
+                              <thead className="bg-muted/50">
+                                <tr>
+                                  <th className="px-3 py-2 text-right font-medium">مبلغ</th>
+                                  <th className="px-3 py-2 text-right font-medium">وضعیت</th>
+                                  <th className="px-3 py-2 text-right font-medium">تاریخ درخواست</th>
+                                  <th className="px-3 py-2 text-right font-medium">تاریخ پرداخت</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {agentPerformance.settlementRecords.map((settlement) => (
+                                  <tr key={settlement.key} className="border-t">
+                                    <td className="whitespace-nowrap px-3 py-2">
+                                      {formatPriceWithUnit(settlement.amount)}
+                                    </td>
+                                    <td className="px-3 py-2">
+                                      <StatusBadge
+                                        status={settlement.status}
+                                        label={
+                                          settlementStatusLabels[settlement.status] ||
+                                          settlement.status
+                                        }
+                                      />
+                                    </td>
+                                    <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
+                                      {getDateOrDash(settlement.requestedAt)}
+                                    </td>
+                                    <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
+                                      {getDateOrDash(settlement.settledAt)}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    برای مشاهده عملکرد، همکار فروش را انتخاب کنید.
+                  </p>
+                )}
+              </div>
 
               {/* Actions */}
               <Separator />
