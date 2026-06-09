@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import {
   Search,
   MoreHorizontal,
@@ -8,11 +8,14 @@ import {
   UserCheck,
   UserX,
   Ban,
+  Eye,
+  RefreshCw,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Separator } from '@/components/ui/separator'
 import {
   Select,
   SelectContent,
@@ -28,6 +31,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -39,15 +48,219 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useToast } from '@/hooks/use-toast'
 import { StatusBadge } from '@/components/shared'
+import {
+  JalaliDateRangeFilter,
+  type JalaliDateRangeValue,
+} from '@/components/shared/jalali-date-range-filter'
+import { apiClient } from '@/lib/api-client'
 import { usersService } from '@/services'
 import type { UserItem } from '@/types'
-import { toPersianNum, formatDate, getDisplayName } from '@/utils/formatters'
-import { USER_STATUS_LABELS } from '@/constants'
+import {
+  toPersianNum,
+  formatDateTime,
+  formatJalaliDate,
+  formatJalaliDateRange,
+  formatPriceWithUnit,
+  getDisplayName,
+} from '@/utils/formatters'
+import {
+  getCurrentJalaliYearMonth,
+  gregorianDateToJalaliParts,
+  jalaliDatePartsToIsoDate,
+} from '@/utils/jalali-date'
+import {
+  COMMISSION_STATUS_LABELS,
+  CONTRACT_STATUS_LABELS,
+  USER_PLAN_STATUS_LABELS,
+  USER_STATUS_LABELS,
+} from '@/constants'
 
 const PAGE_SIZE = 20
 
+type CommissionStatus = 'PENDING' | 'APPROVED' | 'PAID' | 'CANCELLED'
+type SettlementStatus = 'PENDING' | 'APPROVED' | 'PAID' | 'REJECTED' | 'CANCELLED'
+
+interface UserProfileSummary {
+  range: {
+    from: string
+    to: string
+  }
+  user: {
+    mobile: string
+    status: string
+    isMobileVerified: boolean
+    createdAt: string
+    profile: {
+      firstName: string | null
+      lastName: string | null
+    } | null
+    roles: Array<{
+      name: string
+      title: string
+    }>
+  }
+  subscription: {
+    activeSubscription: UserPlanSummary | null
+    purchasedPlansCount: number
+    totalPurchaseAmount: number
+    purchases: UserPlanSummary[]
+  }
+  visits: {
+    totalVisitsCount: number
+    recentVisits: Array<{
+      key: string
+      status: string
+      visitedAt: string | null
+      confirmedAt: string | null
+      completedAt: string | null
+      createdAt: string
+      doctor: {
+        firstName: string | null
+        lastName: string | null
+        specialty: string | null
+        clinicName: string | null
+      }
+    }>
+  }
+  referral: {
+    referralCode: string | null
+    referralLink: string | null
+    totalReferredUsers: number
+    successfulPurchasesFromReferrals: number
+    commissionStats: {
+      totalReferralCommissionAmount: number
+      pendingReferralCommissionAmount: number
+      approvedReferralCommissionAmount: number
+      approvedWithdrawableReferralCommissionAmount: number
+      paidReferralCommissionAmount: number
+    }
+    settlementStats: {
+      openSettlementAmount: number
+      paidSettlementAmount: number
+    }
+    commissionRecords: Array<{
+      key: string
+      amount: number
+      percent: number
+      status: CommissionStatus
+      paidAt: string | null
+      createdAt: string
+      plan: {
+        name: string
+        price: number
+      }
+      userPlan: {
+        status: string
+        startDate: string
+        endDate: string
+        paymentStatus: string | null
+      }
+    }>
+    settlementRecords: Array<{
+      key: string
+      amount: number
+      status: SettlementStatus
+      requestedAt: string
+      settledAt: string | null
+      createdAt: string
+    }>
+  }
+}
+
+interface UserPlanSummary {
+  key?: string
+  planName: string
+  status: string
+  startDate: string
+  endDate: string
+  remainingUses: number
+  totalUses: number
+  paymentStatus: string | null
+  amount: number
+  paidAt: string | null
+  createdAt?: string
+}
+
+const settlementStatusLabels: Record<SettlementStatus, string> = {
+  PENDING: 'در انتظار بررسی',
+  APPROVED: 'تایید شده',
+  PAID: 'پرداخت شده',
+  REJECTED: 'رد شده',
+  CANCELLED: 'لغو شده',
+}
+
+const paymentStatusLabels: Record<string, string> = {
+  PENDING: 'در انتظار پرداخت',
+  SUCCESS: 'موفق',
+  FAILED: 'ناموفق',
+  CANCELLED: 'لغو شده',
+}
+
+function startOfLocalDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+}
+
+function addLocalDays(date: Date, days: number) {
+  const next = startOfLocalDay(date)
+  next.setDate(next.getDate() + days)
+  return next
+}
+
+function getRecentJalaliRange(days: number): JalaliDateRangeValue {
+  const today = startOfLocalDay(new Date())
+  return {
+    from: gregorianDateToJalaliParts(addLocalDays(today, -(days - 1))),
+    to: gregorianDateToJalaliParts(today),
+  }
+}
+
+function toIsoRange(range: JalaliDateRangeValue) {
+  return {
+    from: jalaliDatePartsToIsoDate(range.from.year, range.from.month, range.from.day),
+    to: jalaliDatePartsToIsoDate(range.to.year, range.to.month, range.to.day),
+  }
+}
+
+function getDateOrDash(value?: string | null) {
+  return value ? formatDateTime(value) : '—'
+}
+
+function getFullName(profile?: { firstName: string | null; lastName: string | null } | null) {
+  const firstName = profile?.firstName?.trim() ?? ''
+  const lastName = profile?.lastName?.trim() ?? ''
+  return `${firstName} ${lastName}`.trim() || '—'
+}
+
+function getDoctorName(doctor: UserProfileSummary['visits']['recentVisits'][number]['doctor']) {
+  const name = getFullName(doctor)
+  return name === '—' ? doctor.clinicName || 'پزشک' : name
+}
+
+function getPaymentStatusLabel(status?: string | null) {
+  if (!status) return '—'
+  return paymentStatusLabels[status] || status
+}
+
+function getPlanStatusLabel(status: string) {
+  return USER_PLAN_STATUS_LABELS[status as keyof typeof USER_PLAN_STATUS_LABELS] || status
+}
+
+function getVisitStatusLabel(status: string) {
+  return CONTRACT_STATUS_LABELS[status as keyof typeof CONTRACT_STATUS_LABELS] || status
+}
+
+function SummaryStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 rounded-lg border bg-background p-3">
+      <p className="text-xs leading-5 text-muted-foreground">{label}</p>
+      <p className="mt-2 break-words text-sm font-semibold leading-7">{value}</p>
+    </div>
+  )
+}
+
 export default function AdminUsersPage() {
   const { toast } = useToast()
+  const currentJalaliMonth = useMemo(() => getCurrentJalaliYearMonth(), [])
   const [users, setUsers] = useState<UserItem[]>([])
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
@@ -59,6 +272,28 @@ export default function AdminUsersPage() {
   const [deleteTarget, setDeleteTarget] = useState<UserItem | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [changingId, setChangingId] = useState<string | null>(null)
+  const [selectedUser, setSelectedUser] = useState<UserItem | null>(null)
+  const [summary, setSummary] = useState<UserProfileSummary | null>(null)
+  const [isSummaryLoading, setIsSummaryLoading] = useState(false)
+  const [summaryError, setSummaryError] = useState<string | null>(null)
+  const [summaryRange, setSummaryRange] = useState<JalaliDateRangeValue>(() =>
+    getRecentJalaliRange(30)
+  )
+
+  const summaryYearOptions = useMemo(() => {
+    const selectedYears = [summaryRange.from.year, summaryRange.to.year]
+    const yearWindow = Array.from({ length: 12 }, (_, index) => currentJalaliMonth.year + 1 - index)
+    return Array.from(new Set([...yearWindow, ...selectedYears])).sort((a, b) => b - a)
+  }, [currentJalaliMonth.year, summaryRange])
+
+  const selectedSummaryRangeText = useMemo(() => {
+    try {
+      const range = toIsoRange(summaryRange)
+      return formatJalaliDateRange(range.from, range.to)
+    } catch {
+      return 'بازه تاریخ نامعتبر است'
+    }
+  }, [summaryRange])
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true)
@@ -91,9 +326,47 @@ export default function AdminUsersPage() {
     fetchUsers()
   }, [fetchUsers])
 
+  const fetchProfileSummary = useCallback(async (userId: string) => {
+    setIsSummaryLoading(true)
+    setSummaryError(null)
+    try {
+      const isoRange = toIsoRange(summaryRange)
+      if (isoRange.from > isoRange.to) {
+        throw new Error('تاریخ شروع باید قبل از تاریخ پایان باشد.')
+      }
+
+      const params = new URLSearchParams(isoRange)
+      const res = await apiClient.get<UserProfileSummary>(
+        `/admin/users/${userId}/profile-summary?${params.toString()}`
+      )
+      if (res.success && res.data) {
+        setSummary(res.data)
+      } else {
+        throw new Error(res.error?.message || res.message || 'خطا در دریافت جزئیات کاربر')
+      }
+    } catch (error) {
+      setSummary(null)
+      setSummaryError(error instanceof Error ? error.message : 'خطا در دریافت جزئیات کاربر')
+    } finally {
+      setIsSummaryLoading(false)
+    }
+  }, [summaryRange])
+
+  useEffect(() => {
+    if (!selectedUser?.id) return
+    void fetchProfileSummary(selectedUser.id)
+  }, [fetchProfileSummary, selectedUser?.id])
+
   const handleSearch = (value: string) => {
     setSearch(value)
     setPage(1)
+  }
+
+  const handleViewDetail = (user: UserItem) => {
+    setSummaryRange(getRecentJalaliRange(30))
+    setSelectedUser(user)
+    setSummary(null)
+    setSummaryError(null)
   }
 
   const handleStatusChange = async (userId: string, newStatus: string) => {
@@ -191,8 +464,8 @@ export default function AdminUsersPage() {
 
       <div className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm">
         <div className="w-full overflow-x-auto">
-          <table className="w-full min-w-[900px]">
-            <thead className="bg-transparent border-b">
+          <table className="w-full min-w-[1000px]">
+            <thead className="border-b bg-transparent">
               <tr>
                 <th className="px-4 py-4 text-right text-sm font-semibold text-foreground">موبایل</th>
                 <th className="px-4 py-4 text-right text-sm font-semibold text-foreground">نام</th>
@@ -232,7 +505,7 @@ export default function AdminUsersPage() {
                           <p className="truncate font-medium text-foreground">{user.activePlanName}</p>
                           {user.activePlanEndDate && (
                             <p className="mt-1 text-xs text-muted-foreground">
-                              تا {formatDate(user.activePlanEndDate)}
+                              تا {formatJalaliDate(user.activePlanEndDate)}
                             </p>
                           )}
                         </div>
@@ -242,56 +515,85 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-4 py-4 text-sm">
                       <div className="flex flex-wrap gap-1">
-                        <Badge variant="outline" className="border-border/70 bg-background text-xs font-medium">
-                          کاربر عادی
-                        </Badge>
+                        {user.roles.length > 0 ? (
+                          user.roles.map((role) => (
+                            <Badge
+                              key={role.id}
+                              variant="outline"
+                              className="border-border/70 bg-background text-xs font-medium"
+                            >
+                              {role.title || role.name}
+                            </Badge>
+                          ))
+                        ) : (
+                          <Badge variant="outline" className="border-border/70 bg-background text-xs font-medium">
+                            کاربر
+                          </Badge>
+                        )}
                       </div>
                     </td>
-                    <td className="px-4 py-4 text-sm text-muted-foreground">{formatDate(user.createdAt)}</td>
+                    <td className="px-4 py-4 text-sm text-muted-foreground">{formatJalaliDate(user.createdAt)}</td>
                     <td className="px-4 py-4 text-left text-sm">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-8 hover:bg-background"
-                            aria-label="عملیات کاربر"
-                          >
-                            <MoreHorizontal className="size-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => handleStatusChange(user.id, 'ACTIVE')}
-                            disabled={changingId === user.id || user.status === 'ACTIVE'}
-                          >
-                            <UserCheck className="ml-2 size-4 text-emerald-600" />
-                            فعال‌سازی
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleStatusChange(user.id, 'INACTIVE')}
-                            disabled={changingId === user.id || user.status === 'INACTIVE'}
-                          >
-                            <UserX className="ml-2 size-4 text-amber-600" />
-                            غیرفعال‌سازی
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleStatusChange(user.id, 'BLOCKED')}
-                            disabled={changingId === user.id || user.status === 'BLOCKED'}
-                          >
-                            <Ban className="ml-2 size-4 text-red-600" />
-                            مسدود کردن
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => setDeleteTarget(user)}
-                          >
-                            <Trash2 className="ml-2 size-4" />
-                            حذف
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewDetail(user)}
+                          disabled={isSummaryLoading}
+                          className="whitespace-nowrap"
+                        >
+                          <Eye className="ml-1.5 size-4" />
+                          مشاهده جزئیات
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8 hover:bg-background"
+                              aria-label="عملیات کاربر"
+                            >
+                              <MoreHorizontal className="size-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleViewDetail(user)}>
+                              <Eye className="ml-2 size-4" />
+                              مشاهده جزئیات
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => handleStatusChange(user.id, 'ACTIVE')}
+                              disabled={changingId === user.id || user.status === 'ACTIVE'}
+                            >
+                              <UserCheck className="ml-2 size-4 text-emerald-600" />
+                              فعال‌سازی
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleStatusChange(user.id, 'INACTIVE')}
+                              disabled={changingId === user.id || user.status === 'INACTIVE'}
+                            >
+                              <UserX className="ml-2 size-4 text-amber-600" />
+                              غیرفعال‌سازی
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleStatusChange(user.id, 'BLOCKED')}
+                              disabled={changingId === user.id || user.status === 'BLOCKED'}
+                            >
+                              <Ban className="ml-2 size-4 text-red-600" />
+                              مسدود کردن
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => setDeleteTarget(user)}
+                            >
+                              <Trash2 className="ml-2 size-4" />
+                              حذف
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -329,6 +631,385 @@ export default function AdminUsersPage() {
         </div>
       </div>
 
+      <Dialog
+        open={!!selectedUser || isSummaryLoading}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedUser(null)
+            setSummary(null)
+            setSummaryError(null)
+          }
+        }}
+      >
+        <DialogContent className="max-h-[86vh] max-w-6xl overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>جزئیات کاربر</DialogTitle>
+          </DialogHeader>
+
+          {isSummaryLoading ? (
+            <div className="space-y-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="h-8 w-full" />
+              ))}
+            </div>
+          ) : summaryError ? (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+              {summaryError}
+            </div>
+          ) : summary ? (
+            <div className="space-y-4">
+              <div className="rounded-lg border p-4">
+                <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                  <div>
+                    <span className="text-muted-foreground">نام و نام خانوادگی: </span>
+                    <span>{getFullName(summary.user.profile)}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">موبایل: </span>
+                    <span className="font-mono">{summary.user.mobile}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">وضعیت حساب: </span>
+                    <StatusBadge status={summary.user.status} />
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">تاریخ ثبت‌نام: </span>
+                    <span>{formatJalaliDate(summary.user.createdAt)}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">تأیید موبایل: </span>
+                    <Badge variant={summary.user.isMobileVerified ? 'default' : 'outline'}>
+                      {summary.user.isMobileVerified ? 'تأیید شده' : 'تأیید نشده'}
+                    </Badge>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">نقش‌ها: </span>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {summary.user.roles.length > 0 ? (
+                        summary.user.roles.map((role) => (
+                          <Badge key={`${role.name}-${role.title}`} variant="outline" className="text-xs">
+                            {role.title || role.name}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4 rounded-lg border p-4">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="space-y-1">
+                    <h3 className="font-semibold">خلاصه کاربر و همکار معرفی / رفرال</h3>
+                    <p className="text-xs leading-6 text-muted-foreground">
+                      بازه انتخابی: {selectedSummaryRangeText}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSummaryRange(getRecentJalaliRange(30))}
+                      disabled={isSummaryLoading}
+                    >
+                      بازنشانی بازه
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => selectedUser?.id && void fetchProfileSummary(selectedUser.id)}
+                      disabled={isSummaryLoading}
+                    >
+                      <RefreshCw className="ml-1.5 size-4" />
+                      به‌روزرسانی
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border bg-muted/20 p-3">
+                  <JalaliDateRangeFilter
+                    value={summaryRange}
+                    onChange={setSummaryRange}
+                    yearOptions={summaryYearOptions}
+                  />
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <SummaryStat
+                    label="طرح‌های خریداری‌شده"
+                    value={toPersianNum(summary.subscription.purchasedPlansCount)}
+                  />
+                  <SummaryStat
+                    label="جمع خریدهای موفق"
+                    value={formatPriceWithUnit(summary.subscription.totalPurchaseAmount)}
+                  />
+                  <SummaryStat
+                    label="کل ویزیت‌ها"
+                    value={toPersianNum(summary.visits.totalVisitsCount)}
+                  />
+                  <SummaryStat
+                    label="کاربران معرفی‌شده"
+                    value={toPersianNum(summary.referral.totalReferredUsers)}
+                  />
+                  <SummaryStat
+                    label="خریدهای موفق از رفرال"
+                    value={toPersianNum(summary.referral.successfulPurchasesFromReferrals)}
+                  />
+                  <SummaryStat
+                    label="کل پورسانت رفرال در بازه"
+                    value={formatPriceWithUnit(
+                      summary.referral.commissionStats.totalReferralCommissionAmount
+                    )}
+                  />
+                  <SummaryStat
+                    label="پورسانت در انتظار"
+                    value={formatPriceWithUnit(
+                      summary.referral.commissionStats.pendingReferralCommissionAmount
+                    )}
+                  />
+                  <SummaryStat
+                    label="پورسانت قابل برداشت"
+                    value={formatPriceWithUnit(
+                      summary.referral.commissionStats.approvedWithdrawableReferralCommissionAmount
+                    )}
+                  />
+                  <SummaryStat
+                    label="پورسانت پرداخت‌شده"
+                    value={formatPriceWithUnit(
+                      summary.referral.commissionStats.paidReferralCommissionAmount
+                    )}
+                  />
+                  <SummaryStat
+                    label="درخواست تسویه باز"
+                    value={formatPriceWithUnit(summary.referral.settlementStats.openSettlementAmount)}
+                  />
+                  <SummaryStat
+                    label="تسویه پرداخت‌شده"
+                    value={formatPriceWithUnit(summary.referral.settlementStats.paidSettlementAmount)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 xl:grid-cols-2">
+                <div className="rounded-lg border p-4">
+                  <h3 className="font-semibold">اشتراک و خریدها</h3>
+                  <div className="mt-3 rounded-lg bg-muted/40 p-3 text-sm">
+                    {summary.subscription.activeSubscription ? (
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <div>
+                          <span className="text-muted-foreground">طرح فعال: </span>
+                          <span>{summary.subscription.activeSubscription.planName}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">پایان اعتبار: </span>
+                          <span>{formatJalaliDate(summary.subscription.activeSubscription.endDate)}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">وضعیت پرداخت: </span>
+                          <span>{getPaymentStatusLabel(summary.subscription.activeSubscription.paymentStatus)}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">مبلغ: </span>
+                          <span>{formatPriceWithUnit(summary.subscription.activeSubscription.amount)}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">طرح فعالی برای این کاربر ثبت نشده است.</p>
+                    )}
+                  </div>
+
+                  <div className="mt-4 overflow-x-auto">
+                    {summary.subscription.purchases.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">خریدی برای این کاربر ثبت نشده است.</p>
+                    ) : (
+                      <table className="w-full min-w-[640px] text-sm">
+                        <thead className="bg-muted/50">
+                          <tr>
+                            <th className="px-3 py-2 text-right font-medium">طرح</th>
+                            <th className="px-3 py-2 text-right font-medium">وضعیت طرح</th>
+                            <th className="px-3 py-2 text-right font-medium">وضعیت پرداخت</th>
+                            <th className="px-3 py-2 text-right font-medium">مبلغ</th>
+                            <th className="px-3 py-2 text-right font-medium">شروع</th>
+                            <th className="px-3 py-2 text-right font-medium">پایان</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {summary.subscription.purchases.map((purchase) => (
+                            <tr key={purchase.key} className="border-t">
+                              <td className="px-3 py-2">{purchase.planName}</td>
+                              <td className="px-3 py-2">{getPlanStatusLabel(purchase.status)}</td>
+                              <td className="px-3 py-2">{getPaymentStatusLabel(purchase.paymentStatus)}</td>
+                              <td className="whitespace-nowrap px-3 py-2">
+                                {formatPriceWithUnit(purchase.amount)}
+                              </td>
+                              <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
+                                {formatJalaliDate(purchase.startDate)}
+                              </td>
+                              <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
+                                {formatJalaliDate(purchase.endDate)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-lg border p-4">
+                  <h3 className="font-semibold">ویزیت‌ها</h3>
+                  <div className="mt-4 overflow-x-auto">
+                    {summary.visits.recentVisits.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">در این بازه ویزیتی برای این کاربر ثبت نشده است.</p>
+                    ) : (
+                      <table className="w-full min-w-[560px] text-sm">
+                        <thead className="bg-muted/50">
+                          <tr>
+                            <th className="px-3 py-2 text-right font-medium">پزشک</th>
+                            <th className="px-3 py-2 text-right font-medium">تخصص</th>
+                            <th className="px-3 py-2 text-right font-medium">وضعیت</th>
+                            <th className="px-3 py-2 text-right font-medium">تاریخ</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {summary.visits.recentVisits.map((visit) => (
+                            <tr key={visit.key} className="border-t">
+                              <td className="px-3 py-2">{getDoctorName(visit.doctor)}</td>
+                              <td className="px-3 py-2">{visit.doctor.specialty || '—'}</td>
+                              <td className="px-3 py-2">{getVisitStatusLabel(visit.status)}</td>
+                              <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
+                                {getDateOrDash(
+                                  visit.visitedAt ||
+                                    visit.completedAt ||
+                                    visit.confirmedAt ||
+                                    visit.createdAt
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg border p-4">
+                <h3 className="font-semibold">همکار معرفی / رفرال</h3>
+                <div className="mt-3 grid gap-3 text-sm lg:grid-cols-2">
+                  <div className="rounded-lg bg-muted/40 p-3">
+                    <span className="text-muted-foreground">کد معرفی: </span>
+                    <span className="font-mono">{summary.referral.referralCode || '—'}</span>
+                  </div>
+                  <div className="min-w-0 rounded-lg bg-muted/40 p-3">
+                    <span className="text-muted-foreground">لینک معرفی: </span>
+                    <span className="break-all font-mono">{summary.referral.referralLink || '—'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-4 xl:grid-cols-2">
+                <div className="min-w-0 rounded-lg border">
+                  <div className="border-b p-3">
+                    <h4 className="text-sm font-semibold">سوابق پورسانت رفرال</h4>
+                  </div>
+                  {summary.referral.commissionRecords.length === 0 ? (
+                    <p className="p-4 text-sm text-muted-foreground">
+                      در این بازه پورسانت رفرالی برای این کاربر ثبت نشده است.
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[620px] text-sm">
+                        <thead className="bg-muted/50">
+                          <tr>
+                            <th className="px-3 py-2 text-right font-medium">طرح</th>
+                            <th className="px-3 py-2 text-right font-medium">مبلغ</th>
+                            <th className="px-3 py-2 text-right font-medium">درصد</th>
+                            <th className="px-3 py-2 text-right font-medium">وضعیت</th>
+                            <th className="px-3 py-2 text-right font-medium">تاریخ ثبت</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {summary.referral.commissionRecords.map((commission) => (
+                            <tr key={commission.key} className="border-t">
+                              <td className="px-3 py-2">{commission.plan.name}</td>
+                              <td className="whitespace-nowrap px-3 py-2">
+                                {formatPriceWithUnit(commission.amount)}
+                              </td>
+                              <td className="px-3 py-2">{toPersianNum(commission.percent)}٪</td>
+                              <td className="px-3 py-2">
+                                <StatusBadge
+                                  status={commission.status}
+                                  label={COMMISSION_STATUS_LABELS[commission.status] || commission.status}
+                                />
+                              </td>
+                              <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
+                                {getDateOrDash(commission.createdAt)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                <div className="min-w-0 rounded-lg border">
+                  <div className="border-b p-3">
+                    <h4 className="text-sm font-semibold">سوابق تسویه</h4>
+                  </div>
+                  {summary.referral.settlementRecords.length === 0 ? (
+                    <p className="p-4 text-sm text-muted-foreground">
+                      در این بازه درخواست تسویه‌ای برای این کاربر ثبت نشده است.
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[460px] text-sm">
+                        <thead className="bg-muted/50">
+                          <tr>
+                            <th className="px-3 py-2 text-right font-medium">مبلغ</th>
+                            <th className="px-3 py-2 text-right font-medium">وضعیت</th>
+                            <th className="px-3 py-2 text-right font-medium">تاریخ درخواست</th>
+                            <th className="px-3 py-2 text-right font-medium">تاریخ پرداخت</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {summary.referral.settlementRecords.map((settlement) => (
+                            <tr key={settlement.key} className="border-t">
+                              <td className="whitespace-nowrap px-3 py-2">
+                                {formatPriceWithUnit(settlement.amount)}
+                              </td>
+                              <td className="px-3 py-2">
+                                <StatusBadge
+                                  status={settlement.status}
+                                  label={settlementStatusLabels[settlement.status] || settlement.status}
+                                />
+                              </td>
+                              <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
+                                {getDateOrDash(settlement.requestedAt)}
+                              </td>
+                              <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
+                                {getDateOrDash(settlement.settledAt)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <Separator />
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog
         open={!!deleteTarget}
         onOpenChange={() => setDeleteTarget(null)}
@@ -337,8 +1018,7 @@ export default function AdminUsersPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>حذف کاربر</AlertDialogTitle>
             <AlertDialogDescription>
-              آیا از حذف کاربر{' '}
-              <strong>{deleteTarget?.mobile}</strong> اطمینان دارید؟ این عمل
+              آیا از حذف کاربر <strong>{deleteTarget?.mobile}</strong> اطمینان دارید؟ این عمل
               قابل بازگشت نیست.
             </AlertDialogDescription>
           </AlertDialogHeader>
