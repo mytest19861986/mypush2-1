@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { readFile } from 'fs/promises'
 import path from 'path'
 import {
+  ArrowRight,
   BadgePercent,
   MapPin,
   RotateCcw,
@@ -12,6 +13,16 @@ import {
 } from 'lucide-react'
 import { db } from '@/lib/db'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { IRAN_PROVINCES, getCitiesByProvince } from '@/constants/iran-locations'
 import { DoctorsFilterSidebar } from './doctors-filter-sidebar'
@@ -252,9 +263,21 @@ function filterDoctors(doctors: PublicDoctor[], filters: DoctorFilters) {
   })
 }
 
+function DoctorDetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-border/60 bg-muted/30 px-3 py-3">
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <p className="mt-1 text-sm font-bold leading-6 text-foreground">{value}</p>
+    </div>
+  )
+}
+
 function DoctorCard({ doctor }: { doctor: PublicDoctor }) {
   const location = getLocationLabel(doctor)
   const hasDiscount = typeof doctor.discountPercent === 'number' && doctor.discountPercent > 0
+  const discountLabel = hasDiscount
+    ? `${toPersianDigits(doctor.discountPercent!)}٪`
+    : 'درصد تخفیف ثبت نشده'
 
   return (
     <article className="rounded-2xl border border-border/50 bg-card p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-md">
@@ -303,12 +326,61 @@ function DoctorCard({ doctor }: { doctor: PublicDoctor }) {
         </p>
       </div>
 
-      <Button
-        type="button"
-        className="mt-5 h-11 w-full rounded-xl bg-primary font-bold text-primary-foreground shadow-sm hover:bg-primary/90"
-      >
-        مشاهده اطلاعات
-      </Button>
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button
+            type="button"
+            className="mt-5 h-11 w-full rounded-xl bg-primary font-bold text-primary-foreground shadow-sm hover:bg-primary/90"
+          >
+            مشاهده اطلاعات
+          </Button>
+        </DialogTrigger>
+        <DialogContent dir="rtl" className="sm:max-w-xl">
+          <DialogHeader className="text-right sm:text-right">
+            <DialogTitle>اطلاعات پزشک</DialogTitle>
+            <DialogDescription>
+              اطلاعات عمومی پزشک طرف قرارداد حامی کارت
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-5">
+            <div className="flex items-center gap-4">
+              <div className="grid size-20 shrink-0 place-items-center overflow-hidden rounded-full bg-teal-50 text-teal-700 ring-1 ring-border/70">
+                {doctor.profileImageUrl ? (
+                  <img
+                    src={doctor.profileImageUrl}
+                    alt={`تصویر پزشک ${doctor.fullName}`}
+                    className="size-full object-cover"
+                  />
+                ) : (
+                  <UserRound className="size-9" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="text-lg font-bold leading-7 text-foreground">{doctor.fullName}</p>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                  {doctor.specialty || 'تخصص ثبت نشده'}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <DoctorDetailRow label="نام پزشک" value={doctor.fullName} />
+              <DoctorDetailRow label="تخصص" value={doctor.specialty || 'ثبت نشده'} />
+              <DoctorDetailRow label="درصد تخفیف" value={discountLabel} />
+              <DoctorDetailRow label="استان / شهر" value={location || 'ثبت نشده'} />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline" className="rounded-xl">
+                بستن
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </article>
   )
 }
@@ -455,9 +527,12 @@ export default async function DoctorsPage({
     <main dir="rtl" className="min-h-screen bg-background text-foreground">
       <section className="border-b border-border/60 bg-card px-4 py-10 text-center sm:px-6 md:py-12 lg:px-8">
         <div className="mx-auto max-w-3xl">
-          <Link href="/" className="mb-5 inline-flex text-sm font-bold text-primary hover:text-primary/80">
-            بازگشت به حامی کارت
-          </Link>
+          <Button asChild variant="outline" className="mb-5 h-10 rounded-xl border-primary/20 bg-background font-bold text-primary hover:bg-primary/5 hover:text-primary">
+            <Link href="/">
+              <ArrowRight className="size-4" />
+              بازگشت به حامی کارت
+            </Link>
+          </Button>
           <div className="mx-auto mb-3 grid size-11 place-items-center rounded-2xl bg-teal-50 text-teal-700 ring-1 ring-teal-100">
             <Stethoscope className="size-6" />
           </div>

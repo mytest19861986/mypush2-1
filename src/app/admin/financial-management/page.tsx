@@ -1000,19 +1000,19 @@ export default function FinancialManagementPage() {
 
   const summaryCards = [
     {
-      title: 'موجودی کل کیف پول‌ها',
+      title: 'مانده کیف پول تراکنشی ثبت‌شده',
       value: formatPriceWithUnit(totals.walletBalance),
       icon: Wallet,
       tone: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
     },
     {
-      title: 'موجودی در انتظار',
+      title: 'مانده در انتظار تراکنشی',
       value: formatPriceWithUnit(totals.walletPending),
       icon: Clock,
       tone: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
     },
     {
-      title: 'تسویه در انتظار بررسی',
+      title: 'درخواست تسویه باز',
       value: formatPriceWithUnit(totals.pendingSettlements),
       icon: Banknote,
       tone: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
@@ -1039,19 +1039,19 @@ export default function FinancialManagementPage() {
       tone: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
     },
     {
-      title: 'تایید شده',
+      title: 'پورسانت تاییدشده',
       value: formatPriceWithUnit(salesPartnerCommissionSummary?.totals.approved ?? 0),
       icon: Check,
       tone: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
     },
     {
-      title: 'تسویه شده',
+      title: 'تسویه پرداخت‌شده',
       value: formatPriceWithUnit(salesPartnerCommissionSummary?.totals.paidSettlementAmount ?? 0),
       icon: Wallet,
       tone: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
     },
     {
-      title: 'قابل تسویه فعلی',
+      title: 'موجودی قابل برداشت پورسانتی',
       value: formatPriceWithUnit(salesPartnerCommissionSummary?.totals.availableCurrent ?? 0),
       icon: TrendingUp,
       tone: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
@@ -1068,7 +1068,7 @@ export default function FinancialManagementPage() {
     <div className="space-y-6">
       <PageHeader
         title="مدیریت مالی"
-        description="مدیریت کیف پول‌ها، درخواست‌های تسویه و وضعیت‌های مالی سامانه"
+        description="شفاف‌سازی کیف پول پورسانتی، موجودی قابل برداشت، درخواست‌های تسویه و کیف پول تراکنشی"
       />
 
       <Card className="rounded-2xl border border-border/50 bg-card shadow-sm" dir="rtl">
@@ -1378,7 +1378,7 @@ export default function FinancialManagementPage() {
 
           <Tabs defaultValue="commission-summary" className="gap-4" dir="rtl">
             <TabsList className="w-full justify-start sm:w-fit">
-              <TabsTrigger value="commission-summary">خلاصه پورسانت و تسویه همکاران فروش</TabsTrigger>
+              <TabsTrigger value="commission-summary">کیف پول پورسانتی و تسویه همکاران فروش</TabsTrigger>
               <TabsTrigger value="settlements">درخواست‌های تسویه</TabsTrigger>
               <TabsTrigger value="wallets">کیف پول تراکنشی</TabsTrigger>
             </TabsList>
@@ -1387,9 +1387,9 @@ export default function FinancialManagementPage() {
               <Card className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm">
                 <CardHeader className="gap-4 border-b pb-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="space-y-1">
-                    <CardTitle className="text-base">خلاصه پورسانت و تسویه همکاران فروش</CardTitle>
+                    <CardTitle className="text-base">کیف پول پورسانتی و تسویه همکاران فروش</CardTitle>
                     <p className="text-xs text-muted-foreground">
-                      این بخش از داده واقعی پورسانت و تسویه ساخته شده است؛ موجودی قابل تسویه از پورسانت تاییدشده منهای درخواست‌های تسویه باز یا پرداخت‌شده محاسبه می‌شود.
+                      این موجودی بر اساس پورسانت‌های تاییدشده و وضعیت تسویه‌ها محاسبه می‌شود و به معنی پرداخت خودکار یا حساب بانکی نیست.
                     </p>
                     <p className="text-xs font-medium text-muted-foreground">
                       بازه انتخابی: <span className="text-foreground">{selectedCommissionRangeText}</span>
@@ -1478,10 +1478,10 @@ export default function FinancialManagementPage() {
                                   <TableHead className="px-4 py-3 text-right">همکار فروش</TableHead>
                                   <TableHead className="px-4 py-3 text-right">کل بازه</TableHead>
                                   <TableHead className="px-4 py-3 text-right">در انتظار</TableHead>
-                                  <TableHead className="px-4 py-3 text-right">تایید شده</TableHead>
-                                  <TableHead className="px-4 py-3 text-right">تسویه شده</TableHead>
-                                  <TableHead className="px-4 py-3 text-right">قابل تسویه فعلی</TableHead>
-                                  <TableHead className="px-4 py-3 text-right">تسویه باز</TableHead>
+                                  <TableHead className="px-4 py-3 text-right">پورسانت تاییدشده</TableHead>
+                                  <TableHead className="px-4 py-3 text-right">تسویه پرداخت‌شده</TableHead>
+                                  <TableHead className="px-4 py-3 text-right">موجودی قابل برداشت</TableHead>
+                                  <TableHead className="px-4 py-3 text-right">درخواست تسویه باز</TableHead>
                                   <TableHead className="px-4 py-3 text-right">آخرین پورسانت</TableHead>
                                 </TableRow>
                               </TableHeader>
@@ -1541,15 +1541,15 @@ export default function FinancialManagementPage() {
                                     <p className="mt-1">{formatPriceWithUnit(partner.pending)}</p>
                                   </div>
                                   <div>
-                                    <p className="text-muted-foreground">تایید شده</p>
+                                    <p className="text-muted-foreground">پورسانت تاییدشده</p>
                                     <p className="mt-1">{formatPriceWithUnit(partner.approved)}</p>
                                   </div>
                                   <div>
-                                    <p className="text-muted-foreground">تسویه شده</p>
+                                    <p className="text-muted-foreground">تسویه پرداخت‌شده</p>
                                     <p className="mt-1">{formatPriceWithUnit(partner.paidSettlementAmount)}</p>
                                   </div>
                                   <div className="col-span-2">
-                                    <p className="text-muted-foreground">قابل تسویه فعلی</p>
+                                    <p className="text-muted-foreground">موجودی قابل برداشت</p>
                                     <p className="mt-1">
                                       {formatPriceWithUnit(partner.availableCurrent)}
                                     </p>
@@ -1573,7 +1573,10 @@ export default function FinancialManagementPage() {
             <TabsContent value="wallets" className="mt-0">
               <Card className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">کیف پول‌ها</CardTitle>
+                <CardTitle className="text-base">کیف پول تراکنشی</CardTitle>
+                <p className="text-xs leading-6 text-muted-foreground">
+                  این بخش مانده‌های ثبت‌شده کیف پول تراکنشی را نشان می‌دهد و جایگزین موجودی قابل برداشت پورسانتی نیست.
+                </p>
               </CardHeader>
               <CardContent className="p-0">
                 {wallets.length === 0 ? (
@@ -1598,8 +1601,8 @@ export default function FinancialManagementPage() {
                         <TableHeader>
                           <TableRow className="border-b bg-transparent hover:bg-transparent">
                             <TableHead className="px-4 py-3 text-right">مالک</TableHead>
-                            <TableHead className="px-4 py-3 text-right">موجودی</TableHead>
-                            <TableHead className="px-4 py-3 text-right">در انتظار</TableHead>
+                            <TableHead className="px-4 py-3 text-right">مانده تراکنشی</TableHead>
+                            <TableHead className="px-4 py-3 text-right">در انتظار تراکنشی</TableHead>
                             <TableHead className="px-4 py-3 text-right">واحد</TableHead>
                             <TableHead className="px-4 py-3 text-right">وضعیت</TableHead>
                             <TableHead className="px-4 py-3 text-right">آخرین به‌روزرسانی</TableHead>
@@ -1652,11 +1655,11 @@ export default function FinancialManagementPage() {
                           </div>
                           <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
                             <div>
-                              <p className="text-muted-foreground">موجودی</p>
+                              <p className="text-muted-foreground">مانده تراکنشی</p>
                               <p className="mt-1 font-semibold">{formatPriceWithUnit(wallet.balance)}</p>
                             </div>
                             <div>
-                              <p className="text-muted-foreground">در انتظار</p>
+                              <p className="text-muted-foreground">در انتظار تراکنشی</p>
                               <p className="mt-1">{formatPriceWithUnit(wallet.pendingBalance)}</p>
                             </div>
                           </div>

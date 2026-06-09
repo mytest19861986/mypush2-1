@@ -133,6 +133,8 @@ export default function LoginPage() {
   const [loginLoading, setLoginLoading] = useState(false)
   const [checkingAuth, setCheckingAuth] = useState(false)
   const [redirectingAfterAuth, setRedirectingAfterAuth] = useState(false)
+  const otpMobileInputRef = useRef<HTMLInputElement | null>(null)
+  const otpInputContainerRef = useRef<HTMLDivElement | null>(null)
   const redirectFallbackTimeoutRef = useRef<number | null>(null)
 
   useEffect(() => {
@@ -187,6 +189,22 @@ export default function LoginPage() {
       router.replace(getReferralRedirectPathForUser(user) ?? getRedirectPathForUser(user))
     }
   }, [checkingAuth, isAuthenticated, isLoading, redirectingAfterAuth, router, user])
+
+  useEffect(() => {
+    if (checkingAuth || redirectingAfterAuth) return
+
+    const focusTimer = window.setTimeout(() => {
+      if (otpSent) {
+        const otpInput = otpInputContainerRef.current?.querySelector('input')
+        otpInput?.focus()
+        return
+      }
+
+      otpMobileInputRef.current?.focus()
+    }, 50)
+
+    return () => window.clearTimeout(focusTimer)
+  }, [checkingAuth, otpSent, redirectingAfterAuth])
 
   // ─── Helpers ───────────────────────────────────────────────────────────
 
@@ -487,6 +505,7 @@ export default function LoginPage() {
                           <Label htmlFor="otp-mobile">شماره موبایل</Label>
                           <div className="relative">
                             <Input
+                              ref={otpMobileInputRef}
                               id="otp-mobile"
                               type="tel"
                               inputMode="numeric"
@@ -574,7 +593,7 @@ export default function LoginPage() {
                         {/* OTP Input */}
                         <div className="space-y-2">
                           <Label>کد تایید</Label>
-                          <div className="flex justify-center" dir="ltr">
+                          <div ref={otpInputContainerRef} className="flex justify-center" dir="ltr">
                             <InputOTP
                               maxLength={OTP_LENGTH}
                               value={otpCode}
