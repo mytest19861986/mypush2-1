@@ -59,15 +59,15 @@ function DateFields({
   }
 
   return (
-    <div className="space-y-1.5">
+    <div className="min-w-0 space-y-1.5">
       <Label className="text-xs">{label}</Label>
-      <div className="grid grid-cols-[1fr_1.2fr_1fr] gap-2">
+      <div className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(6.75rem,1fr))] gap-2">
         <Select
           value={String(value.year)}
           onValueChange={(selectedYear) => updateValue({ year: Number(selectedYear) })}
           dir="rtl"
         >
-          <SelectTrigger id={`${idPrefix}-year`} className="h-9">
+          <SelectTrigger id={`${idPrefix}-year`} className="h-9 w-full min-w-0">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -83,7 +83,7 @@ function DateFields({
           onValueChange={(selectedMonth) => updateValue({ month: Number(selectedMonth) })}
           dir="rtl"
         >
-          <SelectTrigger id={`${idPrefix}-month`} className="h-9">
+          <SelectTrigger id={`${idPrefix}-month`} className="h-9 w-full min-w-0">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -99,7 +99,7 @@ function DateFields({
           onValueChange={(selectedDay) => updateValue({ day: Number(selectedDay) })}
           dir="rtl"
         >
-          <SelectTrigger id={`${idPrefix}-day`} className="h-9">
+          <SelectTrigger id={`${idPrefix}-day`} className="h-9 w-full min-w-0">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -123,7 +123,10 @@ export function JalaliDateRangeFilter({
   toLabel = 'تا تاریخ',
 }: JalaliDateRangeFilterProps) {
   return (
-    <div className="grid gap-3 md:grid-cols-2" dir="rtl">
+    <div
+      className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,20rem),1fr))] gap-3"
+      dir="rtl"
+    >
       <DateFields
         idPrefix="jalali-range-from"
         label={fromLabel}
