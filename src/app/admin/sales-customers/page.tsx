@@ -52,7 +52,7 @@ import { PageHeader, StatusBadge } from '@/components/shared'
 import { useToast } from '@/hooks/use-toast'
 import { ApiError, apiClient } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
-import { formatDateTime, toPersianNum } from '@/utils/formatters'
+import { formatDateTime, isValidNationalCode } from '@/utils/formatters'
 
 type SalesCustomerStatus =
   | 'PENDING_REVIEW'
@@ -134,20 +134,20 @@ const initialCreateForm: CreateFormState = {
 
 const statusFilters: { value: StatusFilter; label: string }[] = [
   { value: 'all', label: 'همه' },
-  { value: 'PENDING_REVIEW', label: 'در انتظار پرداخت' },
-  { value: 'PAID', label: 'پرداخت‌شده' },
-  { value: 'CONFIRMED', label: 'تایید شده' },
+  { value: 'PENDING_REVIEW', label: 'در انتظار بررسی' },
+  { value: 'PAID', label: 'پرداخت شده' },
+  { value: 'CONFIRMED', label: 'تایید نهایی شده' },
   { value: 'RETURNED', label: 'برگشتی' },
 ]
 
 const statusLabels: Record<SalesCustomerStatus, string> = {
-  PENDING_REVIEW: 'در انتظار پرداخت',
-  APPROVED: 'تایید اولیه',
-  CARD_ISSUED: 'کارت صادر شده',
-  SHIPPED: 'ارسال شده',
-  DELIVERED: 'تحویل شده',
-  PAID: 'پرداخت‌شده',
-  CONFIRMED: 'تأیید شده',
+  PENDING_REVIEW: 'در انتظار بررسی',
+  APPROVED: 'تایید شده',
+  CARD_ISSUED: 'کارت صادر شد',
+  SHIPPED: 'ارسال شد',
+  DELIVERED: 'تحویل شد',
+  PAID: 'پرداخت شده',
+  CONFIRMED: 'تایید نهایی شده',
   RETURNED: 'برگشتی',
 }
 
@@ -180,7 +180,7 @@ function getProfileName(profile?: AgentProfile | null) {
 }
 
 function getAgentName(agent: AgentOption) {
-  return agent.businessName?.trim() || getProfileName(agent.user?.profile) || agent.user?.mobile || 'همکار فروش'
+  return getProfileName(agent.user?.profile) || agent.user?.mobile || 'همکار فروش'
 }
 
 function getPlanName(customer: SalesCustomer) {
@@ -200,6 +200,13 @@ function getDateOrDash(value: string | null) {
 
 function isFinalStatus(status: SalesCustomerStatus) {
   return status === 'CONFIRMED' || status === 'RETURNED'
+}
+
+function hasConfirmableNationalCode(customer: SalesCustomer) {
+  const nationalCode = customer.nationalCode?.trim()
+  if (!nationalCode) return false
+  if (nationalCode.includes('*')) return true
+  return isValidNationalCode(nationalCode)
 }
 
 function LoadingCustomers() {
@@ -414,12 +421,31 @@ export default function AdminSalesCustomersPage() {
   }
 
   const handleConfirm = async (customer: SalesCustomer) => {
-    if (processing || customer.status !== 'PAID') return
+    if (processing || isFinalStatus(customer.status)) return
+
+    if (customer.status !== 'PAID') {
+      toast({
+        title: 'خطا',
+        description: 'برای تایید نهایی، ابتدا پرداخت مشتری را ثبت کنید.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (!hasConfirmableNationalCode(customer)) {
+      toast({
+        title: 'خطا',
+        description: 'برای تایید نهایی، ثبت کد ملی معتبر مشتری الزامی است.',
+        variant: 'destructive',
+      })
+      return
+    }
 
     setProcessing({ id: customer.id, action: 'confirm' })
     try {
       const updatedCustomer = await apiClient.patch<SalesCustomer>(
-        `/sales-customers/${customer.id}/confirm`
+        `/sales-customers/${customer.id}/confirm`,
+        {}
       )
       updateCustomer(updatedCustomer)
       toast({
@@ -480,7 +506,7 @@ export default function AdminSalesCustomersPage() {
     const isMarkingPaid = isProcessing && processing.action === 'mark-paid'
     const isConfirming = isProcessing && processing.action === 'confirm'
     const isReturning = isProcessing && processing.action === 'return'
-    const canMarkPaid = !isFinalStatus(customer.status) && customer.status !== 'PAID'
+    const canMarkPaid = ['PENDING_REVIEW', 'APPROVED', 'CARD_ISSUED', 'SHIPPED', 'DELIVERED'].includes(customer.status)
     const canConfirm = customer.status === 'PAID'
     const canReturn = customer.status !== 'CONFIRMED' && customer.status !== 'RETURNED'
 
