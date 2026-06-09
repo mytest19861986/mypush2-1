@@ -368,7 +368,7 @@ export default function AdminCommissionsPage() {
     },
     {
       key: 'agent',
-      header: 'نماینده',
+      header: 'همکار فروش',
       className: 'px-4 py-3 text-right',
       render: (row) => (
         <div className="flex min-w-0 flex-col">

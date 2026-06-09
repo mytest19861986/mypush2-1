@@ -55,7 +55,7 @@ function SidebarContent({
       <div className="flex items-center gap-3 p-4">
         <BrandLogo imageClassName="h-10" />
         <div className="flex flex-col">
-          <span className="text-sm font-semibold">پنل نمایندگان</span>
+          <span className="text-sm font-semibold">پنل همکاران فروش</span>
           {agentData?.businessName && (
             <span className="truncate text-xs text-muted-foreground max-w-[140px]">
               {agentData.businessName}
@@ -178,7 +178,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
             </Sheet>
             <div className="flex items-center gap-2">
               <BrandLogo imageClassName="h-8" />
-              <span className="text-sm font-semibold">پنل نمایندگان</span>
+              <span className="text-sm font-semibold">پنل همکاران فروش</span>
             </div>
             {agentData && (
               <div className="mr-auto">
@@ -200,7 +200,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
             <header className="sticky top-0 z-20 hidden h-14 items-center justify-between border-b bg-background/95 px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:flex">
               <div className="flex items-center gap-4">
                 <h2 className="text-sm font-medium text-muted-foreground">
-                  سامانه تخفیف درمانی — پنل نمایندگان
+                  سامانه تخفیف درمانی — پنل همکاران فروش
                 </h2>
               </div>
               <div className="flex items-center gap-3">

@@ -8,13 +8,13 @@ import { getDisplayName } from '@/utils/formatters'
 import { ShieldX, AlertCircle } from 'lucide-react'
 
 export function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { isAdmin, user } = useAuthStore()
+  const { canAccessAdmin, user } = useAuthStore()
 
   if (!user) {
     return <ProtectedRoute>{children}</ProtectedRoute>
   }
 
-  if (!isAdmin()) {
+  if (!canAccessAdmin()) {
     return (
       <ProtectedRoute>
         <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-4 bg-background">

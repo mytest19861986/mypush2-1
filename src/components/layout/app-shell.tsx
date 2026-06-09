@@ -69,7 +69,7 @@ function getUserInitials(user: AppShellUser) {
 function getPrimaryRole(roles: string[]): string {
   if (roles.includes('SUPER_ADMIN')) return 'مدیر ارشد'
   if (roles.includes('ADMIN')) return 'مدیر'
-  if (roles.includes('AGENT')) return 'نماینده'
+  if (roles.includes('AGENT')) return 'همکار فروش'
   return 'کاربر'
 }
 
@@ -168,7 +168,7 @@ export function AppShell({ children, breadcrumbs }: AppShellProps) {
                     {shellUser.agent && (
                       <DropdownMenuItem>
                         <Building2 className="ml-2 h-4 w-4" />
-                        <span>{shellUser.agent.businessName ?? 'پنل نماینده'}</span>
+                        <span>{shellUser.agent.businessName ?? 'پنل همکار فروش'}</span>
                         {shellUser.agent.status !== 'APPROVED' && (
                           <Badge variant="outline" className="mr-auto text-xs px-1.5 py-0">
                             {shellUser.agent.status}

@@ -1,5 +1,5 @@
 import { BaseService } from './base.service'
-import type { RoleItem, PermissionItem } from '@/types'
+import type { RoleItem, PermissionItem, SafeRoleItem } from '@/types'
 
 export class RolesService extends BaseService {
   async getList() {
@@ -16,6 +16,10 @@ export class RolesService extends BaseService {
 
   async updatePermissions(id: string, permissionIds: string[]) {
     return this.patch(`/roles/${id}/permissions`, { permissionIds })
+  }
+
+  async updateUserRoles(userId: string, roleNames: string[]) {
+    return this.patch<{ roles: SafeRoleItem[] }>(`/admin/users/${userId}/roles`, { roleNames })
   }
 }
 

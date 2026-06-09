@@ -93,9 +93,9 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   USER_STATUS_CHANGED: 'تغییر وضعیت کاربر',
   ROLE_UPDATED: 'بروزرسانی نقش',
   PERMISSION_UPDATED: 'بروزرسانی دسترسی',
-  AGENT_CREATED: 'ثبت نماینده',
-  AGENT_UPDATED: 'بروزرسانی نماینده',
-  AGENT_STATUS_CHANGED: 'تغییر وضعیت نماینده',
+  AGENT_CREATED: 'ثبت همکار فروش',
+  AGENT_UPDATED: 'بروزرسانی همکار فروش',
+  AGENT_STATUS_CHANGED: 'تغییر وضعیت همکار فروش',
   DOCUMENT_UPLOADED: 'آپلود مدرک',
   DOCUMENT_REVIEWED: 'بررسی مدرک',
   UPLOAD_CREATED: 'آپلود فایل',
@@ -108,7 +108,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
 
 export const ENTITY_LABELS: Record<string, string> = {
   User: 'کاربر',
-  Agent: 'نماینده',
+  Agent: 'همکار فروش',
   Doctor: 'پزشک',
   Plan: 'طرح',
   Contract: 'قرارداد',
@@ -133,14 +133,14 @@ export const ROLE_LABELS: Record<string, string> = {
   ADMIN: 'مدیر',
   SUPPORT: 'پشتیبان',
   DOCTOR: 'پزشک',
-  AGENT: 'نماینده',
+  AGENT: 'همکار فروش',
   USER: 'کاربر',
 }
 
 // ─── Permissions ───
 export const PERMISSION_MODULES: Record<string, string> = {
   users: 'کاربران',
-  agents: 'نمایندگان',
+  agents: 'همکاران فروش',
   doctors: 'پزشکان',
   plans: 'طرح‌ها',
   contracts: 'قراردادها',

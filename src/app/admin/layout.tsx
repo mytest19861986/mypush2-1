@@ -8,10 +8,17 @@ import {
   Bell,
   Menu,
   ChevronLeft,
+  ShieldX,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
-import { adminDashboardNav, adminDashboardPageTitles } from '@/config/dashboard-nav'
+import {
+  adminDashboardPageTitles,
+  canViewAdminNavItem,
+  getAdminDashboardNavForUser,
+  getAdminNavItemForPath,
+} from '@/config/dashboard-nav'
+import { hasFullAdminRole } from '@/lib/admin-access'
 import { AdminRoute } from '@/components/guards/AdminRoute'
 import { BrandLogo } from '@/components/shared/brand-logo'
 import { Button } from '@/components/ui/button'
@@ -52,6 +59,7 @@ import {
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname() ?? ''
   const { user, logout } = useAuthStore()
+  const navItems = getAdminDashboardNavForUser(user)
 
   const userInitials = user?.profile
     ? `${(user.profile.firstName || '').charAt(0)}${(user.profile.lastName || '').charAt(0)}`
@@ -73,7 +81,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       {/* Navigation */}
       <ScrollArea className="flex-1 px-3 py-3">
         <nav className="flex flex-col gap-1">
-          {adminDashboardNav.map((item) => {
+          {navItems.map((item) => {
             const isActive =
               pathname === item.href || pathname.startsWith(item.href + '/')
             const Icon = item.icon
@@ -264,6 +272,42 @@ function AdminTopbar() {
 
 /* ── Root Layout ────────────────────────────────────────── */
 
+function AdminSectionGuard({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname() ?? ''
+  const { user } = useAuthStore()
+
+  if (!user || pathname === '/admin') {
+    return <>{children}</>
+  }
+
+  const matchedNavItem = getAdminNavItemForPath(pathname)
+  const canViewMatchedItem = matchedNavItem ? canViewAdminNavItem(matchedNavItem, user) : false
+  const canViewUnlistedAdminPath = !matchedNavItem && hasFullAdminRole(user.roles || [])
+
+  if (canViewMatchedItem || canViewUnlistedAdminPath) {
+    return <>{children}</>
+  }
+
+  return (
+    <div className="flex min-h-[calc(100vh-7rem)] items-center justify-center p-4">
+      <div className="flex max-w-md flex-col items-center gap-4 text-center">
+        <div className="flex size-16 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+          <ShieldX className="size-8" />
+        </div>
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold">دسترسی محدود</h1>
+          <p className="text-sm leading-6 text-muted-foreground">
+            شما دسترسی لازم برای مشاهده این بخش مدیریتی را ندارید.
+          </p>
+        </div>
+        <Button asChild variant="outline">
+          <Link href="/admin">بازگشت به پنل مدیریت</Link>
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 export default function AdminLayout({
   children,
 }: {
@@ -279,7 +323,9 @@ export default function AdminLayout({
           <AdminTopbar />
 
           {/* Page content */}
-          <main className="p-4 md:p-6">{children}</main>
+          <main className="p-4 md:p-6">
+            <AdminSectionGuard>{children}</AdminSectionGuard>
+          </main>
         </div>
       </div>
     </AdminRoute>

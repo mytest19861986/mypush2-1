@@ -782,7 +782,7 @@ export default function LoginPage() {
               </span>
             </p>
             <p>
-              نماینده:{' '}
+              همکار فروش:{' '}
               <span dir="ltr" className="font-mono">
                 09123456789
               </span>{' '}

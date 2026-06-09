@@ -33,17 +33,21 @@ export async function GET(request: NextRequest) {
   // Admin users page is for regular members only. Provider, sales partner,
   // and staff accounts have separate management pages.
   const regularUserRoleFilter: Prisma.UserRoleListRelationFilter = {
-    every: {
+    some: {
       role: { name: 'USER' },
     },
+    none: {
+      role: { name: { in: ['ADMIN', 'SUPER_ADMIN', 'SUPERADMIN', 'AGENT', 'DOCTOR'] } },
+    },
   }
+  const andFilters: Prisma.UserWhereInput[] = [{ roles: regularUserRoleFilter }]
 
   // Build where clause
   const where: Prisma.UserWhereInput = {
     deletedAt: null,
     doctor: { is: null },
     agent: { is: null },
-    roles: regularUserRoleFilter,
+    AND: andFilters,
   }
 
   if (search) {
@@ -60,12 +64,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (role) {
-    where.roles = {
-      ...regularUserRoleFilter,
-      some: {
-        role: { name: role },
-      },
-    }
+    andFilters.push({ roles: { some: { role: { name: role } } } })
   }
 
   const [users, total] = await Promise.all([

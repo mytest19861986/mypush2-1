@@ -79,6 +79,11 @@ export interface RoleItem {
   userCount?: number
 }
 
+export interface SafeRoleItem {
+  name: string
+  title: string
+}
+
 export interface PermissionItem {
   id: string
   name: string

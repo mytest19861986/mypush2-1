@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import {
+  ArrowLeft,
   Users,
   Stethoscope,
   Briefcase,
@@ -28,6 +30,9 @@ import type { DashboardStats } from '@/types'
 import { cn } from '@/lib/utils'
 import { toPersianNum, formatPriceWithUnit, formatDateTime } from '@/utils/formatters'
 import { AUDIT_ACTION_LABELS, ENTITY_LABELS } from '@/constants'
+import { getAdminDashboardNavForUser } from '@/config/dashboard-nav'
+import { hasFullAdminRole } from '@/lib/admin-access'
+import { useAuthStore } from '@/stores/auth-store'
 
 function getActionBadgeClass(action: string) {
   if (action.includes('DELETED') || action.includes('REJECTED')) {
@@ -50,11 +55,21 @@ function getActionBadgeClass(action: string) {
 }
 
 export default function AdminDashboardPage() {
+  const { user } = useAuthStore()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const isFullAdmin = hasFullAdminRole(user?.roles || [])
+  const limitedNavItems = getAdminDashboardNavForUser(user).filter((item) => item.href !== '/admin/dashboard')
 
   useEffect(() => {
+    if (!isFullAdmin) {
+      setStats(null)
+      setError(null)
+      setIsLoading(false)
+      return
+    }
+
     async function fetchData() {
       setIsLoading(true)
       try {
@@ -72,7 +87,52 @@ export default function AdminDashboardPage() {
     }
 
     fetchData()
-  }, [])
+  }, [isFullAdmin])
+
+  if (!isFullAdmin) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="داشبورد مدیریت"
+          description="بخش‌های مجاز مدیریتی بر اساس دسترسی‌های حساب شما"
+        />
+
+        {limitedNavItems.length > 0 ? (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {limitedNavItems.map((item) => {
+              const Icon = item.icon
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="group rounded-lg border border-border/60 bg-card p-4 transition-colors hover:border-emerald-500/50 hover:bg-emerald-50/60 dark:hover:bg-emerald-950/20"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                        <Icon className="size-5" />
+                      </span>
+                      <span className="truncate text-sm font-semibold">{item.label}</span>
+                    </div>
+                    <ArrowLeft className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-emerald-700" />
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        ) : (
+          <Card className="rounded-lg border-border/60">
+            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+              <p className="text-sm text-muted-foreground">
+                در حال حاضر بخش مدیریتی مجازی برای حساب شما فعال نیست.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    )
+  }
 
   if (error) {
     return (
@@ -139,7 +199,7 @@ export default function AdminDashboardPage() {
           iconClassName="bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400"
         />
         <StatCard
-          title="کل نمایندگان"
+          title="کل همکاران فروش"
           value={stats?.totalAgents ?? 0}
           icon={Briefcase}
           description={`${toPersianNum(stats?.pendingAgents ?? 0)} در انتظار تأیید`}

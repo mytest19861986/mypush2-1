@@ -18,6 +18,7 @@ export async function GET(
     where: { id },
     select: {
       id: true,
+      userId: true,
       businessName: true,
       status: true,
       score: true,
@@ -87,6 +88,7 @@ export async function GET(
   return successResponse(
     {
       id: agent.id,
+      userId: agent.userId,
       businessName: agent.businessName,
       status: agent.status,
       score: agent.score,

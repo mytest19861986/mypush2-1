@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
@@ -53,8 +54,8 @@ import {
   type JalaliDateRangeValue,
 } from '@/components/shared/jalali-date-range-filter'
 import { apiClient } from '@/lib/api-client'
-import { usersService } from '@/services'
-import type { UserItem } from '@/types'
+import { rolesService, usersService } from '@/services'
+import type { RoleItem, SafeRoleItem, UserItem } from '@/types'
 import {
   toPersianNum,
   formatDateTime,
@@ -76,6 +77,8 @@ import {
 } from '@/constants'
 
 const PAGE_SIZE = 20
+const PROTECTED_ROLE_NAMES = new Set(['USER', 'AGENT', 'DOCTOR', 'ADMIN', 'SUPERADMIN', 'SUPER_ADMIN'])
+const ROLE_SESSION_NOTICE = 'برای اعمال کامل دسترسی‌ها، کاربر باید دوباره وارد حساب شود.'
 
 type CommissionStatus = 'PENDING' | 'APPROVED' | 'PAID' | 'CANCELLED'
 type SettlementStatus = 'PENDING' | 'APPROVED' | 'PAID' | 'REJECTED' | 'CANCELLED'
@@ -249,6 +252,10 @@ function getVisitStatusLabel(status: string) {
   return CONTRACT_STATUS_LABELS[status as keyof typeof CONTRACT_STATUS_LABELS] || status
 }
 
+function isProtectedRole(roleName: string) {
+  return PROTECTED_ROLE_NAMES.has(roleName.toUpperCase())
+}
+
 function SummaryStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0 rounded-lg border bg-background p-3">
@@ -279,6 +286,12 @@ export default function AdminUsersPage() {
   const [summaryRange, setSummaryRange] = useState<JalaliDateRangeValue>(() =>
     getRecentJalaliRange(30)
   )
+  const [availableRoles, setAvailableRoles] = useState<RoleItem[]>([])
+  const [selectedRoleNames, setSelectedRoleNames] = useState<string[]>([])
+  const [isRolesLoading, setIsRolesLoading] = useState(false)
+  const [isRolesSaving, setIsRolesSaving] = useState(false)
+  const [rolesError, setRolesError] = useState<string | null>(null)
+  const [rolesSavedNotice, setRolesSavedNotice] = useState(false)
 
   const summaryYearOptions = useMemo(() => {
     const selectedYears = [summaryRange.from.year, summaryRange.to.year]
@@ -352,10 +365,41 @@ export default function AdminUsersPage() {
     }
   }, [summaryRange])
 
+  const fetchAvailableRoles = useCallback(async () => {
+    setIsRolesLoading(true)
+    setRolesError(null)
+    try {
+      const res = await rolesService.getList()
+      if (res.success && res.data) {
+        setAvailableRoles(res.data)
+      } else {
+        throw new Error(res.error?.message || res.message || 'خطا در دریافت نقش‌ها')
+      }
+    } catch (error) {
+      setAvailableRoles([])
+      setRolesError(error instanceof Error ? error.message : 'خطا در دریافت نقش‌ها')
+    } finally {
+      setIsRolesLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     if (!selectedUser?.id) return
     void fetchProfileSummary(selectedUser.id)
   }, [fetchProfileSummary, selectedUser?.id])
+
+  useEffect(() => {
+    if (!selectedUser?.id) return
+    void fetchAvailableRoles()
+  }, [fetchAvailableRoles, selectedUser?.id])
+
+  useEffect(() => {
+    if (!summary) {
+      setSelectedRoleNames([])
+      return
+    }
+    setSelectedRoleNames(summary.user.roles.map((role) => role.name))
+  }, [summary])
 
   const handleSearch = (value: string) => {
     setSearch(value)
@@ -367,6 +411,41 @@ export default function AdminUsersPage() {
     setSelectedUser(user)
     setSummary(null)
     setSummaryError(null)
+    setRolesError(null)
+    setRolesSavedNotice(false)
+  }
+
+  const handleRoleToggle = (roleName: string, checked: boolean) => {
+    if (isProtectedRole(roleName)) return
+    setRolesSavedNotice(false)
+    setSelectedRoleNames((current) => {
+      if (checked) return Array.from(new Set([...current, roleName]))
+      return current.filter((name) => name !== roleName)
+    })
+  }
+
+  const handleSaveRoles = async () => {
+    if (!selectedUser?.id) return
+    setIsRolesSaving(true)
+    try {
+      const result = await rolesService.updateUserRoles(selectedUser.id, selectedRoleNames)
+      const updatedRoles: SafeRoleItem[] = result.roles
+      setSelectedRoleNames(updatedRoles.map((role) => role.name))
+      setSummary((current) =>
+        current ? { ...current, user: { ...current.user, roles: updatedRoles } } : current
+      )
+      setRolesSavedNotice(true)
+      toast({ title: 'موفق', description: `نقش‌های کاربر با موفقیت ذخیره شد. ${ROLE_SESSION_NOTICE}` })
+      await Promise.all([fetchUsers(), fetchProfileSummary(selectedUser.id)])
+    } catch (error) {
+      toast({
+        title: 'خطا',
+        description: error instanceof Error ? error.message : 'خطا در ذخیره نقش‌ها',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsRolesSaving(false)
+    }
   }
 
   const handleStatusChange = async (userId: string, newStatus: string) => {
@@ -638,6 +717,9 @@ export default function AdminUsersPage() {
             setSelectedUser(null)
             setSummary(null)
             setSummaryError(null)
+            setSelectedRoleNames([])
+            setRolesError(null)
+            setRolesSavedNotice(false)
           }
         }}
       >
@@ -687,7 +769,11 @@ export default function AdminUsersPage() {
                     <div className="mt-1 flex flex-wrap gap-1">
                       {summary.user.roles.length > 0 ? (
                         summary.user.roles.map((role) => (
-                          <Badge key={`${role.name}-${role.title}`} variant="outline" className="text-xs">
+                          <Badge
+                            key={`${role.name}-${role.title}`}
+                            variant="outline"
+                            className="h-auto max-w-full whitespace-normal text-xs leading-6"
+                          >
                             {role.title || role.name}
                           </Badge>
                         ))
@@ -696,6 +782,102 @@ export default function AdminUsersPage() {
                       )}
                     </div>
                   </div>
+                </div>
+              </div>
+
+              <div className="space-y-4 rounded-lg border p-4">
+                <div className="space-y-1">
+                    <h3 className="font-semibold">مدیریت نقش‌ها</h3>
+                    <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                      فقط نقش‌های دسترسی قابل تغییر هستند و نقش‌های پایه محافظت می‌شوند.
+                    </p>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5">
+                  {summary.user.roles.length > 0 ? (
+                    summary.user.roles.map((role) => (
+                      <Badge
+                        key={`${role.name}-${role.title}`}
+                        variant="outline"
+                        className="h-auto max-w-full whitespace-normal text-xs leading-6"
+                      >
+                        {role.title || role.name}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-xs text-muted-foreground">نقشی برای این کاربر ثبت نشده است.</span>
+                  )}
+                </div>
+
+                {isRolesLoading ? (
+                  <div className="space-y-2">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <Skeleton key={i} className="h-14 w-full" />
+                    ))}
+                  </div>
+                ) : rolesError ? (
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                    {rolesError}
+                  </div>
+                ) : availableRoles.length === 0 ? (
+                  <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
+                    نقشی برای نمایش وجود ندارد.
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {availableRoles.map((role) => {
+                      const protectedRole = isProtectedRole(role.name)
+                      const checked = selectedRoleNames.includes(role.name)
+                      return (
+                        <label
+                          key={role.name}
+                          className="flex min-w-0 flex-col gap-3 rounded-lg border bg-background p-3 text-sm sm:flex-row sm:items-start sm:p-4"
+                        >
+                          <Checkbox
+                            className="mt-1 shrink-0"
+                            checked={checked}
+                            disabled={protectedRole || isRolesSaving}
+                            onCheckedChange={(value) => handleRoleToggle(role.name, value === true)}
+                          />
+                          <span className="min-w-0 flex-1 space-y-1">
+                            <span className="block whitespace-normal break-words font-medium leading-6">
+                              {role.title || role.name}
+                            </span>
+                            {role.title && role.title !== role.name ? (
+                              <span className="block break-all text-xs leading-5 text-muted-foreground">
+                                {role.name}
+                              </span>
+                            ) : null}
+                          </span>
+                          {protectedRole && (
+                            <Badge variant="secondary" className="h-auto shrink-0 self-start whitespace-nowrap text-[10px] leading-5">
+                              محافظت‌شده
+                            </Badge>
+                          )}
+                        </label>
+                      )
+                    })}
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  {rolesSavedNotice ? (
+                    <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-6 text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+                      {ROLE_SESSION_NOTICE}
+                    </p>
+                  ) : (
+                    <p className="text-xs leading-6 text-muted-foreground">
+                      پس از انتخاب نقش‌ها، تغییرات را ذخیره کنید.
+                    </p>
+                  )}
+                  <Button
+                    type="button"
+                    onClick={handleSaveRoles}
+                    disabled={isRolesSaving || isRolesLoading || Boolean(rolesError) || availableRoles.length === 0}
+                    className="w-full shrink-0 sm:w-auto"
+                  >
+                    {isRolesSaving ? 'در حال ذخیره...' : 'ذخیره نقش‌ها'}
+                  </Button>
                 </div>
               </div>
 

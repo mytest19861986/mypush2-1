@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
@@ -44,8 +45,8 @@ import {
   type JalaliDateRangeValue,
 } from '@/components/shared/jalali-date-range-filter'
 import { apiClient } from '@/lib/api-client'
-import { agentsService } from '@/services'
-import type { AgentItem } from '@/types'
+import { agentsService, rolesService } from '@/services'
+import type { AgentItem, RoleItem, SafeRoleItem } from '@/types'
 import {
   toPersianNum,
   getDisplayName,
@@ -71,6 +72,8 @@ const STATUS_FILTERS = [
   { value: 'REJECTED', label: 'رد شده' },
   { value: 'SUSPENDED', label: 'معلق' },
 ]
+const PROTECTED_ROLE_NAMES = new Set(['USER', 'AGENT', 'DOCTOR', 'ADMIN', 'SUPERADMIN', 'SUPER_ADMIN'])
+const ROLE_SESSION_NOTICE = 'برای اعمال کامل دسترسی‌ها، کاربر باید دوباره وارد حساب شود.'
 
 /* ── Agents Page ─────────────────────────────────────────── */
 
@@ -176,6 +179,10 @@ function getCustomerName(customer: AgentPerformance['commissionRecords'][number]
   return `${firstName} ${lastName}`.trim() || 'مشتری ثبت‌شده'
 }
 
+function isProtectedRole(roleName: string) {
+  return PROTECTED_ROLE_NAMES.has(roleName.toUpperCase())
+}
+
 export default function AdminAgentsPage() {
   const { toast } = useToast()
   const currentJalaliMonth = useMemo(() => getCurrentJalaliYearMonth(), [])
@@ -196,6 +203,12 @@ export default function AdminAgentsPage() {
   const [agentPerformance, setAgentPerformance] = useState<AgentPerformance | null>(null)
   const [isPerformanceLoading, setIsPerformanceLoading] = useState(false)
   const [performanceError, setPerformanceError] = useState<string | null>(null)
+  const [availableRoles, setAvailableRoles] = useState<RoleItem[]>([])
+  const [selectedRoleNames, setSelectedRoleNames] = useState<string[]>([])
+  const [isRolesLoading, setIsRolesLoading] = useState(false)
+  const [isRolesSaving, setIsRolesSaving] = useState(false)
+  const [rolesError, setRolesError] = useState<string | null>(null)
+  const [rolesSavedNotice, setRolesSavedNotice] = useState(false)
 
   const performanceYearOptions = useMemo(() => {
     const selectedYears = [performanceRange.from.year, performanceRange.to.year]
@@ -231,7 +244,7 @@ export default function AdminAgentsPage() {
     } catch {
       toast({
         title: 'خطا',
-        description: 'خطا در دریافت لیست نمایندگان',
+        description: 'خطا در دریافت لیست همکاران فروش',
         variant: 'destructive',
       })
     } finally {
@@ -242,6 +255,24 @@ export default function AdminAgentsPage() {
   useEffect(() => {
     fetchAgents()
   }, [fetchAgents])
+
+  const fetchAvailableRoles = useCallback(async () => {
+    setIsRolesLoading(true)
+    setRolesError(null)
+    try {
+      const res = await rolesService.getList()
+      if (res.success && res.data) {
+        setAvailableRoles(res.data)
+      } else {
+        throw new Error(res.error?.message || res.message || 'خطا در دریافت نقش‌ها')
+      }
+    } catch (error) {
+      setAvailableRoles([])
+      setRolesError(error instanceof Error ? error.message : 'خطا در دریافت نقش‌ها')
+    } finally {
+      setIsRolesLoading(false)
+    }
+  }, [])
 
   const handleSearch = (value: string) => {
     setSearch(value)
@@ -305,6 +336,8 @@ export default function AdminAgentsPage() {
     setSelectedAgent(null)
     setAgentPerformance(null)
     setPerformanceError(null)
+    setRolesError(null)
+    setRolesSavedNotice(false)
     try {
       const res = await agentsService.getById(agentId)
       if (res.success && res.data) {
@@ -321,10 +354,68 @@ export default function AdminAgentsPage() {
     }
   }
 
+  const handleRoleToggle = (roleName: string, checked: boolean) => {
+    if (isProtectedRole(roleName)) return
+    setRolesSavedNotice(false)
+    setSelectedRoleNames((current) => {
+      if (checked) return Array.from(new Set([...current, roleName]))
+      return current.filter((name) => name !== roleName)
+    })
+  }
+
+  const handleSaveRoles = async () => {
+    if (!selectedAgent?.id || !selectedAgent.userId) return
+    setIsRolesSaving(true)
+    try {
+      const result = await rolesService.updateUserRoles(selectedAgent.userId, selectedRoleNames)
+      const updatedRoles: SafeRoleItem[] = result.roles
+      setSelectedRoleNames(updatedRoles.map((role) => role.name))
+      setSelectedAgent((current) =>
+        current
+          ? {
+              ...current,
+              user: current.user ? { ...current.user, roles: updatedRoles } : current.user,
+            }
+          : current
+      )
+      setRolesSavedNotice(true)
+      toast({ title: 'موفق', description: `نقش‌های حساب کاربری همکار فروش ذخیره شد. ${ROLE_SESSION_NOTICE}` })
+
+      const [detailRes] = await Promise.all([
+        agentsService.getById(selectedAgent.id),
+        fetchAgents(),
+      ])
+      if (detailRes.success && detailRes.data) {
+        setSelectedAgent(detailRes.data as AgentDetail)
+      }
+    } catch (error) {
+      toast({
+        title: 'خطا',
+        description: error instanceof Error ? error.message : 'خطا در ذخیره نقش‌ها',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsRolesSaving(false)
+    }
+  }
+
   useEffect(() => {
     if (!selectedAgent?.id) return
     void fetchAgentPerformance(selectedAgent.id)
   }, [fetchAgentPerformance, selectedAgent?.id])
+
+  useEffect(() => {
+    if (!selectedAgent?.id) return
+    void fetchAvailableRoles()
+  }, [fetchAvailableRoles, selectedAgent?.id])
+
+  useEffect(() => {
+    if (!selectedAgent) {
+      setSelectedRoleNames([])
+      return
+    }
+    setSelectedRoleNames(selectedAgent.user?.roles?.map((role) => role.name) ?? [])
+  }, [selectedAgent])
 
   // ...existing code...
 
@@ -500,10 +591,13 @@ export default function AdminAgentsPage() {
             setSelectedAgent(null)
             setAgentPerformance(null)
             setPerformanceError(null)
+            setSelectedRoleNames([])
+            setRolesError(null)
+            setRolesSavedNotice(false)
           }
         }}
       >
-        <DialogContent className="max-h-[86vh] max-w-5xl overflow-y-auto" dir="rtl">
+        <DialogContent className="max-h-[86vh] max-w-6xl overflow-y-auto" dir="rtl">
           <DialogHeader>
             <DialogTitle>جزئیات همکار فروش</DialogTitle>
           </DialogHeader>
@@ -590,12 +684,118 @@ export default function AdminAgentsPage() {
                     <span className="text-muted-foreground">نقش‌ها: </span>
                     <div className="flex flex-wrap gap-1 mt-0.5">
                       {selectedAgent.user?.roles?.map((r) => (
-                        <Badge key={`${r.name}-${r.title}`} variant="outline" className="text-xs">
+                        <Badge
+                          key={`${r.name}-${r.title}`}
+                          variant="outline"
+                          className="h-auto max-w-full whitespace-normal text-xs leading-6"
+                        >
                           {r.title}
                         </Badge>
                       ))}
                     </div>
                   </div>
+                </div>
+              </div>
+
+              <div className="space-y-4 rounded-lg border p-4">
+                <div className="space-y-1">
+                    <h3 className="font-semibold">مدیریت نقش‌ها</h3>
+                    <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                      این نقش‌ها برای حساب کاربری این همکار فروش اعمال می‌شوند.
+                    </p>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedAgent.user?.roles && selectedAgent.user.roles.length > 0 ? (
+                    selectedAgent.user.roles.map((role) => (
+                      <Badge
+                        key={`${role.name}-${role.title}`}
+                        variant="outline"
+                        className="h-auto max-w-full whitespace-normal text-xs leading-6"
+                      >
+                        {role.title || role.name}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-xs text-muted-foreground">نقشی برای این حساب کاربری ثبت نشده است.</span>
+                  )}
+                </div>
+
+                {isRolesLoading ? (
+                  <div className="space-y-2">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <Skeleton key={i} className="h-14 w-full" />
+                    ))}
+                  </div>
+                ) : rolesError ? (
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                    {rolesError}
+                  </div>
+                ) : availableRoles.length === 0 ? (
+                  <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
+                    نقشی برای نمایش وجود ندارد.
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {availableRoles.map((role) => {
+                      const protectedRole = isProtectedRole(role.name)
+                      const checked = selectedRoleNames.includes(role.name)
+                      return (
+                        <label
+                          key={role.name}
+                          className="flex min-w-0 flex-col gap-3 rounded-lg border bg-background p-3 text-sm sm:flex-row sm:items-start sm:p-4"
+                        >
+                          <Checkbox
+                            className="mt-1 shrink-0"
+                            checked={checked}
+                            disabled={protectedRole || isRolesSaving}
+                            onCheckedChange={(value) => handleRoleToggle(role.name, value === true)}
+                          />
+                          <span className="min-w-0 flex-1 space-y-1">
+                            <span className="block whitespace-normal break-words font-medium leading-6">
+                              {role.title || role.name}
+                            </span>
+                            {role.title && role.title !== role.name ? (
+                              <span className="block break-all text-xs leading-5 text-muted-foreground">
+                                {role.name}
+                              </span>
+                            ) : null}
+                          </span>
+                          {protectedRole && (
+                            <Badge variant="secondary" className="h-auto shrink-0 self-start whitespace-nowrap text-[10px] leading-5">
+                              محافظت‌شده
+                            </Badge>
+                          )}
+                        </label>
+                      )
+                    })}
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  {rolesSavedNotice ? (
+                    <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-6 text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+                      {ROLE_SESSION_NOTICE}
+                    </p>
+                  ) : (
+                    <p className="text-xs leading-6 text-muted-foreground">
+                      پس از انتخاب نقش‌ها، تغییرات را ذخیره کنید.
+                    </p>
+                  )}
+                  <Button
+                    type="button"
+                    onClick={handleSaveRoles}
+                    disabled={
+                      isRolesSaving ||
+                      isRolesLoading ||
+                      Boolean(rolesError) ||
+                      availableRoles.length === 0 ||
+                      !selectedAgent.userId
+                    }
+                    className="w-full shrink-0 sm:w-auto"
+                  >
+                    {isRolesSaving ? 'در حال ذخیره...' : 'ذخیره نقش‌ها'}
+                  </Button>
                 </div>
               </div>
 

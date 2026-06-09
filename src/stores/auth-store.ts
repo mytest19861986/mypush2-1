@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { authService } from '@/services/auth.service'
+import { userCanAccessAdmin } from '@/lib/admin-access'
 import type { AuthUser } from '@/types'
 
 const AUTH_REQUEST_TIMEOUT_MS = 10000
@@ -68,6 +69,7 @@ interface AuthState {
   setLoading: (loading: boolean) => void
   initialize: () => Promise<void>
   isAdmin: () => boolean
+  canAccessAdmin: () => boolean
   isDoctor: () => boolean
   isAgent: () => boolean
   hasRole: (role: string) => boolean
@@ -190,6 +192,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     return roles.includes('SUPER_ADMIN') || roles.includes('ADMIN')
   },
 
+  canAccessAdmin: () => {
+    const { user } = get()
+    return userCanAccessAdmin(user)
+  },
+
   isDoctor: () => {
     const { user } = get()
     if (!user) return false
@@ -218,7 +225,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { user } = get()
     if (!user) return '/auth/login'
     const roles = user.roles || []
-    if (roles.includes('SUPER_ADMIN') || roles.includes('ADMIN')) return '/admin/dashboard'
+    if (userCanAccessAdmin(user)) return '/admin/dashboard'
     if (roles.includes('DOCTOR')) return '/doctor/dashboard'
     if (roles.includes('AGENT')) return '/agent/dashboard'
     // Empty roles or only USER role → go to user dashboard

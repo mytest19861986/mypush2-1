@@ -452,7 +452,7 @@ export default function AgentDocumentsPage() {
       <div className="space-y-6">
         <PageHeader
           title="مدیریت مدارک"
-          description="آپلود و مدیریت مدارک نمایندگی"
+          description="آپلود و مدیریت مدارک همکار فروش"
         />
         <Card className="border-destructive/50">
           <CardContent className="p-6 text-center">
@@ -471,7 +471,7 @@ export default function AgentDocumentsPage() {
     <div className="space-y-6">
       <PageHeader
         title="مدیریت مدارک"
-        description="آپلود و مدیریت مدارک نمایندگی"
+        description="آپلود و مدیریت مدارک همکار فروش"
       />
 
       <UploadForm onUploaded={fetchDocuments} />
