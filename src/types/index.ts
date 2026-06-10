@@ -89,6 +89,7 @@ export interface PermissionItem {
   name: string
   module: string
   title?: string | null
+  description?: string | null
 }
 
 // ─── Doctor ───
