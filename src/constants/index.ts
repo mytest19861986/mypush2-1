@@ -1,9 +1,16 @@
 import {
-  UserStatus, DoctorStatus, AgentStatus, DocumentType, DocumentStatus,
-  PlanStatus, UserPlanStatus, ContractStatus, CommissionStatus
+  UserStatus,
+  DoctorStatus,
+  AgentStatus,
+  DocumentType,
+  DocumentStatus,
+  PlanStatus,
+  UserPlanStatus,
+  ContractStatus,
+  CommissionStatus,
 } from '@/types'
 
-// ─── Status Labels (Persian) ───
+// Status Labels (Persian)
 export const USER_STATUS_LABELS: Record<UserStatus, string> = {
   ACTIVE: 'فعال',
   INACTIVE: 'غیرفعال',
@@ -57,13 +64,29 @@ export const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
 }
 
 export const COMMISSION_STATUS_LABELS: Record<CommissionStatus, string> = {
-  PENDING: 'در انتظار',
-  APPROVED: 'تأیید شده',
-  PAID: 'پرداخت شده',
+  PENDING: 'در انتظار تأیید',
+  APPROVED: 'تأییدشده',
+  PAID: 'پرداخت‌شده',
   CANCELLED: 'لغو شده',
 }
 
-// ─── Status Color Classes ───
+export const SETTLEMENT_STATUS_LABELS: Record<
+  'PENDING' | 'APPROVED' | 'PAID' | 'REJECTED' | 'CANCELLED',
+  string
+> = {
+  PENDING: 'در انتظار بررسی',
+  APPROVED: 'تأیید شده',
+  PAID: 'پرداخت‌شده',
+  REJECTED: 'رد شده',
+  CANCELLED: 'لغو شده',
+}
+
+export const COMMISSION_SOURCE_TYPE_LABELS: Record<'SALES_PARTNER' | 'USER_REFERRAL', string> = {
+  SALES_PARTNER: 'همکار فروش',
+  USER_REFERRAL: 'رفرال کاربر',
+}
+
+// Status Color Classes
 export const STATUS_VARIANT_MAP: Record<string, string> = {
   // User
   ACTIVE: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
@@ -85,22 +108,22 @@ export const STATUS_VARIANT_MAP: Record<string, string> = {
   PAID: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
 }
 
-// ─── Audit Log Labels ───
+// Audit Log Labels
 export const AUDIT_ACTION_LABELS: Record<string, string> = {
   USER_LOGIN: 'ورود کاربر',
   USER_LOGOUT: 'خروج کاربر',
-  USER_UPDATED: 'بروزرسانی کاربر',
+  USER_UPDATED: 'به‌روزرسانی کاربر',
   USER_STATUS_CHANGED: 'تغییر وضعیت کاربر',
-  ROLE_UPDATED: 'بروزرسانی نقش',
-  PERMISSION_UPDATED: 'بروزرسانی دسترسی',
+  ROLE_UPDATED: 'به‌روزرسانی نقش',
+  PERMISSION_UPDATED: 'به‌روزرسانی دسترسی',
   AGENT_CREATED: 'ثبت همکار فروش',
-  AGENT_UPDATED: 'بروزرسانی همکار فروش',
+  AGENT_UPDATED: 'به‌روزرسانی همکار فروش',
   AGENT_STATUS_CHANGED: 'تغییر وضعیت همکار فروش',
   DOCUMENT_UPLOADED: 'آپلود مدرک',
   DOCUMENT_REVIEWED: 'بررسی مدرک',
   UPLOAD_CREATED: 'آپلود فایل',
   PLAN_CREATED: 'ایجاد طرح',
-  PLAN_UPDATED: 'بروزرسانی طرح',
+  PLAN_UPDATED: 'به‌روزرسانی طرح',
   PLAN_DELETED: 'حذف طرح',
   CONTRACT_CREATED: 'ثبت قرارداد',
   COMMISSION_CREATED: 'ثبت پورسانت',
@@ -118,7 +141,7 @@ export const ENTITY_LABELS: Record<string, string> = {
   Document: 'مدرک',
 }
 
-// ─── Roles ───
+// Roles
 export const ROLES = {
   SUPER_ADMIN: 'SUPER_ADMIN',
   ADMIN: 'ADMIN',
@@ -137,7 +160,7 @@ export const ROLE_LABELS: Record<string, string> = {
   USER: 'کاربر',
 }
 
-// ─── Permissions ───
+// Permissions
 export const PERMISSION_MODULES: Record<string, string> = {
   users: 'کاربران',
   agents: 'همکاران فروش',
@@ -148,16 +171,16 @@ export const PERMISSION_MODULES: Record<string, string> = {
   roles: 'نقش‌ها',
 }
 
-// ─── App Info ───
+// App Info
 export const APP_NAME = 'حامی کارت'
 export const APP_FULL_NAME = 'سامانه تخفیف درمانی حامی کارت'
 export const APP_URL = 'https://hamicard.ir'
 
-// ─── Pagination ───
+// Pagination
 export const DEFAULT_PAGE_SIZE = 20
 export const MAX_PAGE_SIZE = 100
 
-// ─── File Upload ───
+// File Upload
 export const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 export const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 export const ACCEPTED_DOC_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp']

@@ -277,6 +277,8 @@ export interface CommissionItem {
 }
 
 export type CommissionStatus = 'PENDING' | 'APPROVED' | 'PAID' | 'CANCELLED'
+export type CommissionSourceType = 'SALES_PARTNER' | 'USER_REFERRAL'
+export type SettlementStatus = 'PENDING' | 'APPROVED' | 'PAID' | 'REJECTED' | 'CANCELLED'
 
 export interface WalletCommissionSummary {
   totalCommissionAmount: number

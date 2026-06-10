@@ -1,4 +1,5 @@
 export type CommissionReferrerType = 'SALES_PARTNER' | 'USER_REFERRAL'
+export type CommissionSourceType = CommissionReferrerType
 
 type PlanCommissionSettings = {
   salesPartnerCommissionPercent?: number | null
@@ -25,4 +26,15 @@ export function getPlanCommissionPercent(
 
 export function calculateCommissionAmount(amount: number, percent: number) {
   return Math.round((amount * percent) / 100)
+}
+
+type CommissionSourceLookup = {
+  userPlan: { source?: string | null }
+  agent?: { agent?: { status?: string | null } | null } | null
+}
+
+export function getCommissionSourceType(commission: CommissionSourceLookup): CommissionSourceType {
+  if (commission.userPlan.source === 'SALES_CONFIRMED') return 'SALES_PARTNER'
+  if (commission.agent?.agent?.status === 'APPROVED') return 'SALES_PARTNER'
+  return 'USER_REFERRAL'
 }

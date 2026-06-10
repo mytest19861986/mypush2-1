@@ -2,10 +2,15 @@ import { NextRequest } from 'next/server'
 import type { Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { db } from '@/lib/db'
-import { authenticateRequest, requirePermission } from '@/lib/auth'
+import { authenticateRequest } from '@/lib/auth'
 import { errorResponse, paginatedResponse } from '@/lib/api-response'
+import {
+  getCommissionSourceType,
+} from '@/lib/commissions'
 
 const validStatuses = ['PENDING', 'APPROVED', 'PAID', 'CANCELLED'] as const
+const validSourceTypes = ['SALES_PARTNER', 'USER_REFERRAL'] as const
+const dateParamPattern = /^\d{4}-\d{2}-\d{2}$/
 
 const querySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -13,19 +18,153 @@ const querySchema = z.object({
   status: z.enum(validStatuses).optional(),
   agentId: z.string().optional(),
   ownerSearch: z.string().trim().max(100).optional(),
-  sourceType: z.enum(['SALES_PARTNER', 'USER_REFERRAL']).optional(),
+  sourceType: z.enum(validSourceTypes).optional(),
+  from: z.string().trim().regex(dateParamPattern).optional(),
+  to: z.string().trim().regex(dateParamPattern).optional(),
 })
 
-function getCommissionSourceType(commission: {
-  userPlan: { source?: string | null }
-  agent?: { agent?: { status?: string | null } | null } | null
-}) {
-  if (commission.userPlan.source === 'SALES_CONFIRMED') return 'SALES_PARTNER'
-  if (commission.agent?.agent?.status === 'APPROVED') return 'SALES_PARTNER'
-  return 'USER_REFERRAL'
+function canManageCommissions(payload: { roles: string[]; permissions: string[] }) {
+  return (
+    payload.roles.includes('SUPER_ADMIN') ||
+    payload.roles.includes('ADMIN') ||
+    payload.permissions.includes('manage_commissions')
+  )
 }
 
-// GET /api/v1/commissions — List commissions
+function getDateRange(from?: string, to?: string) {
+  if (!from && !to) return null
+  if (!from || !to) return null
+
+  const fromDate = new Date(`${from}T00:00:00.000Z`)
+  const toDate = new Date(`${to}T23:59:59.999Z`)
+
+  if (
+    Number.isNaN(fromDate.getTime()) ||
+    Number.isNaN(toDate.getTime()) ||
+    fromDate.getTime() > toDate.getTime()
+  ) {
+    return null
+  }
+
+  return { fromDate, toDate }
+}
+
+function buildSearchCondition(ownerSearch: string): Prisma.CommissionWhereInput {
+  return {
+    OR: [
+      {
+        agent: {
+          profile: {
+            firstName: { contains: ownerSearch },
+          },
+        },
+      },
+      {
+        agent: {
+          profile: {
+            lastName: { contains: ownerSearch },
+          },
+        },
+      },
+      {
+        agent: {
+          mobile: { contains: ownerSearch },
+        },
+      },
+      {
+        agent: {
+          agent: {
+            is: {
+              businessName: { contains: ownerSearch },
+            },
+          },
+        },
+      },
+      {
+        userPlan: {
+          salesCustomer: {
+            is: {
+              firstName: { contains: ownerSearch },
+            },
+          },
+        },
+      },
+      {
+        userPlan: {
+          salesCustomer: {
+            is: {
+              lastName: { contains: ownerSearch },
+            },
+          },
+        },
+      },
+      {
+        userPlan: {
+          salesCustomer: {
+            is: {
+              mobile: { contains: ownerSearch },
+            },
+          },
+        },
+      },
+      {
+        userPlan: {
+          user: {
+            is: {
+              profile: {
+                firstName: { contains: ownerSearch },
+              },
+            },
+          },
+        },
+      },
+      {
+        userPlan: {
+          user: {
+            is: {
+              profile: {
+                lastName: { contains: ownerSearch },
+              },
+            },
+          },
+        },
+      },
+      {
+        userPlan: {
+          user: {
+            is: {
+              mobile: { contains: ownerSearch },
+            },
+          },
+        },
+      },
+    ],
+  }
+}
+
+function buildSourceFilter(sourceType?: string): Prisma.CommissionWhereInput | null {
+  if (sourceType === 'USER_REFERRAL') {
+    return {
+      NOT: [
+        { userPlan: { source: 'SALES_CONFIRMED' } },
+        { agent: { agent: { is: { status: 'APPROVED' } } } },
+      ],
+    }
+  }
+
+  if (sourceType === 'SALES_PARTNER') {
+    return {
+      OR: [
+        { userPlan: { source: 'SALES_CONFIRMED' } },
+        { agent: { agent: { is: { status: 'APPROVED' } } } },
+      ],
+    }
+  }
+
+  return null
+}
+
+// GET /api/v1/commissions - List commissions
 // - Admin (manage_commissions): all commissions with pagination + filters
 // - Agent: only their commissions
 export async function GET(request: NextRequest) {
@@ -34,7 +173,7 @@ export async function GET(request: NextRequest) {
     if (!authenticated) return errorResponse('UNAUTHORIZED', error!, 401)
 
     const userId = payload!.sub
-    const hasAdminPermission = payload!.permissions.includes('manage_commissions')
+    const hasAdminPermission = canManageCommissions(payload!)
     const isAgent = payload!.roles.includes('AGENT')
 
     if (!hasAdminPermission && !isAgent) {
@@ -47,12 +186,13 @@ export async function GET(request: NextRequest) {
       return errorResponse('VALIDATION_ERROR', parsed.error.issues.map((e) => e.message).join('. '), 400)
     }
 
-    const { page, limit, status, agentId, ownerSearch, sourceType } = parsed.data
+    const { page, limit, status, agentId, ownerSearch, sourceType, from, to } = parsed.data
     const skip = (page - 1) * limit
+    const dateRange = getDateRange(from, to)
 
     const where: Prisma.CommissionWhereInput = {}
+    const andConditions: Prisma.CommissionWhereInput[] = []
 
-    // Agents can only see their own commissions
     if (!hasAdminPermission) {
       where.agentId = userId
     } else if (agentId) {
@@ -60,35 +200,29 @@ export async function GET(request: NextRequest) {
     }
 
     if (status) {
-      where.status = status
+      andConditions.push({ status })
+    }
+
+    if (dateRange) {
+      andConditions.push({
+        createdAt: {
+          gte: dateRange.fromDate,
+          lte: dateRange.toDate,
+        },
+      })
     }
 
     if (ownerSearch) {
-      where.agent = {
-        OR: [
-          { profile: { firstName: { contains: ownerSearch } } },
-          { profile: { lastName: { contains: ownerSearch } } },
-          { agent: { is: { businessName: { contains: ownerSearch } } } },
-        ],
-      }
+      andConditions.push(buildSearchCondition(ownerSearch))
     }
 
-    if (sourceType === 'USER_REFERRAL') {
-      where.AND = [
-        ...(Array.isArray(where.AND) ? where.AND : []),
-        { userPlan: { source: 'ONLINE_PAYMENT' } },
-        { agent: { agent: { is: null } } },
-      ]
-    } else if (sourceType === 'SALES_PARTNER') {
-      where.AND = [
-        ...(Array.isArray(where.AND) ? where.AND : []),
-        {
-          OR: [
-            { userPlan: { source: 'SALES_CONFIRMED' } },
-            { agent: { agent: { is: { status: 'APPROVED' } } } },
-          ],
-        },
-      ]
+    const sourceFilter = buildSourceFilter(sourceType)
+    if (sourceFilter) {
+      andConditions.push(sourceFilter)
+    }
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions
     }
 
     const [commissions, total] = await Promise.all([
@@ -101,22 +235,40 @@ export async function GET(request: NextRequest) {
           agent: {
             select: {
               id: true,
-              profile: { select: { firstName: true, lastName: true } },
-              agent: { select: { businessName: true, status: true } },
+              mobile: true,
+              profile: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                },
+              },
+              agent: {
+                select: {
+                  businessName: true,
+                  status: true,
+                },
+              },
             },
           },
           userPlan: {
             include: {
               salesCustomer: {
                 select: {
-                  id: true,
-                  status: true,
+                  firstName: true,
+                  lastName: true,
+                  mobile: true,
                 },
               },
               plan: true,
               user: {
                 select: {
-                  profile: { select: { firstName: true, lastName: true } },
+                  mobile: true,
+                  profile: {
+                    select: {
+                      firstName: true,
+                      lastName: true,
+                    },
+                  },
                 },
               },
             },
