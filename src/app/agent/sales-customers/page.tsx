@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { Loader2, Plus, RefreshCw, ShoppingBag, XCircle } from 'lucide-react'
@@ -106,7 +106,7 @@ const statusFilters: { value: StatusFilter; label: string }[] = [
   { value: 'all', label: 'همه' },
   { value: 'PENDING_REVIEW', label: 'در انتظار پرداخت' },
   { value: 'PAID', label: 'پرداخت‌شده' },
-  { value: 'CONFIRMED', label: 'تایید شده' },
+  { value: 'CONFIRMED', label: 'تاییدشده' },
   { value: 'RETURNED', label: 'برگشتی' },
 ]
 
@@ -117,7 +117,7 @@ const statusLabels: Record<SalesCustomerStatus, string> = {
   SHIPPED: 'ارسال شده',
   DELIVERED: 'تحویل شده',
   PAID: 'پرداخت‌شده',
-  CONFIRMED: 'تأیید شده',
+  CONFIRMED: 'تاییدشده',
   RETURNED: 'برگشتی',
 }
 
@@ -145,13 +145,6 @@ function getFullName(customer: SalesCustomer) {
 
 function getPlanName(customer: SalesCustomer) {
   return customer.plan?.title?.trim() || customer.plan?.name?.trim() || 'طرح انتخاب‌شده'
-}
-
-function getMaskedNationalCode(value: string | null) {
-  if (!value) return '-'
-  if (value.includes('*')) return value
-  if (/^\d{10}$/.test(value)) return `${'*'.repeat(6)}${value.slice(-4)}`
-  return '-'
 }
 
 function getDateOrDash(value: string | null) {
@@ -417,10 +410,6 @@ export default function AgentSalesCustomersPage() {
 
         <div className="grid grid-cols-2 gap-3 text-xs">
           <div>
-            <p className="text-muted-foreground">کد ملی</p>
-            <p className="mt-1 font-medium">-</p>
-          </div>
-          <div>
             <p className="text-muted-foreground">طرح</p>
             <p className="mt-1 font-medium">{getPlanName(customer)}</p>
           </div>
@@ -464,8 +453,8 @@ export default function AgentSalesCustomersPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="مشتریان من"
-        description="مشتریان ثبت‌شده توسط شما و وضعیت آن‌ها را مشاهده کنید."
+        title="مشتریان ثبت‌شده"
+        description="مشتریان ثبت‌شده توسط همکار فروش و وضعیت آن‌ها را مشاهده کنید."
         action={
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
@@ -723,12 +712,11 @@ export default function AgentSalesCustomersPage() {
                     <TableRow className="bg-muted/50 hover:bg-muted/50">
                       <TableHead>مشتری</TableHead>
                       <TableHead>موبایل</TableHead>
-                      <TableHead>کد ملی</TableHead>
                       <TableHead>طرح</TableHead>
                       <TableHead>وضعیت</TableHead>
                       <TableHead>ثبت</TableHead>
                       <TableHead>پرداخت</TableHead>
-                      <TableHead>تأیید</TableHead>
+                      <TableHead>تایید</TableHead>
                       <TableHead>برگشتی</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -743,11 +731,6 @@ export default function AgentSalesCustomersPage() {
                         <TableCell>
                           <span className="whitespace-nowrap text-sm" dir="ltr">
                             {customer.mobile || '-'}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span className="whitespace-nowrap text-sm" dir="ltr">
-                            -
                           </span>
                         </TableCell>
                         <TableCell>
