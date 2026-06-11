@@ -132,6 +132,19 @@ const statusClasses: Record<SalesCustomerStatus, string> = {
   RETURNED: 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
 }
 
+const customerTableColumns = {
+  customer: 'w-[180px] min-w-[180px] max-w-[180px]',
+  mobile: 'w-[130px] min-w-[130px] max-w-[130px]',
+  plan: 'w-[180px] min-w-[180px] max-w-[180px]',
+  status: 'w-[140px] min-w-[140px] max-w-[140px]',
+  date: 'w-[150px] min-w-[150px] max-w-[150px]',
+}
+
+const tableHeadClass = 'h-11 text-right align-middle whitespace-nowrap'
+const tableCellClass = 'align-middle text-right'
+const tableTextClass = 'block truncate text-sm'
+const tableMutedTextClass = cn(tableTextClass, 'text-muted-foreground')
+
 function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof ApiError) return error.message
   return fallback
@@ -605,35 +618,47 @@ export default function AgentSalesCustomersPage() {
           ) : (
             <>
               <div className="hidden overflow-x-auto md:block">
-                <Table>
+                <Table className="min-w-[780px] table-fixed">
                   <TableHeader>
                     <TableRow className="bg-muted/50 hover:bg-muted/50">
-                      <TableHead>مشتری</TableHead>
-                      <TableHead>موبایل</TableHead>
-                      <TableHead>طرح</TableHead>
-                      <TableHead>وضعیت</TableHead>
-                      <TableHead>تاریخ برگشت</TableHead>
+                      <TableHead className={cn(tableHeadClass, customerTableColumns.customer)}>
+                        مشتری
+                      </TableHead>
+                      <TableHead className={cn(tableHeadClass, customerTableColumns.mobile)}>
+                        موبایل
+                      </TableHead>
+                      <TableHead className={cn(tableHeadClass, customerTableColumns.plan)}>
+                        طرح
+                      </TableHead>
+                      <TableHead className={cn(tableHeadClass, customerTableColumns.status)}>
+                        وضعیت
+                      </TableHead>
+                      <TableHead className={cn(tableHeadClass, customerTableColumns.date)}>
+                        تاریخ برگشت
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {returnedCustomers.map((customer) => (
                       <TableRow key={customer.id}>
-                        <TableCell>
-                          <span className="whitespace-nowrap text-sm font-medium">
+                        <TableCell className={cn(tableCellClass, customerTableColumns.customer)}>
+                          <span className={cn(tableTextClass, 'font-medium')}>
                             {getFullName(customer)}
                           </span>
                         </TableCell>
-                        <TableCell>
-                          <span className="whitespace-nowrap text-sm" dir="ltr">
+                        <TableCell className={cn(tableCellClass, customerTableColumns.mobile)}>
+                          <span className={cn(tableTextClass, 'text-right')} dir="ltr">
                             {customer.mobile || '-'}
                           </span>
                         </TableCell>
-                        <TableCell>
-                          <span className="whitespace-nowrap text-sm">{getPlanName(customer)}</span>
+                        <TableCell className={cn(tableCellClass, customerTableColumns.plan)}>
+                          <span className={tableTextClass}>{getPlanName(customer)}</span>
                         </TableCell>
-                        <TableCell>{renderStatus(customer.status)}</TableCell>
-                        <TableCell>
-                          <span className="whitespace-nowrap text-sm text-muted-foreground">
+                        <TableCell className={cn(tableCellClass, customerTableColumns.status)}>
+                          {renderStatus(customer.status)}
+                        </TableCell>
+                        <TableCell className={cn(tableCellClass, customerTableColumns.date)}>
+                          <span className={tableMutedTextClass}>
                             {getDateOrDash(customer.returnedAt)}
                           </span>
                         </TableCell>
@@ -707,53 +732,71 @@ export default function AgentSalesCustomersPage() {
           <Card className="hidden border-0 shadow-sm md:block">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <Table>
+                <Table className="min-w-[1230px] table-fixed">
                   <TableHeader>
                     <TableRow className="bg-muted/50 hover:bg-muted/50">
-                      <TableHead>مشتری</TableHead>
-                      <TableHead>موبایل</TableHead>
-                      <TableHead>طرح</TableHead>
-                      <TableHead>وضعیت</TableHead>
-                      <TableHead>ثبت</TableHead>
-                      <TableHead>پرداخت</TableHead>
-                      <TableHead>تایید</TableHead>
-                      <TableHead>برگشتی</TableHead>
+                      <TableHead className={cn(tableHeadClass, customerTableColumns.customer)}>
+                        مشتری
+                      </TableHead>
+                      <TableHead className={cn(tableHeadClass, customerTableColumns.mobile)}>
+                        موبایل
+                      </TableHead>
+                      <TableHead className={cn(tableHeadClass, customerTableColumns.plan)}>
+                        طرح
+                      </TableHead>
+                      <TableHead className={cn(tableHeadClass, customerTableColumns.status)}>
+                        وضعیت
+                      </TableHead>
+                      <TableHead className={cn(tableHeadClass, customerTableColumns.date)}>
+                        ثبت
+                      </TableHead>
+                      <TableHead className={cn(tableHeadClass, customerTableColumns.date)}>
+                        پرداخت
+                      </TableHead>
+                      <TableHead className={cn(tableHeadClass, customerTableColumns.date)}>
+                        تایید
+                      </TableHead>
+                      <TableHead className={cn(tableHeadClass, customerTableColumns.date)}>
+                        برگشتی
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {customers.map((customer) => (
                       <TableRow key={customer.id}>
-                        <TableCell>
-                          <span className="whitespace-nowrap text-sm font-medium">
+                        <TableCell className={cn(tableCellClass, customerTableColumns.customer)}>
+                          <span className={cn(tableTextClass, 'font-medium')}>
                             {getFullName(customer)}
                           </span>
                         </TableCell>
-                        <TableCell>
-                          <span className="whitespace-nowrap text-sm" dir="ltr">
+                        <TableCell className={cn(tableCellClass, customerTableColumns.mobile)}>
+                          <span className={cn(tableTextClass, 'text-right')} dir="ltr">
                             {customer.mobile || '-'}
                           </span>
                         </TableCell>
-                        <TableCell>
-                          <span className="whitespace-nowrap text-sm">{getPlanName(customer)}</span>
+                        <TableCell className={cn(tableCellClass, customerTableColumns.plan)}>
+                          <span className={tableTextClass}>{getPlanName(customer)}</span>
                         </TableCell>
-                        <TableCell>{renderStatus(customer.status)}</TableCell>
-                        <TableCell>
-                          <span className="whitespace-nowrap text-sm text-muted-foreground">
+                        <TableCell className={cn(tableCellClass, customerTableColumns.status)}>
+                          {renderStatus(customer.status)}
+                        </TableCell>
+                        <TableCell className={cn(tableCellClass, customerTableColumns.date)}>
+                          <span className={tableMutedTextClass}>
                             {formatDateTime(customer.createdAt)}
                           </span>
                         </TableCell>
-                        <TableCell>
-                          <span className="whitespace-nowrap text-sm text-muted-foreground">
+                        <TableCell className={cn(tableCellClass, customerTableColumns.date)}>
+                          <span className={tableMutedTextClass}>
                             {getDateOrDash(customer.paidAt)}
                           </span>
                         </TableCell>
-                        <TableCell>
-                          <span className="whitespace-nowrap text-sm text-muted-foreground">
+                        <TableCell className={cn(tableCellClass, customerTableColumns.date)}>
+                          <span className={tableMutedTextClass}>
                             {getDateOrDash(customer.confirmedAt)}
                           </span>
                         </TableCell>
-                        <TableCell>
-                          <span className="whitespace-nowrap text-sm text-muted-foreground">
+                        <TableCell className={cn(tableCellClass, customerTableColumns.date)}>
+                          <span className={tableMutedTextClass}>
                             {getDateOrDash(customer.returnedAt)}
                           </span>
                         </TableCell>
