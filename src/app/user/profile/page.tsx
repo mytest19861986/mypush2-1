@@ -31,14 +31,12 @@ import {
 } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { formatJalaliDate, toPersianNum } from '@/utils/formatters'
-import { normalizeCardNumber, normalizePayoutUpdate } from '@/lib/payout'
 import type { AuthUser } from '@/types'
 import {
   AlertCircle,
   Banknote,
   CheckCircle2,
   Copy,
-  CreditCard,
   HandCoins,
   Hourglass,
   Landmark,
@@ -60,9 +58,6 @@ type ProfileForm = {
   nationalCode: string
   gender: string
   address: string
-  cardNumber: string
-  sheba: string
-  accountOwnerName: string
 }
 
 type SavedProfileResponse = {
@@ -72,9 +67,6 @@ type SavedProfileResponse = {
   gender?: string | null
   address?: string | null
   avatar?: string | null
-  cardNumber?: string | null
-  sheba?: string | null
-  accountOwnerName?: string | null
   planHolderLinked?: boolean
   linkedPlansCount?: number
 }
@@ -157,9 +149,6 @@ const emptyForm: ProfileForm = {
   nationalCode: '',
   gender: '',
   address: '',
-  cardNumber: '',
-  sheba: '',
-  accountOwnerName: '',
 }
 
 function mapUserToForm(user?: AuthUser | null): ProfileForm {
@@ -169,9 +158,6 @@ function mapUserToForm(user?: AuthUser | null): ProfileForm {
     nationalCode: user?.profile?.nationalCode || '',
     gender: user?.profile?.gender || '',
     address: user?.profile?.address || '',
-    cardNumber: user?.profile?.payoutCardNumber || '',
-    sheba: user?.profile?.payoutSheba || '',
-    accountOwnerName: user?.profile?.payoutAccountOwnerName || '',
   }
 }
 
@@ -315,16 +301,16 @@ const emptyWalletSummary: WalletCommissionSummary = {
 }
 
 const commissionStatusLabels: Record<string, string> = {
-  PENDING: 'در انتظار تایید',
-  APPROVED: 'تایید شده',
-  PAID: 'پرداخت شده',
+  PENDING: 'در انتظار بررسی',
+  APPROVED: 'قابل برداشت',
+  PAID: 'پرداخت‌شده',
   CANCELLED: 'لغو شده',
 }
 
 const settlementStatusLabels: Record<string, string> = {
   PENDING: 'در انتظار بررسی',
-  APPROVED: 'تایید شده',
-  PAID: 'پرداخت شده',
+  APPROVED: 'تسویه ثبت‌شده',
+  PAID: 'پرداخت‌شده',
   REJECTED: 'رد شده',
   CANCELLED: 'لغو شده',
 }
@@ -415,11 +401,11 @@ function UserReferralCommissionPanel({ enabled }: { enabled: boolean }) {
   const minimumSettlementAmount = walletSummary.minimumSettlementAmount
   const settlementBlockMessage =
     openSettlementAmount > 0
-      ? 'یک درخواست تسویه باز دارید. درخواست‌های در انتظار بررسی یا تایید شده باید ابتدا تعیین تکلیف شوند.'
+      ? 'یک درخواست تسویه ثبت‌شده دارید. درخواست‌های در انتظار بررسی یا تسویه ثبت‌شده باید ابتدا تعیین تکلیف شوند.'
       : minimumSettlementAmount > 0 && availableBalance < minimumSettlementAmount
         ? `حداقل مبلغ قابل درخواست تسویه ${formatMoney(minimumSettlementAmount)} است.`
         : availableBalance <= 0
-          ? 'در حال حاضر موجودی قابل برداشت از پورسانت تایید شده ندارید.'
+          ? 'در حال حاضر موجودی قابل برداشت از پورسانت بررسی‌شده ندارید.'
           : null
 
   const handleSettlementSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -498,7 +484,7 @@ function UserReferralCommissionPanel({ enabled }: { enabled: boolean }) {
               پورسانت رفرال و تسویه
             </CardTitle>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              فقط پورسانت تایید شده در موجودی قابل برداشت محاسبه می‌شود؛ پورسانت در انتظار تایید قابل تسویه نیست.
+              این بخش فقط پورسانت معرفی کاربران را نشان می‌دهد و جدا از پورسانت همکار فروش است. پورسانت در انتظار بررسی قابل برداشت نیست.
             </p>
           </div>
           <div className="flex gap-2">
@@ -544,7 +530,7 @@ function UserReferralCommissionPanel({ enabled }: { enabled: boolean }) {
                   <DialogHeader>
                     <DialogTitle>درخواست تسویه پورسانت رفرال</DialogTitle>
                     <DialogDescription>
-                      پرداخت نهایی پس از بررسی و اقدام مدیر انجام می‌شود و این درخواست پرداخت خودکار نیست.
+                      پرداخت نهایی پس از بررسی و اقدام مدیر انجام می‌شود و ثبت درخواست به معنی پرداخت خودکار نیست.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
@@ -621,7 +607,7 @@ function UserReferralCommissionPanel({ enabled }: { enabled: boolean }) {
                   icon: Wallet,
                 },
                 {
-                  title: 'در انتظار تایید',
+                  title: 'در انتظار بررسی',
                   amount: walletSummary.pendingCommissionAmount,
                   icon: Hourglass,
                 },
@@ -631,12 +617,12 @@ function UserReferralCommissionPanel({ enabled }: { enabled: boolean }) {
                   icon: HandCoins,
                 },
                 {
-                  title: 'درخواست تسویه باز',
+                  title: 'تسویه ثبت‌شده',
                   amount: openSettlementAmount,
                   icon: Banknote,
                 },
                 {
-                  title: 'تسویه پرداخت شده',
+                  title: 'پرداخت‌شده',
                   amount: walletSummary.paidSettlementAmount,
                   icon: Landmark,
                 },
@@ -652,7 +638,7 @@ function UserReferralCommissionPanel({ enabled }: { enabled: boolean }) {
             </div>
 
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
-              پورسانت‌های در انتظار تایید تا زمان تایید مدیر قابل برداشت نیستند.
+              پورسانت‌های در انتظار بررسی تا زمان بررسی مدیر قابل برداشت نیستند.
             </div>
 
             <div className="space-y-3">
@@ -805,19 +791,6 @@ export default function UserProfilePage() {
       return
     }
 
-    const payout = normalizePayoutUpdate({
-      ...(form.cardNumber.includes('*') ? {} : { cardNumber: form.cardNumber }),
-      ...(form.sheba.includes('*') ? {} : { sheba: form.sheba }),
-      accountOwnerName: form.accountOwnerName,
-    })
-
-    if (payout.errors.length > 0) {
-      const message = payout.errors[0]
-      setFeedback({ type: 'error', message })
-      toast({ title: 'خطا', description: message, variant: 'destructive' })
-      return
-    }
-
     setIsSaving(true)
     setFeedback(null)
 
@@ -827,9 +800,6 @@ export default function UserProfilePage() {
         lastName: form.lastName.trim(),
         nationalCode,
         address: form.address.trim(),
-        cardNumber: payout.values.payoutCardNumber,
-        sheba: payout.values.payoutSheba,
-        accountOwnerName: payout.values.payoutAccountOwnerName,
         ...(form.gender ? { gender: form.gender as 'MALE' | 'FEMALE' } : {}),
       }
 
@@ -852,9 +822,6 @@ export default function UserProfilePage() {
         nationalCode: saved.nationalCode || '',
         gender: saved.gender || '',
         address: saved.address || '',
-        accountOwnerName: saved.accountOwnerName || '',
-        // Keep prev.cardNumber and prev.sheba.
-        // API returns masked values and masked values must not be re-submitted.
       }))
       setLoadedNationalCode(saved.nationalCode || '')
 
@@ -1111,57 +1078,6 @@ export default function UserProfilePage() {
             {nationalCodeError && (
               <p className="text-sm text-destructive">{nationalCodeError}</p>
             )}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <CreditCard className="size-4 text-primary" />
-            اطلاعات مالی برای دریافت پورسانت رفرال
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm leading-7 text-muted-foreground">
-            برای دریافت پورسانت رفرال، اطلاعات مالی خود را تکمیل کنید.
-          </p>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="referralCardNumber">شماره کارت</Label>
-              <Input
-                id="referralCardNumber"
-                value={form.cardNumber}
-                onChange={(e) =>
-                  updateField('cardNumber', normalizeCardNumber(e.target.value).slice(0, 16))
-                }
-                placeholder="6037990000000000"
-                dir="ltr"
-                inputMode="numeric"
-                maxLength={16}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="referralSheba">شماره شبا</Label>
-              <Input
-                id="referralSheba"
-                value={form.sheba}
-                onChange={(e) => updateField('sheba', e.target.value.toUpperCase())}
-                placeholder="IR000000000000000000000000"
-                dir="ltr"
-              />
-            </div>
-          </div>
-
-          <div className="max-w-sm space-y-2">
-            <Label htmlFor="referralAccountOwnerName">نام صاحب حساب</Label>
-            <Input
-              id="referralAccountOwnerName"
-              value={form.accountOwnerName}
-              onChange={(e) => updateField('accountOwnerName', e.target.value)}
-              placeholder="نام و نام خانوادگی صاحب حساب"
-            />
           </div>
         </CardContent>
       </Card>

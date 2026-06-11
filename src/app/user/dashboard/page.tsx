@@ -696,23 +696,41 @@ function ReferralCodeCard({ referralCode }: { referralCode?: string | null }) {
         <p className="text-sm leading-6 text-muted-foreground">
           این لینک را برای معرفی کاربران جدید ارسال کنید.
         </p>
-        <div className="flex items-center gap-2 rounded-2xl border border-slate-100/70 bg-background/70 p-3 dark:border-slate-800/70">
-          <p className="min-w-0 flex-1 truncate font-mono text-sm font-semibold" dir="ltr">
-            {referralLink || '...'}
-          </p>
-          <Button type="button" variant="outline" size="sm" onClick={handleCopy} className="shrink-0">
-            {copied ? (
-              <>
-                <CheckCircle2 className="ml-2 size-4" />
-                کپی شد
-              </>
-            ) : (
-              <>
-                <Copy className="ml-2 size-4" />
-                کپی
-              </>
-            )}
-          </Button>
+        <div className="space-y-3 rounded-2xl border border-slate-100/70 bg-background/70 p-3 dark:border-slate-800/70">
+          <div className="space-y-2">
+            <Label htmlFor="dashboard-referral-code">کد معرفی</Label>
+            <Input
+              id="dashboard-referral-code"
+              value={referralCode}
+              readOnly
+              dir="ltr"
+              className="h-11 select-all font-mono text-base font-semibold"
+              onFocus={(event) => event.currentTarget.select()}
+            />
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              value={referralLink || '...'}
+              readOnly
+              dir="ltr"
+              aria-label="لینک معرفی"
+              className="h-11 min-w-0 select-all font-mono text-sm"
+              onFocus={(event) => event.currentTarget.select()}
+            />
+            <Button type="button" variant="outline" size="sm" onClick={handleCopy} className="h-11 shrink-0">
+              {copied ? (
+                <>
+                  <CheckCircle2 className="ml-2 size-4" />
+                  کپی شد
+                </>
+              ) : (
+                <>
+                  <Copy className="ml-2 size-4" />
+                  کپی
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -720,9 +738,9 @@ function ReferralCodeCard({ referralCode }: { referralCode?: string | null }) {
 }
 
 const referralCommissionStatusLabels: Record<string, string> = {
-  PENDING: 'در انتظار تایید',
-  APPROVED: 'تایید شده',
-  PAID: 'تسویه شده',
+  PENDING: 'در انتظار بررسی',
+  APPROVED: 'قابل برداشت',
+  PAID: 'پرداخت‌شده',
   CANCELLED: 'لغو شده',
 }
 
@@ -872,7 +890,7 @@ function ReferralCommissionReport() {
               گزارش پورسانت رفرال
             </CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              مبالغ در انتظار تایید در مانده قابل تسویه محاسبه نمی‌شوند.
+              پورسانت‌های در انتظار بررسی در مبلغ قابل برداشت محاسبه نمی‌شوند.
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={() => void fetchReport()} disabled={isLoading}>
@@ -891,13 +909,12 @@ function ReferralCommissionReport() {
           <JalaliDateFields title="تا تاریخ" value={toDate} onChange={setToDate} />
         </div>
 
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {[
             { title: 'کل پورسانت', value: totals.total },
-            { title: 'در انتظار تایید', value: totals.pending },
-            { title: 'تایید شده', value: totals.approved },
-            { title: 'تسویه شده', value: totals.paid },
-            { title: 'مانده قابل تسویه', value: totals.available },
+            { title: 'در انتظار بررسی', value: totals.pending },
+            { title: 'قابل برداشت', value: totals.available },
+            { title: 'پرداخت‌شده', value: totals.paid },
           ].map((item) => (
             <div key={item.title} className="rounded-2xl border border-slate-100/70 bg-background/70 p-4 dark:border-slate-800/70">
               <p className="text-xs text-muted-foreground">{item.title}</p>

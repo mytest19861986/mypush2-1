@@ -19,6 +19,7 @@ export async function buildUserResponse(user: {
     firstName: string | null
     lastName: string | null
     nationalCode: string | null
+    address?: string | null
     gender?: string | null
     avatar: string | null
     payoutCardNumber?: string | null
@@ -45,6 +46,7 @@ export async function buildUserResponse(user: {
           firstName: user.profile.firstName,
           lastName: user.profile.lastName,
           nationalCode: user.profile.nationalCode,
+          ...(user.profile.address !== undefined ? { address: user.profile.address ?? null } : {}),
           ...(user.profile.gender !== undefined ? { gender: user.profile.gender ?? null } : {}),
           avatar: user.profile.avatar,
           ...(user.profile.payoutCardNumber !== undefined

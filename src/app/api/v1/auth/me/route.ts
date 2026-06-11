@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
             firstName: true,
             lastName: true,
             nationalCode: true,
+            address: true,
             gender: true,
             avatar: true,
             payoutCardNumber: true,
