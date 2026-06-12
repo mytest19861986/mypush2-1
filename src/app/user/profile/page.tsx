@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { useToast } from '@/hooks/use-toast'
 import { PageHeader, StatusBadge } from '@/components/shared'
 import { ApiError, apiClient } from '@/lib/api-client'
+import { DEMO_SCOPE_PHASE_1 } from '@/config/demo-scope'
 import { useAuthStore } from '@/stores/auth-store'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -939,8 +940,8 @@ export default function UserProfilePage() {
         </CardContent>
       </Card>
 
-      <ReferralCodePanel referralCode={referralCode} />
-      <UserReferralCommissionPanel enabled={Boolean(referralCode)} />
+      {!DEMO_SCOPE_PHASE_1 && <ReferralCodePanel referralCode={referralCode} />}
+      {!DEMO_SCOPE_PHASE_1 && <UserReferralCommissionPanel enabled={Boolean(referralCode)} />}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>

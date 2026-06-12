@@ -10,7 +10,7 @@ import { ThemeToggle } from '@/components/shared/theme-toggle'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { useAuthStore } from '@/stores/auth-store'
 import { agentsService } from '@/services'
-import { agentDashboardNav } from '@/config/dashboard-nav'
+import { phase1DemoAgentDashboardNav } from '@/config/dashboard-nav'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -69,7 +69,7 @@ function SidebarContent({
       {/* Navigation */}
       <ScrollArea className="flex-1 px-3 py-2">
         <nav className="flex flex-col gap-1">
-          {agentDashboardNav.map((item) => {
+          {phase1DemoAgentDashboardNav.map((item) => {
             const isActive = pathname === item.href
             const Icon = item.icon
             return (

@@ -4,6 +4,7 @@ import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores/auth-store'
+import { phase1DemoVisibleItems } from '@/config/demo-scope'
 import { BrandLogo, ErrorBoundary } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -49,6 +50,8 @@ const footerLinks = [
   { label: 'ثبت‌نام همکار فروش', href: '/register/agent' },
   { label: 'ورود', href: '/auth/login' },
 ]
+
+const visibleFooterLinks = phase1DemoVisibleItems(footerLinks)
 
 const brandName = 'حامی‌کارت'
 
@@ -134,6 +137,8 @@ const audiences = [
     icon: Briefcase,
   },
 ]
+
+const visibleAudiences = phase1DemoVisibleItems(audiences)
 
 function FloatingBadge({
   label,
@@ -488,7 +493,7 @@ export default function Home() {
                 <h2 className="mt-3 text-3xl font-black text-slate-950">برای چه کسانی مناسب است؟</h2>
               </div>
               <div className="mt-8 grid gap-5 lg:grid-cols-3">
-                {audiences.map((audience) => (
+                {visibleAudiences.map((audience) => (
                   <Card
                     key={audience.title}
                     className="rounded-2xl border-sky-100 bg-white/90 shadow-[0_20px_45px_-32px_rgba(15,23,42,0.5)]"
@@ -542,7 +547,7 @@ export default function Home() {
             {brandName}
           </div>
           <div className="flex flex-wrap gap-4">
-            {footerLinks.map((link) => (
+            {visibleFooterLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href === '/auth/login' ? loginHref : link.href}

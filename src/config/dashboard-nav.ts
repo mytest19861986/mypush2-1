@@ -17,6 +17,7 @@ import {
   Wallet,
 } from 'lucide-react'
 import { hasFullAdminRole, userCanAccessAdmin } from '@/lib/admin-access'
+import { phase1DemoVisibleItems } from '@/config/demo-scope'
 
 export interface DashboardNavItem {
   href: string
@@ -67,7 +68,7 @@ export function canViewAdminNavItem(
 export function getAdminDashboardNavForUser(
   user: Pick<AuthUser, 'roles' | 'permissions'> | null | undefined
 ) {
-  return adminDashboardNav.filter((item) => canViewAdminNavItem(item, user))
+  return phase1DemoVisibleItems(adminDashboardNav.filter((item) => canViewAdminNavItem(item, user)))
 }
 
 export function getAdminNavItemForPath(pathname: string) {
@@ -112,3 +113,5 @@ export const agentDashboardNav: DashboardNavItem[] = [
   { href: '/agent/documents', label: '\u0645\u062f\u0627\u0631\u06a9', icon: FileText },
   { href: '/agent/profile', label: '\u067e\u0631\u0648\u0641\u0627\u06cc\u0644', icon: User },
 ]
+
+export const phase1DemoAgentDashboardNav = phase1DemoVisibleItems(agentDashboardNav)

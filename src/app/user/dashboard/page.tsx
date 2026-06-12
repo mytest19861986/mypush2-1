@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import Link from 'next/link'
 import { apiClient } from '@/lib/api-client'
+import { DEMO_SCOPE_PHASE_1 } from '@/config/demo-scope'
 import { useAuthStore } from '@/stores/auth-store'
 import { useToast } from '@/hooks/use-toast'
 import { EmptyState, StatusBadge } from '@/components/shared'
@@ -1143,11 +1144,11 @@ export default function UserDashboardPage() {
           />
           <RecentVisitsCard visits={visits} reviewsByVisit={reviewsByVisit} />
           <PlanSummaryCard plans={plans} />
-          <ReferralCommissionReport />
+          {!DEMO_SCOPE_PHASE_1 && <ReferralCommissionReport />}
         </main>
 
         <aside className="space-y-5">
-          <ReferralCodeCard referralCode={referralCode} />
+          {!DEMO_SCOPE_PHASE_1 && <ReferralCodeCard referralCode={referralCode} />}
           <ProfileCompletionCard nationalCode={nationalCode} />
           <QuickActionsCard />
           <ProductGuidanceCard />
