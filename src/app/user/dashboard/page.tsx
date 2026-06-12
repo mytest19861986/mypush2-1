@@ -124,6 +124,7 @@ const quickActions: {
   description: string
   href: string
   icon: LucideIcon
+  actionLabel?: string
 }[] = [
   {
     title: 'خرید یا تمدید طرح',
@@ -132,10 +133,11 @@ const quickActions: {
     icon: ShoppingCart,
   },
   {
-    title: 'مشاهده پزشکان طرف قرارداد',
-    description: 'پیدا کردن پزشک و تخصص مورد نیاز',
+    title: 'پزشکان طرف قرارداد',
+    description: 'لیست پزشکان فعال سامانه را مشاهده کنید.',
     href: '/doctors',
     icon: Stethoscope,
+    actionLabel: 'مشاهده پزشکان',
   },
   {
     title: 'تکمیل پروفایل',
@@ -409,6 +411,11 @@ function QuickActionsCard() {
                   <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
                     {action.description}
                   </p>
+                  {action.actionLabel ? (
+                    <span className="mt-2 inline-flex text-xs font-semibold text-primary">
+                      {action.actionLabel}
+                    </span>
+                  ) : null}
                 </div>
                 <ArrowLeft className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-x-1" />
               </div>
