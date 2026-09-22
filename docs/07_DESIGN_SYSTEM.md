@@ -15,7 +15,12 @@
 - **Muted**: `oklch(0.96 0.01 160)`
 
 ## ۳. استاندارد کامپوننت‌های اتمیک
-- **Buttons**: کلیدهای با کنتراست بالا، شعاع گوشه هماهنگ (`rounded-xl` / `rounded-lg`)، ترنزیشن‌های نرم و حالات Disabled/Loading مشخص.
-- **Cards**: سایه‌های ملایم (Soft elevation)، بوردرهای مرزی با غلظت شفاف (`border-border/50`)، پدینگ استاندارد داخلی.
-- **Badges**: وضعیت‌های فعال، معلق، منقضی با فونت‌های سایز کوچک و خوانا.
-- **Inputs & Forms**: فوکوس مشخص با رنگ Primary Ring، پشتیبانی کامل از RTL و اعداد فارسی/انگلیسی استاندارد.
+- **Buttons**: کلیدهای با کنتراست بالا، شعاع گوشه هماهنگ (`rounded-xl` / `rounded-lg`)، ترنزیشن‌های نرم و حالات Disabled/Loading مشخص به همراه واریانت‌های `premium` و `glass`.
+- **Cards**: سایه‌های ملایم لایه‌ای (Layered Soft elevation)، بوردرهای مرزی با غلظت شفاف (`border-border/50`)، واریانت‌های `premium`, `glass`, `subtle`.
+- **Badges**: وضعیت‌های فعال، معلق، منقضی با فونت‌های سایز کوچک و نشانگرهای معنایی (`success`, `warning`, `premium`, `destructive`).
+- **Inputs & Forms**: فیلدهای ورودی با بوردرهای متوازن، آیکون‌های درون‌فیلدی و فوکوس با رینگ نرم.
+
+## ۴. استانداردهای صفحات ماژولار و جداول (Data-Dense Tables Pattern)
+- **Avatar System**: نمادهای کاربری گرادیانی مبتنی بر هویت و نام با نسبت ۱:۱ و گوشه‌های گرد نرم (`rounded-xl`).
+- **Status Mapping**: نگاشت مستقیم وضعیت‌های دیتابیس به پالت معنایی دیزاین سیستم (Active -> Success Badge, Pending -> Warning Badge, Suspended -> Destructive Badge).
+- **Search & Filter Bars**: کارت‌های شناور با پس‌زمینه شیشه‌ای (`Card variant="glass"`)، تعبیه فیلترهای چندگانه تب‌مانند در دسترس سریع کاربر.
