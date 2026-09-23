@@ -40,7 +40,7 @@ export function DashboardAppShell({ children, activeMenu = 'dashboard' }: Dashbo
     { id: 'contracts', label: 'قراردادها', icon: FileText, href: '/doctors-clinics-premium-preview' },
     { id: 'agents', label: 'نمایندگان و فروش', icon: CreditCard, href: '/agents-premium-preview' },
     { id: 'reports', label: 'گزارش‌ها و هوش سلامت', icon: BarChart3, href: '/reports-bi-premium-preview' },
-    { id: 'settings', label: 'تنظیمات', icon: Settings, href: '/dashboard-premium-preview' },
+    { id: 'settings', label: 'تنظیمات سامانه', icon: Settings, href: '/settings-premium-preview' },
   ]
 
   return (
