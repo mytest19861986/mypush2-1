@@ -140,7 +140,10 @@ export function DashboardAppShell({ children, activeMenu = 'dashboard' }: Dashbo
             </button>
 
             {/* User Profile Capsule */}
-            <div className="flex items-center gap-3 ps-2 sm:ps-4 border-s border-slate-200/80">
+            <Link
+              href="/admin-profile-premium-preview"
+              className="flex items-center gap-3 ps-2 sm:ps-4 border-s border-slate-200/80 hover:opacity-85 transition-opacity cursor-pointer"
+            >
               <div className="size-10 rounded-full bg-gradient-to-tr from-[#0D5C58] to-teal-500 text-white font-bold flex items-center justify-center shadow-xs">
                 م‌س
               </div>
@@ -151,7 +154,7 @@ export function DashboardAppShell({ children, activeMenu = 'dashboard' }: Dashbo
                 </div>
                 <span className="text-[11px] text-emerald-600 font-medium">سطح دسترسی کل</span>
               </div>
-            </div>
+            </Link>
           </div>
         </header>
 
