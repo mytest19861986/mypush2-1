@@ -176,7 +176,11 @@ export async function getLiveUsersData(options: UserFilterOptions = {}): Promise
         include: {
           profile: true,
           roles: { include: { role: true } },
-          userPlans: { take: 1, orderBy: { createdAt: 'desc' } },
+          userPlans: {
+            take: 1,
+            orderBy: { createdAt: 'desc' },
+            include: { plan: true },
+          },
         },
       }),
       db.user.count({ where: { deletedAt: null } }),
@@ -225,7 +229,7 @@ export async function getLiveUsersData(options: UserFilterOptions = {}): Promise
         roleLabel,
         status,
         statusLabel,
-        plan: u.userPlans[0]?.planType || 'طرح پایه',
+        plan: u.userPlans[0]?.plan?.name || 'طرح طلایی سلامت',
         joinDate,
         lastActivity: 'امروز',
         avatarInitial,

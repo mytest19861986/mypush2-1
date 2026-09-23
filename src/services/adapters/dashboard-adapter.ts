@@ -186,24 +186,24 @@ export async function getLiveDashboardData(): Promise<DashboardDataContract> {
       activities: getDashboardDemoData().activities, // Enriched activities
       recentContracts: recentContractsDb.length > 0
         ? recentContractsDb.map((c) => ({
-            id: c.contractNumber || c.id.slice(0, 8),
-            name: c.title || `${c.user?.profile?.firstName || ''} ${c.user?.profile?.lastName || ''}`.trim() || 'قرارداد ثبتی',
+            id: `CTR-${c.id.slice(0, 6).toUpperCase()}`,
+            name: `${c.user?.profile?.firstName || ''} ${c.user?.profile?.lastName || ''}`.trim() || 'قرارداد خدمات سلامت',
             category: 'خدمات سلامت',
             date: c.createdAt ? new Date(c.createdAt).toLocaleDateString('fa-IR') : 'امروز',
-            amount: `${(c.amount || 0).toLocaleString('fa-IR')} تومان`,
-            status: (c.status === 'SIGNED' ? 'ACTIVE' : c.status === 'TERMINATED' ? 'REJECTED' : 'PENDING') as 'ACTIVE' | 'PENDING' | 'REJECTED',
-            statusLabel: c.status === 'SIGNED' ? 'فعال' : c.status === 'TERMINATED' ? 'رد شده' : 'در حال بررسی',
+            amount: `${(c.totalAmount || 0).toLocaleString('fa-IR')} تومان`,
+            status: (c.status === 'CONFIRMED' || c.status === 'COMPLETED' ? 'ACTIVE' : c.status === 'CANCELLED' ? 'REJECTED' : 'PENDING') as 'ACTIVE' | 'PENDING' | 'REJECTED',
+            statusLabel: c.status === 'CONFIRMED' || c.status === 'COMPLETED' ? 'فعال' : c.status === 'CANCELLED' ? 'رد شده' : 'در حال بررسی',
           }))
         : getDashboardDemoData().recentContracts,
       recentTransactions: recentTransactionsDb.length > 0
         ? recentTransactionsDb.map((t) => ({
-            id: t.trackingCode || t.id.slice(0, 8),
+            id: t.refId || `TXN-${t.id.slice(0, 6)}`,
             title: t.description || 'تراکنش سیستمی',
-            trackingCode: t.trackingCode || `TRX-${t.id.slice(0, 6)}`,
+            trackingCode: t.refId || `TRX-${t.id.slice(0, 6)}`,
             date: t.createdAt ? new Date(t.createdAt).toLocaleDateString('fa-IR') : 'امروز',
             amount: `${(t.amount || 0).toLocaleString('fa-IR')} تومان`,
-            type: (t.type === 'SUBSCRIPTION' ? 'SUBSCRIPTION' : t.type === 'SETTLEMENT' ? 'SETTLEMENT' : 'GATEWAY') as 'GATEWAY' | 'SUBSCRIPTION' | 'SETTLEMENT',
-            typeLabel: t.type === 'SUBSCRIPTION' ? 'خرید اشتراک' : t.type === 'SETTLEMENT' ? 'تسویه حساب' : 'درگاه پرداخت',
+            type: (t.type === 'COMMISSION_PAYOUT' ? 'SETTLEMENT' : t.type === 'PURCHASE' ? 'SUBSCRIPTION' : 'GATEWAY') as 'GATEWAY' | 'SUBSCRIPTION' | 'SETTLEMENT',
+            typeLabel: t.type === 'COMMISSION_PAYOUT' ? 'تسویه پورسانت' : t.type === 'PURCHASE' ? 'خرید اشتراک' : 'درگاه پرداخت',
           }))
         : getDashboardDemoData().recentTransactions,
       source: 'REAL_DATABASE',
