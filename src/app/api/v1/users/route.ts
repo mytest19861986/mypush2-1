@@ -1,149 +1,61 @@
 import { NextRequest } from 'next/server'
-import { z } from 'zod'
-import { db } from '@/lib/db'
-import { requirePermission } from '@/lib/auth'
-import { successResponse, errorResponse, paginatedResponse } from '@/lib/api-response'
-import type { Prisma } from '@prisma/client'
+import { authenticateRequest } from '@/lib/auth'
+import { successResponse, errorResponse } from '@/lib/api-response'
+import { getUserAdapter } from '@/services/adapters/user-adapter'
 
-const querySchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
-  search: z.string().optional(),
-  status: z.enum(['ACTIVE', 'INACTIVE', 'BLOCKED']).optional(),
-  role: z.string().optional(),
-})
+const ALLOWED_ROLES = ['SUPER_ADMIN', 'ADMIN', 'SUPPORT']
 
+/**
+ * GET /api/v1/users
+ * Protected users list with search, role/status filtering, and pagination.
+ * RBAC: SUPER_ADMIN, ADMIN, SUPPORT
+ */
 export async function GET(request: NextRequest) {
-  const { authorized, payload, error } = await requirePermission(request, 'manage_users')
-  if (!authorized) {
-    return errorResponse('FORBIDDEN', error!, payload ? 403 : 401)
-  }
-
-  const { searchParams } = request.nextUrl
-  const parsed = querySchema.safeParse(Object.fromEntries(searchParams))
-
-  if (!parsed.success) {
-    return errorResponse('VALIDATION_ERROR', parsed.error.issues.map((i) => i.message).join(', '))
-  }
-
-  const { page, limit, search, status, role } = parsed.data
-  const skip = (page - 1) * limit
-  const now = new Date()
-
-  // Admin users page is for regular members only. Provider, sales partner,
-  // and staff accounts have separate management pages.
-  const regularUserRoleFilter: Prisma.UserRoleListRelationFilter = {
-    some: {
-      role: { name: 'USER' },
-    },
-    none: {
-      role: { name: { in: ['ADMIN', 'SUPER_ADMIN', 'SUPERADMIN', 'AGENT', 'DOCTOR'] } },
-    },
-  }
-  const andFilters: Prisma.UserWhereInput[] = [{ roles: regularUserRoleFilter }]
-
-  // Build where clause
-  const where: Prisma.UserWhereInput = {
-    deletedAt: null,
-    doctor: { is: null },
-    agent: { is: null },
-    AND: andFilters,
-  }
-
-  if (search) {
-    where.OR = [
-      { mobile: { contains: search } },
-      { email: { contains: search } },
-      { profile: { firstName: { contains: search } } },
-      { profile: { lastName: { contains: search } } },
-    ]
-  }
-
-  if (status) {
-    where.status = status
-  }
-
-  if (role) {
-    andFilters.push({ roles: { some: { role: { name: role } } } })
-  }
-
-  const [users, total] = await Promise.all([
-    db.user.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        mobile: true,
-        email: true,
-        status: true,
-        isMobileVerified: true,
-        createdAt: true,
-        updatedAt: true,
-        profile: {
-          select: {
-            firstName: true,
-            lastName: true,
-            avatar: true,
-          },
-        },
-        roles: {
-          select: {
-            role: {
-              select: {
-                id: true,
-                name: true,
-                title: true,
-              },
-            },
-          },
-        },
-        userPlans: {
-          where: {
-            status: 'ACTIVE',
-            endDate: { gte: now },
-          },
-          orderBy: { endDate: 'desc' },
-          take: 1,
-          select: {
-            status: true,
-            endDate: true,
-            plan: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-      },
-    }),
-    db.user.count({ where }),
-  ])
-
-  const formattedUsers = users.map((user) => {
-    const activePlan = user.userPlans[0]
-
-    return {
-      id: user.id,
-      mobile: user.mobile,
-      email: user.email,
-      status: user.status,
-      isMobileVerified: user.isMobileVerified,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-      profile: user.profile,
-      roles: user.roles.map((ur) => ur.role),
-      activePlanName: activePlan?.plan.name ?? null,
-      activePlanEndDate: activePlan?.endDate.toISOString() ?? null,
-      activePlanStatus: activePlan?.status ?? null,
+  try {
+    // 1. Authenticate Request
+    const { authenticated, payload, error } = await authenticateRequest(request)
+    if (!authenticated || !payload) {
+      return errorResponse('UNAUTHORIZED', error || 'احراز هویت الزامی است', 401)
     }
-  })
 
-  return paginatedResponse(formattedUsers, {
-    page,
-    limit,
-    total,
-    totalPages: Math.ceil(total / limit),
-  })
+    // 2. Role Guard (RBAC)
+    const hasRole = payload.roles.some((r) => ALLOWED_ROLES.includes(r))
+    if (!hasRole) {
+      return errorResponse(
+        'FORBIDDEN',
+        `دسترسی غیرمجاز. دسترسی به مدیریت کاربران نیازمند نقش مجاز است`,
+        403
+      )
+    }
+
+    // 3. Query Parameter Extraction & Validation
+    const searchParams = request.nextUrl.searchParams
+    const searchQuery = searchParams.get('q') || ''
+    const roleFilter = searchParams.get('role') || 'ALL'
+    const statusFilter = searchParams.get('status') || 'ALL'
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
+    const pageSize = Math.min(50, Math.max(1, parseInt(searchParams.get('pageSize') || '10', 10) || 10))
+    const useMock = searchParams.get('demo') === 'true'
+
+    // 4. Retrieve data from typed Adapter Layer
+    const result = await getUserAdapter(
+      {
+        searchQuery,
+        roleFilter,
+        statusFilter,
+        page,
+        pageSize,
+      },
+      useMock
+    )
+
+    return successResponse(result, 'لیست کاربران با موفقیت بارگذاری شد')
+  } catch (err: any) {
+    console.error('[UsersAPI] Error:', err)
+    return errorResponse(
+      'INTERNAL_SERVER_ERROR',
+      'خطایی در پردازش لیست کاربران رخ داد',
+      500
+    )
+  }
 }
