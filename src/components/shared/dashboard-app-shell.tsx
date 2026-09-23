@@ -39,7 +39,7 @@ export function DashboardAppShell({ children, activeMenu = 'dashboard' }: Dashbo
     { id: 'requests', label: 'درخواست‌ها', icon: FileCheck2, badge: '۱۲', badgeColor: 'bg-[#EA580C] text-white', href: '/dashboard-premium-preview' },
     { id: 'contracts', label: 'قراردادها', icon: FileText, href: '/doctors-clinics-premium-preview' },
     { id: 'agents', label: 'نمایندگان و فروش', icon: CreditCard, href: '/agents-premium-preview' },
-    { id: 'reports', label: 'گزارش‌ها', icon: BarChart3, href: '/dashboard-premium-preview' },
+    { id: 'reports', label: 'گزارش‌ها و هوش سلامت', icon: BarChart3, href: '/reports-bi-premium-preview' },
     { id: 'settings', label: 'تنظیمات', icon: Settings, href: '/dashboard-premium-preview' },
   ]
 
