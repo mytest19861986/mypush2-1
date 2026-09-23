@@ -26,6 +26,9 @@ import {
 } from 'lucide-react'
 import { toPersianNum } from '@/utils/formatters'
 
+import { DashboardAppShell } from '@/components/shared/dashboard-app-shell'
+import { PremiumMetricCard } from '@/components/shared/premium-metric-card'
+
 interface UserItemMock {
   id: string
   fullName: string
@@ -43,41 +46,6 @@ export default function UsersPremiumPreviewPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [roleFilter, setRoleFilter] = useState('ALL')
   const [statusFilter, setStatusFilter] = useState('ALL')
-
-  const userStats = [
-    {
-      title: 'کل کاربران ثبت‌شده',
-      value: '۲,۸۴۵',
-      growth: '+۱۲.۴٪ رشد ماهانه',
-      icon: Users,
-      glow: 'from-blue-500/20 to-indigo-500/5',
-      badge: 'مجموع'
-    },
-    {
-      title: 'کاربران فعال با اشتراک',
-      value: '۲,۱۹۰',
-      growth: '۷۶.۹٪ نرخ فعال بودن',
-      icon: UserCheck,
-      glow: 'from-emerald-500/20 to-teal-500/5',
-      badge: 'احراز هویت شده'
-    },
-    {
-      title: 'در انتظار تکمیل مدارک',
-      value: '۵۱۲',
-      growth: 'نیازمند بررسی اپراتور',
-      icon: Clock,
-      glow: 'from-amber-500/20 to-orange-500/5',
-      badge: 'صف بازبینی'
-    },
-    {
-      title: 'حساب‌های معلق یا غیرفعال',
-      value: '۱۴۳',
-      growth: 'محدودیت موقت',
-      icon: UserX,
-      glow: 'from-rose-500/20 to-red-500/5',
-      badge: 'کنترل ریسک'
-    },
-  ]
 
   const users: UserItemMock[] = [
     {
@@ -150,64 +118,74 @@ export default function UsersPremiumPreviewPage() {
   })
 
   return (
-    <div className="min-h-screen bg-background/95 p-4 sm:p-6 lg:p-10 space-y-8" dir="rtl">
-      {/* ─── Header ─── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/50 pb-6">
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              مدیریت و پایش اعضای سامانه حامی‌کارت
-            </h1>
-            <Badge variant="premium">
-              <Sparkles className="size-3.5 text-primary" />
-              <span>Users Premium Experience</span>
-            </Badge>
+    <DashboardAppShell activeMenu="users">
+      <div className="space-y-8">
+        {/* ─── Header ─── */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/70 pb-6">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                مدیریت کاربران و اعضای سامانه
+              </h1>
+              <Badge variant="premium">
+                <Sparkles className="size-3.5 text-primary" />
+                <span>Users Premium Experience</span>
+              </Badge>
+            </div>
+            <p className="text-sm text-slate-500">
+              فهرست یکپارچه کاربران، پزشکان و نمایندگان به همراه تله‌متری اشتراک‌ها و وضعیت اعتبارسنجی
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground">
-            فهرست یکپارچه کاربران، پزشکان و نمایندگان به همراه تله‌متری اشتراک‌ها و وضعیت اعتبارسنجی
-          </p>
+
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="sm" className="gap-2 rounded-xl text-xs font-bold text-slate-700">
+              <Download className="size-4" />
+              <span>خروجی اکسل</span>
+            </Button>
+            <Button variant="premium" size="sm" className="gap-2 rounded-xl text-xs font-bold shadow-xs">
+              <ShieldCheck className="size-4" />
+              <span>ثبت کاربر جدید</span>
+            </Button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" className="gap-2">
-            <Download className="size-4" />
-            <span>خروجی اکسل</span>
-          </Button>
-          <Button variant="premium" size="sm" className="gap-2">
-            <ShieldCheck className="size-4" />
-            <span>ثبت عضو جدید</span>
-          </Button>
+        {/* ─── KPI Stats Section ─── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <PremiumMetricCard
+            title="کل کاربران ثبت‌شده"
+            value="۲,۸۴۵"
+            trend="↑ ۱۲.۴٪ رشد ماهانه"
+            isUp={true}
+            icon={Users}
+            variant="blue"
+            badge="مجموع"
+          />
+          <PremiumMetricCard
+            title="کاربران فعال با اشتراک"
+            value="۲,۱۹۰"
+            trend="۷۶.۹٪ نرخ فعال"
+            isUp={true}
+            icon={UserCheck}
+            variant="green"
+            badge="احراز شده"
+          />
+          <PremiumMetricCard
+            title="در انتظار تکمیل مدارک"
+            value="۵۱۲"
+            description="صف بازبینی اپراتور"
+            icon={Clock}
+            variant="amber"
+            badge="صف بازبینی"
+          />
+          <PremiumMetricCard
+            title="حساب‌های معلق یا مسدود"
+            value="۱۴۳"
+            description="محدودیت موقت"
+            icon={UserX}
+            variant="purple"
+            badge="کنترل ریسک"
+          />
         </div>
-      </div>
-
-      {/* ─── KPI Stats Section ─── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {userStats.map((stat, idx) => {
-          const Icon = stat.icon
-          return (
-            <Card key={idx} variant="premium" className="relative overflow-hidden group hover:shadow-md transition-all">
-              <div className={`absolute -top-10 -right-10 size-24 rounded-full bg-gradient-to-br ${stat.glow} blur-2xl group-hover:scale-150 transition-transform`} />
-              <CardContent className="p-5 relative z-10 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-xs">
-                    <Icon className="size-5" />
-                  </div>
-                  <Badge variant="outline" className="text-[11px] font-normal border-border/60">
-                    {stat.badge}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">{stat.title}</p>
-                  <p className="text-2xl font-extrabold font-mono text-foreground mt-1">{stat.value}</p>
-                </div>
-                <p className="text-xs text-muted-foreground pt-2 border-t border-border/30">
-                  {stat.growth}
-                </p>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
 
       {/* ─── Filter & Search Bar ─── */}
       <Card variant="glass">
@@ -371,6 +349,7 @@ export default function UsersPremiumPreviewPage() {
           </table>
         </div>
       </Card>
-    </div>
+      </div>
+    </DashboardAppShell>
   )
 }

@@ -29,6 +29,9 @@ import {
 } from 'lucide-react'
 import { toPersianNum } from '@/utils/formatters'
 
+import { DashboardAppShell } from '@/components/shared/dashboard-app-shell'
+import { PremiumMetricCard } from '@/components/shared/premium-metric-card'
+
 interface DoctorClinicMock {
   id: string
   name: string
@@ -51,45 +54,6 @@ export default function DoctorsClinicsPremiumPreviewPage() {
   const [specialtyFilter, setSpecialtyFilter] = useState('ALL')
   const [statusFilter, setStatusFilter] = useState('ALL')
 
-  const kpis = [
-    {
-      title: 'پزشکان فعال همکار',
-      value: '۳۲۸',
-      growth: '+۸ پزشک در این ماه',
-      isUp: true,
-      icon: Stethoscope,
-      glow: 'from-emerald-500/20 to-teal-500/5',
-      badge: 'شبکه درمان'
-    },
-    {
-      title: 'مراکز و کلینیک‌های معتبر',
-      value: '۱۴۲',
-      growth: 'پوشش ۱۲ منطقه کلیدی',
-      isUp: true,
-      icon: Building2,
-      glow: 'from-blue-500/20 to-indigo-500/5',
-      badge: 'شعب طرف قرارداد'
-    },
-    {
-      title: 'قراردادهای رسمی فعال',
-      value: '۴۵۶',
-      growth: 'تضمین تعرفه تا پایان سال',
-      isUp: true,
-      icon: FileCheck2,
-      glow: 'from-teal-500/20 to-emerald-500/5',
-      badge: 'تعهد تعرفه‌ای'
-    },
-    {
-      title: 'مراجعات ثبت‌شده ماه جاری',
-      value: '۳,۴۹۰',
-      growth: '+۱۵.۳٪ رشد پذیرش',
-      isUp: true,
-      icon: TrendingUp,
-      glow: 'from-purple-500/20 to-indigo-500/5',
-      badge: 'تراکنش درمان'
-    },
-  ]
-
   const doctorsList: DoctorClinicMock[] = [
     {
       id: 'DOC-101',
@@ -99,7 +63,7 @@ export default function DoctorsClinicsPremiumPreviewPage() {
       location: 'تهران، میدان ونک',
       discountRate: '۴۰٪ تخفیف حامی',
       rating: '۴.۹',
-      reviewsCount: ۱۸۴,
+      reviewsCount: 184,
       status: 'ACTIVE',
       statusLabel: 'فعال و تاییدشده',
       activeContracts: 'طرح طلایی و نقره‌ای',
@@ -114,7 +78,7 @@ export default function DoctorsClinicsPremiumPreviewPage() {
       location: 'تهران، سعادت‌آباد',
       discountRate: '۳۵٪ تخفیف حامی',
       rating: '۴.۸',
-      reviewsCount: ۱۴۲,
+      reviewsCount: 142,
       status: 'ACTIVE',
       statusLabel: 'فعال و تاییدشده',
       activeContracts: 'طرح طلایی',
@@ -129,7 +93,7 @@ export default function DoctorsClinicsPremiumPreviewPage() {
       location: 'تهران، خیابان شریعتی',
       discountRate: '۳۰٪ تخفیف حامی',
       rating: '۴.۷',
-      reviewsCount: ۹۶,
+      reviewsCount: 96,
       status: 'PENDING',
       statusLabel: 'در انتظار تایید مدارک',
       activeContracts: 'در صف بازبینی',
@@ -144,7 +108,7 @@ export default function DoctorsClinicsPremiumPreviewPage() {
       location: 'تهران، پاسداران',
       discountRate: '۲۵٪ تخفیف حامی',
       rating: '۴.۶',
-      reviewsCount: ۷۵,
+      reviewsCount: 75,
       status: 'NEEDS_REVIEW',
       statusLabel: 'نیازمند بررسی تعرفه',
       activeContracts: 'تمدید سالانه',
@@ -160,77 +124,88 @@ export default function DoctorsClinicsPremiumPreviewPage() {
   })
 
   return (
-    <div className="min-h-screen bg-background/95 p-4 sm:p-6 lg:p-10 space-y-8" dir="rtl">
-      {/* ─── Header ─── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/50 pb-6">
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              شبکه مراکز درمانی و پزشکان همکار حامی‌کارت
-            </h1>
-            <Badge variant="premium">
-              <Sparkles className="size-3.5 text-primary" />
-              <span>Healthcare Network v2</span>
-            </Badge>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            پایش و ارزیابی پزشکان، کلینیک‌های طرف قرارداد، سقف تخفیف‌ها و اعتبار سنجی مجوزهای پزشکی
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="flex rounded-xl bg-muted/60 p-1 border border-border/40 text-xs">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'}`}
-              title="نمای کارتی"
-            >
-              <LayoutGrid className="size-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded-lg transition-all ${viewMode === 'table' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'}`}
-              title="نمای جدولی"
-            >
-              <List className="size-4" />
-            </button>
+    <DashboardAppShell activeMenu="doctors">
+      <div className="space-y-8">
+        {/* ─── Header ─── */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/70 pb-6">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                شبکه مراکز درمانی و پزشکان همکار
+              </h1>
+              <Badge variant="premium">
+                <Sparkles className="size-3.5 text-primary" />
+                <span>Healthcare Network v2</span>
+              </Badge>
+            </div>
+            <p className="text-sm text-slate-500">
+              پایش و ارزیابی پزشکان، کلینیک‌های طرف قرارداد، سقف تخفیف‌ها و اعتبار سنجی مجوزهای پزشکی
+            </p>
           </div>
 
-          <Button variant="premium" size="sm" className="gap-2">
-            <Plus className="size-4" />
-            <span>ثبت پزشک / مرکز همکار</span>
-          </Button>
-        </div>
-      </div>
+          <div className="flex items-center gap-3">
+            <div className="flex rounded-xl bg-slate-100 p-1 border border-slate-200 text-xs">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'}`}
+                title="نمای کارتی"
+              >
+                <LayoutGrid className="size-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('table')}
+                className={`p-1.5 rounded-lg transition-all ${viewMode === 'table' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'}`}
+                title="نمای جدولی"
+              >
+                <List className="size-4" />
+              </button>
+            </div>
 
-      {/* ─── KPI Section ─── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {kpis.map((kpi, idx) => {
-          const Icon = kpi.icon
-          return (
-            <Card key={idx} variant="premium" className="relative overflow-hidden group hover:shadow-md transition-all">
-              <div className={`absolute -top-10 -right-10 size-24 rounded-full bg-gradient-to-br ${kpi.glow} blur-2xl group-hover:scale-150 transition-transform`} />
-              <CardContent className="p-5 relative z-10 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-xs">
-                    <Icon className="size-5" />
-                  </div>
-                  <Badge variant="outline" className="text-[11px] font-normal border-border/60">
-                    {kpi.badge}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">{kpi.title}</p>
-                  <p className="text-2xl font-extrabold font-mono text-foreground mt-1">{kpi.value}</p>
-                </div>
-                <p className="text-xs text-muted-foreground pt-2 border-t border-border/30">
-                  {kpi.growth}
-                </p>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
+            <Button variant="premium" size="sm" className="gap-2 rounded-xl text-xs font-bold shadow-xs">
+              <Plus className="size-4" />
+              <span>ثبت پزشک / مرکز همکار</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* ─── KPI Section ─── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <PremiumMetricCard
+            title="پزشکان فعال همکار"
+            value="۳۲۸"
+            trend="+۸ پزشک در این ماه"
+            isUp={true}
+            icon={Stethoscope}
+            variant="green"
+            badge="شبکه درمان"
+          />
+          <PremiumMetricCard
+            title="مراکز و کلینیک‌های معتبر"
+            value="۱۴۲"
+            trend="پوشش ۱۲ منطقه کلیدی"
+            isUp={true}
+            icon={Building2}
+            variant="blue"
+            badge="شعب طرف قرارداد"
+          />
+          <PremiumMetricCard
+            title="قراردادهای رسمی فعال"
+            value="۴۵۶"
+            description="تضمین تعرفه تا پایان سال"
+            icon={FileCheck2}
+            variant="amber"
+            badge="تعهد تعرفه‌ای"
+          />
+          <PremiumMetricCard
+            title="مراجعات ثبت‌شده ماه جاری"
+            value="۳,۴۹۰"
+            trend="↑ ۱۵.۳٪ رشد پذیرش"
+            isUp={true}
+            icon={TrendingUp}
+            variant="purple"
+            badge="تراکنش درمان"
+          />
+        </div>
 
       {/* ─── Search & Filter Bar ─── */}
       <Card variant="glass">
@@ -398,6 +373,7 @@ export default function DoctorsClinicsPremiumPreviewPage() {
           </div>
         </Card>
       )}
-    </div>
+      </div>
+    </DashboardAppShell>
   )
 }

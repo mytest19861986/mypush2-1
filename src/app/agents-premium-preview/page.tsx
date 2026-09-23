@@ -28,6 +28,9 @@ import {
 } from 'lucide-react'
 import { toPersianNum } from '@/utils/formatters'
 
+import { DashboardAppShell } from '@/components/shared/dashboard-app-shell'
+import { PremiumMetricCard } from '@/components/shared/premium-metric-card'
+
 interface AgentMock {
   id: string
   name: string
@@ -60,54 +63,13 @@ export default function AgentsPremiumPreviewPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
 
-  const kpis = [
-    {
-      title: 'نمایندگان و همکاران فعال',
-      value: '۸۶',
-      growth: '+۵ همکار در ماه جاری',
-      isUp: true,
-      icon: Briefcase,
-      glow: 'from-blue-500/20 to-indigo-500/5',
-      badge: 'شبکه فروش'
-    },
-    {
-      title: 'حجم فروش موفق کل',
-      value: '۱,۴۲۰,۰۰۰,۰۰۰',
-      unit: 'تومان',
-      growth: '+۲۴.۸٪ رشد فصلی',
-      isUp: true,
-      icon: TrendingUp,
-      glow: 'from-emerald-500/20 to-teal-500/5',
-      badge: 'جریان درآمدی'
-    },
-    {
-      title: 'مشتریان معرفی‌شده فعال',
-      value: '۱,۷۴۰',
-      growth: '۸۲٪ تبدیل به اشتراک',
-      isUp: true,
-      icon: Users,
-      glow: 'from-teal-500/20 to-emerald-500/5',
-      badge: 'تبدیل لید'
-    },
-    {
-      title: 'کمیسیون پرداختی شاپرک',
-      value: '۲۱۸,۵۰۰,۰۰۰',
-      unit: 'تومان',
-      growth: 'تسویه خودکار هفتگی',
-      isUp: true,
-      icon: DollarSign,
-      glow: 'from-purple-500/20 to-indigo-500/5',
-      badge: 'تسویه‌شده'
-    },
-  ]
-
   const agents: AgentMock[] = [
     {
       id: 'AG-201',
       name: 'پیمان حسینی',
       branch: 'شعبه مرکزی غرب تهران',
       location: 'تهران، صادقیه',
-      activeClientsCount: ۳۴۲,
+      activeClientsCount: 342,
       totalSalesVolume: '۳۸۰,۰۰۰,۰۰۰ تومان',
       totalCommissionPaid: '۵۷,۰۰۰,۰۰۰ تومان',
       rank: 'رتبه ۱ فروش (VIP)',
@@ -121,7 +83,7 @@ export default function AgentsPremiumPreviewPage() {
       name: 'الهام سلیمی',
       branch: 'نمایندگی منطقه سعادت‌آباد',
       location: 'تهران، سعادت‌آباد',
-      activeClientsCount: ۲۸۵,
+      activeClientsCount: 285,
       totalSalesVolume: '۳۱۰,۰۰۰,۰۰۰ تومان',
       totalCommissionPaid: '۴۶,۵۰۰,۰۰۰ تومان',
       rank: 'رتبه ۲ فروش',
@@ -135,7 +97,7 @@ export default function AgentsPremiumPreviewPage() {
       name: 'شرکت خدمات نوین مهر',
       branch: 'نمایندگی حقوقی و سازمانی',
       location: 'تهران، مطهری',
-      activeClientsCount: ۵۲۰,
+      activeClientsCount: 520,
       totalSalesVolume: '۵۴۰,۰۰۰,۰۰۰ تومان',
       totalCommissionPaid: '۸۱,۰۰۰,۰۰۰ تومان',
       rank: 'نماینده طلایی سازمانی',
@@ -149,7 +111,7 @@ export default function AgentsPremiumPreviewPage() {
       name: 'فرهاد بهرامی',
       branch: 'دفتر نمایندگی شرق',
       location: 'تهران، تهرانپارس',
-      activeClientsCount: ۶۴,
+      activeClientsCount: 64,
       totalSalesVolume: '۵۸,۰۰۰,۰۰۰ تومان',
       totalCommissionPaid: '۸,۷۰۰,۰۰۰ تومان',
       rank: 'همکار در حال توسعه',
@@ -206,67 +168,77 @@ export default function AgentsPremiumPreviewPage() {
   })
 
   return (
-    <div className="min-h-screen bg-background/95 p-4 sm:p-6 lg:p-10 space-y-8" dir="rtl">
-      {/* ─── Header ─── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/50 pb-6">
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              مرکز رشد و مدیریت شبکه نمایندگان فروش حامی‌کارت
-            </h1>
-            <Badge variant="premium">
-              <Sparkles className="size-3.5 text-primary" />
-              <span>Sales Network Intelligence v2</span>
-            </Badge>
+    <DashboardAppShell activeMenu="agents">
+      <div className="space-y-8">
+        {/* ─── Header ─── */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/70 pb-6">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                مرکز رشد و مدیریت شبکه نمایندگان فروش
+              </h1>
+              <Badge variant="premium">
+                <Sparkles className="size-3.5 text-primary" />
+                <span>Sales Network Intelligence v2</span>
+              </Badge>
+            </div>
+            <p className="text-sm text-slate-500">
+              پایش لحظه‌ای عملکرد فروش، مدیریت خطوط کمیسیون، تسویه‌های مالی و جذب نمایندگان حقوقی و حقیقی
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground">
-            پایش لحظه‌ای عملکرد فروش، مدیریت خطوط کمیسیون، تسویه‌های مالی و جذب نمایندگان حقوقی و حقیقی
-          </p>
+
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="sm" className="gap-2 rounded-xl text-xs font-bold text-slate-700">
+              <Download className="size-4" />
+              <span>خروجی مالی کمیسیون</span>
+            </Button>
+            <Button variant="premium" size="sm" className="gap-2 rounded-xl text-xs font-bold shadow-xs">
+              <Plus className="size-4" />
+              <span>ثبت قرارداد نماینده جدید</span>
+            </Button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" className="gap-2">
-            <Download className="size-4" />
-            <span>خروجی مالی کمیسیون</span>
-          </Button>
-          <Button variant="premium" size="sm" className="gap-2">
-            <Plus className="size-4" />
-            <span>ثبت قرارداد نماینده جدید</span>
-          </Button>
+        {/* ─── KPI Section ─── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <PremiumMetricCard
+            title="نمایندگان و همکاران فعال"
+            value="۸۶"
+            trend="+۵ همکار در ماه جاری"
+            isUp={true}
+            icon={Briefcase}
+            variant="blue"
+            badge="شبکه فروش"
+          />
+          <PremiumMetricCard
+            title="حجم فروش موفق کل"
+            value="۱,۴۲۰M"
+            unit="تومان"
+            trend="↑ ۲۴.۸٪ رشد فصلی"
+            isUp={true}
+            icon={TrendingUp}
+            variant="green"
+            badge="جریان درآمدی"
+          />
+          <PremiumMetricCard
+            title="مشتریان معرفی‌شده فعال"
+            value="۱,۷۴۰"
+            trend="۸۲٪ تبدیل به اشتراک"
+            isUp={true}
+            icon={Users}
+            variant="amber"
+            badge="تبدیل لید"
+          />
+          <PremiumMetricCard
+            title="کمیسیون پرداختی شاپرک"
+            value="۲۱۸.۵M"
+            unit="تومان"
+            description="تسویه خودکار هفتگی"
+            icon={DollarSign}
+            variant="purple"
+            badge="تسویه‌شده"
+          />
         </div>
-      </div>
-
-      {/* ─── KPI Section ─── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {kpis.map((kpi, idx) => {
-          const Icon = kpi.icon
-          return (
-            <Card key={idx} variant="premium" className="relative overflow-hidden group hover:shadow-md transition-all">
-              <div className={`absolute -top-10 -right-10 size-24 rounded-full bg-gradient-to-br ${kpi.glow} blur-2xl group-hover:scale-150 transition-transform`} />
-              <CardContent className="p-5 relative z-10 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-xs">
-                    <Icon className="size-5" />
-                  </div>
-                  <Badge variant="outline" className="text-[11px] font-normal border-border/60">
-                    {kpi.badge}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">{kpi.title}</p>
-                  <div className="flex items-baseline gap-2 mt-1">
-                    <span className="text-2xl font-extrabold font-mono text-foreground">{kpi.value}</span>
-                    {kpi.unit && <span className="text-xs font-semibold text-muted-foreground">{kpi.unit}</span>}
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground pt-2 border-t border-border/30">
-                  {kpi.growth}
-                </p>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
 
       {/* ─── Filter & Search ─── */}
       <Card variant="glass">
@@ -426,6 +398,7 @@ export default function AgentsPremiumPreviewPage() {
           </div>
         </Card>
       </div>
-    </div>
+      </div>
+    </DashboardAppShell>
   )
 }
