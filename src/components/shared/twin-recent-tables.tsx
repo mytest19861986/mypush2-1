@@ -20,17 +20,33 @@ export function TwinRecentTables() {
   ]
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* ─── Recent Healthcare Centers Table ─── */}
-      <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-4">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full max-w-full">
+      {/* ─── Recent Healthcare Centers ─── */}
+      <div className="p-4 sm:p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-extrabold text-base text-slate-800">آخرین مراکز درمانی</h3>
+          <h3 className="font-extrabold text-sm sm:text-base text-slate-800">آخرین مراکز درمانی</h3>
           <Link href="/doctors-clinics-premium-preview" className="text-xs text-[#0D5C58] font-bold hover:underline">
             مشاهده همه
           </Link>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile View: Card List (<640px) */}
+        <div className="sm:hidden space-y-2.5">
+          {recentCenters.map((item, idx) => (
+            <div key={idx} className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs">
+              <div className="space-y-1">
+                <span className="font-bold text-slate-900 block">{item.name}</span>
+                <span className="text-[11px] text-slate-500">{item.city} • {item.date}</span>
+              </div>
+              <Badge variant={item.variant} className="rounded-full px-2 text-[10px]">
+                {item.status}
+              </Badge>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop View: Table (>=640px) */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-right text-xs">
             <thead className="text-slate-400 font-bold border-b border-slate-100 pb-2">
               <tr>
@@ -58,16 +74,40 @@ export function TwinRecentTables() {
         </div>
       </div>
 
-      {/* ─── Recent Users Table ─── */}
-      <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-4">
+      {/* ─── Recent Users ─── */}
+      <div className="p-4 sm:p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-extrabold text-base text-slate-800">آخرین کاربران</h3>
+          <h3 className="font-extrabold text-sm sm:text-base text-slate-800">آخرین کاربران</h3>
           <Link href="/users-premium-preview" className="text-xs text-[#0D5C58] font-bold hover:underline">
             مشاهده همه
           </Link>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile View: Card List (<640px) */}
+        <div className="sm:hidden space-y-2.5">
+          {recentUsers.map((item, idx) => (
+            <div key={idx} className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2.5">
+                <div className="size-7 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold shrink-0">
+                  {item.name[0]}
+                </div>
+                <div className="space-y-0.5">
+                  <span className="font-bold text-slate-900 block">{item.name}</span>
+                  <span className="text-[11px] font-mono text-slate-400">{item.mobile}</span>
+                </div>
+              </div>
+              <div className="text-left space-y-1">
+                <Badge variant={item.variant} className="rounded-full px-2 text-[10px]">
+                  {item.status}
+                </Badge>
+                <span className="text-[10px] text-slate-400 block font-mono">{item.time}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop View: Table (>=640px) */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-right text-xs">
             <thead className="text-slate-400 font-bold border-b border-slate-100 pb-2">
               <tr>

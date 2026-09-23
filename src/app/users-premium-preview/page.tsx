@@ -142,15 +142,27 @@ export default function UsersPremiumPreviewPage() {
               <Download className="size-4" />
               <span>خروجی اکسل</span>
             </Button>
-            <Button variant="premium" size="sm" className="gap-2 rounded-xl text-xs font-bold shadow-xs">
+            <Button variant="premium" size="sm" className="hidden sm:inline-flex gap-2 rounded-xl text-xs font-bold shadow-xs">
               <ShieldCheck className="size-4" />
               <span>ثبت کاربر جدید</span>
             </Button>
           </div>
         </div>
 
+        {/* Floating Action Button for Mobile (<640px) */}
+        <div className="fixed bottom-6 end-6 z-40 sm:hidden">
+          <Button
+            variant="premium"
+            size="lg"
+            className="rounded-full shadow-xl text-xs font-bold gap-2 px-5 py-3 h-12 bg-[#0D5C58] hover:bg-[#0a4845] text-white flex items-center border border-white/20"
+          >
+            <ShieldCheck className="size-5" />
+            <span>ثبت کاربر جدید</span>
+          </Button>
+        </div>
+
         {/* ─── KPI Stats Section ─── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 w-full">
           <PremiumMetricCard
             title="کل کاربران ثبت‌شده"
             value="۲,۸۴۵"

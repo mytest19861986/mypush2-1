@@ -51,8 +51,8 @@ export default function DashboardPremiumPreviewPage() {
           </p>
         </div>
 
-        {/* ─── Row 1: KPI 4-Card Pastel Grid ─── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {/* ─── Row 1: KPI 4-Card Pastel Grid (Single col on mobile, 2 col on tablet, 4 col on desktop) ─── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 w-full">
           <PremiumMetricCard
             title="کاربر فعال"
             value="۱۲,۵۴۰"

@@ -161,15 +161,27 @@ export default function DoctorsClinicsPremiumPreviewPage() {
               </button>
             </div>
 
-            <Button variant="premium" size="sm" className="gap-2 rounded-xl text-xs font-bold shadow-xs">
+            <Button variant="premium" size="sm" className="hidden sm:inline-flex gap-2 rounded-xl text-xs font-bold shadow-xs">
               <Plus className="size-4" />
               <span>ثبت پزشک / مرکز همکار</span>
             </Button>
           </div>
         </div>
 
+        {/* Floating Action Button for Mobile (<640px) */}
+        <div className="fixed bottom-6 end-6 z-40 sm:hidden">
+          <Button
+            variant="premium"
+            size="lg"
+            className="rounded-full shadow-xl text-xs font-bold gap-2 px-5 py-3 h-12 bg-[#0D5C58] hover:bg-[#0a4845] text-white flex items-center border border-white/20"
+          >
+            <Plus className="size-5" />
+            <span>ثبت پزشک همکار</span>
+          </Button>
+        </div>
+
         {/* ─── KPI Section ─── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 w-full">
           <PremiumMetricCard
             title="پزشکان فعال همکار"
             value="۳۲۸"
