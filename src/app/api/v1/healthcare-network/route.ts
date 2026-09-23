@@ -1,14 +1,14 @@
 import { NextRequest } from 'next/server'
 import { authenticateRequest } from '@/lib/auth'
 import { successResponse, errorResponse } from '@/lib/api-response'
-import { getAgentsAdapter } from '@/services/adapters/agents-adapter'
+import { getHealthcareAdapter } from '@/services/adapters/doctors-clinics-adapter'
 
-const ALLOWED_ROLES = ['SUPER_ADMIN', 'ADMIN', 'AGENT']
+const ALLOWED_ROLES = ['SUPER_ADMIN', 'ADMIN', 'SUPPORT', 'DOCTOR']
 
 /**
- * GET /api/v1/agents
- * Protected Sales Network & Commission Analytics API.
- * RBAC: SUPER_ADMIN, ADMIN, AGENT (with tenant scoping)
+ * GET /api/v1/healthcare-network
+ * Protected Doctors and Healthcare Centers directory API.
+ * RBAC: SUPER_ADMIN, ADMIN, SUPPORT, DOCTOR
  */
 export async function GET(request: NextRequest) {
   try {
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     if (!hasRole) {
       return errorResponse(
         'FORBIDDEN',
-        'دسترسی غیرمجاز. دسترسی به شبکه نمایندگان نیازمند نقش مجاز است',
+        'دسترسی غیرمجاز. مشاهده شبکه درمانی نیازمند نقش مجاز است',
         403
       )
     }
@@ -31,15 +31,17 @@ export async function GET(request: NextRequest) {
     // 3. Query Parameter Extraction
     const searchParams = request.nextUrl.searchParams
     const searchQuery = searchParams.get('q') || ''
+    const cityFilter = searchParams.get('city') || 'ALL'
     const statusFilter = searchParams.get('status') || 'ALL'
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
     const pageSize = Math.min(50, Math.max(1, parseInt(searchParams.get('pageSize') || '10', 10) || 10))
     const useMock = searchParams.get('demo') === 'true'
 
     // 4. Retrieve data from typed Adapter Layer
-    const result = await getAgentsAdapter(
+    const result = await getHealthcareAdapter(
       {
         searchQuery,
+        cityFilter,
         statusFilter,
         page,
         pageSize,
@@ -47,19 +49,12 @@ export async function GET(request: NextRequest) {
       useMock
     )
 
-    // 5. Tenant Scoping Guard: If caller is strictly an AGENT (not admin), scope results to their self record
-    const isOnlyAgent = payload.roles.includes('AGENT') && !payload.roles.includes('SUPER_ADMIN') && !payload.roles.includes('ADMIN')
-    if (isOnlyAgent && result.source === 'REAL_DATABASE') {
-      result.agents = result.agents.filter((a) => a.id.includes(payload.sub.slice(-6).toUpperCase()))
-      result.totalCount = result.agents.length
-    }
-
-    return successResponse(result, 'اطلاعات شبکه نمایندگان و پورسانت با موفقیت بارگذاری شد')
+    return successResponse(result, 'اطلاعات شبکه درمان با موفقیت دریافت شد')
   } catch (err: any) {
-    console.error('[AgentsAPI] Error:', err)
+    console.error('[HealthcareNetworkAPI] Error:', err)
     return errorResponse(
       'INTERNAL_SERVER_ERROR',
-      'خطایی در پردازش اطلاعات نمایندگان رخ داد',
+      'خطایی در پردازش اطلاعات شبکه درمانی رخ داد',
       500
     )
   }
