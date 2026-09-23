@@ -4,6 +4,11 @@
 
 ## [Unreleased] - premium-ui-development
 ### اضافه شده:
+- **Mission 530**: پیاده‌سازی شوکیس پرمیوم شبکه نمایندگان و هوش فروش (`/agents-premium-preview`).
+- **Mission 530.5**: ممیزی بصری و تحلیل شکاف نسبت به تصاویر مرجع ویژوال کارفرما (`HAMI_CARD_PREMIUM_GAP_ANALYSIS.md`).
+- **Mission 531-A**: استقرار ۴ کامپوننت مشترک هسته: `DashboardAppShell`, `PremiumMetricCard`, `AnalyticsChartsBlock`, `TwinRecentTables` و بازسازی پیش‌نمایش داشبورد اصلی، کاربران و پزشکان.
+- **Mission 531**: پیاده‌سازی کامل داشبورد هوش مدیریتی و گزارشات (`/reports-bi-premium-preview`) با ۵ بخش کلیدی استراتژیک.
+- **Mission 532**: ممیزی جامع یکپارچگی (Premium Consistency Audit) در تمام سطوح طراحی، تایپوگرافی، کامپوننت‌ها و جریان کاربری.
 - ایجاد زیرساخت مستندسازی فنی در پوشه `/docs` (شامل شروع کار، معماری، سیستم طراحی، تصمیمات و تغییرات).
 - ممیزی جامع دیزاین سیستم در فایل `HAMI_CARD_DESIGN_SYSTEM_AUDIT.md`.
 - راه‌اندازی برنچ ایزوله `premium-ui-development` جهت ایجاد پایه‌های Premium UI بدون تغییر در اسکلت دمو.
