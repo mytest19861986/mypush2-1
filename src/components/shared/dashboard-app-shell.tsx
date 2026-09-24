@@ -28,6 +28,7 @@ import {
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { phase1DemoVisibleItems } from '@/config/demo-scope'
 
 interface DashboardAppShellProps {
   children: React.ReactNode
@@ -38,8 +39,8 @@ export function DashboardAppShell({ children, activeMenu = 'dashboard' }: Dashbo
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  // Production Navigation Contract (12 items: exact order, exact label, exact route, exact icon)
-  const navItems = [
+  // Production Navigation Contract filtered by DEMO_SCOPE_PHASE_1 (Exact 5 permitted items for Demo)
+  const allNavItems = [
     { href: '/admin/dashboard', label: 'داشبورد', icon: LayoutDashboard },
     { href: '/admin/users', label: 'کاربران', icon: Users },
     { href: '/admin/doctors', label: 'پزشکان', icon: Stethoscope },
@@ -53,6 +54,7 @@ export function DashboardAppShell({ children, activeMenu = 'dashboard' }: Dashbo
     { href: '/admin/permissions', label: 'دسترسی‌ها', icon: Shield },
     { href: '/admin/audit-logs', label: 'گزارش فعالیت‌ها', icon: BarChart3 },
   ]
+  const navItems = phase1DemoVisibleItems(allNavItems)
 
   // Rule 5: Exactly ONE single item active per route
   const activeNavItem = [...navItems]

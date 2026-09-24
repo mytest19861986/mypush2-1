@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/providers/theme-provider";
@@ -69,11 +70,7 @@ export default function RootLayout({
   return (
     <html lang="fa-IR" dir="rtl" suppressHydrationWarning>
       <body className="antialiased bg-background text-foreground min-h-screen">
-        <script
-          dangerouslySetInnerHTML={{
-            __html: serviceWorkerScript,
-          }}
-        />
+        <Script id="sw-script" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: serviceWorkerScript }} />
         <ThemeProvider>
           {children}
           <Toaster position="top-center" richColors />

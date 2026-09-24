@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import Link from 'next/link'
 import { DashboardAppShell } from '@/components/shared/dashboard-app-shell'
 import { PremiumMetricCard } from '@/components/shared/premium-metric-card'
 import { AnalyticsChartsBlock } from '@/components/shared/analytics-charts-block'
@@ -30,10 +31,10 @@ export default function DashboardPremiumPreviewPage() {
   ]
 
   const quickActions = [
-    { title: 'ثبت مرکز درمانی', icon: Building2, color: 'text-teal-600 bg-teal-50', href: '/doctors' },
-    { title: 'افزودن کاربر', icon: UserPlus, color: 'text-sky-600 bg-sky-50', href: '/users' },
-    { title: 'مدیریت درخواست‌ها', icon: FileCheck2, color: 'text-amber-600 bg-amber-50', href: '/dashboard' },
-    { title: 'گزارش عملکرد', icon: BarChart3, color: 'text-purple-600 bg-purple-50', href: '/agents' },
+    { title: 'ثبت مرکز درمانی', icon: Building2, color: 'text-teal-600 bg-teal-50', href: '/admin/doctors' },
+    { title: 'افزودن کاربر', icon: UserPlus, color: 'text-sky-600 bg-sky-50', href: '/admin/users' },
+    { title: 'طرح‌های تخفیف', icon: FileCheck2, color: 'text-amber-600 bg-amber-50', href: '/admin/plans' },
+    { title: 'مدیریت نظرات', icon: BarChart3, color: 'text-purple-600 bg-purple-50', href: '/admin/reviews' },
   ]
 
   return (
@@ -99,7 +100,7 @@ export default function DashboardPremiumPreviewPage() {
           <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-extrabold text-base text-slate-800">آخرین فعالیت‌ها</h3>
-              <a href="#" className="text-xs text-[#0D5C58] font-bold hover:underline">مشاهده همه</a>
+              <Link href="/admin/reviews" className="text-xs text-[#0D5C58] font-bold hover:underline">مشاهده همه</Link>
             </div>
 
             <div className="space-y-3.5">
