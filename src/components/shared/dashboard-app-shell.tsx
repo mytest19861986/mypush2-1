@@ -6,12 +6,15 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
   Users,
-  Building2,
-  FileCheck2,
-  FileText,
+  Stethoscope,
+  Briefcase,
   CreditCard,
+  Wallet,
+  ShoppingBag,
+  MessageSquareText,
+  Shield,
   BarChart3,
-  Settings,
+  Building2,
   Search,
   Bell,
   ChevronDown,
@@ -35,16 +38,34 @@ export function DashboardAppShell({ children, activeMenu = 'dashboard' }: Dashbo
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
+  // Production Navigation Contract (12 items: exact order, exact label, exact route, exact icon)
   const navItems = [
-    { id: 'dashboard', label: 'داشبورد', icon: LayoutDashboard, href: '/dashboard' },
-    { id: 'users', label: 'کاربران', icon: Users, href: '/users' },
-    { id: 'doctors', label: 'مراکز درمانی', icon: Building2, href: '/doctors' },
-    { id: 'requests', label: 'درخواست‌ها', icon: FileCheck2, badge: '۱۲', badgeColor: 'bg-[#EA580C] text-white', href: '/dashboard' },
-    { id: 'contracts', label: 'قراردادها', icon: FileText, href: '/doctors' },
-    { id: 'agents', label: 'نمایندگان و فروش', icon: CreditCard, href: '/agents' },
-    { id: 'reports', label: 'گزارش‌ها و هوش سلامت', icon: BarChart3, href: '/reports' },
-    { id: 'settings', label: 'تنظیمات سامانه', icon: Settings, href: '/settings' },
+    { href: '/admin/dashboard', label: 'داشبورد', icon: LayoutDashboard },
+    { href: '/admin/users', label: 'کاربران', icon: Users },
+    { href: '/admin/doctors', label: 'پزشکان', icon: Stethoscope },
+    { href: '/admin/agents', label: 'همکاران فروش', icon: Briefcase },
+    { href: '/admin/plans', label: 'طرح‌ها', icon: CreditCard },
+    { href: '/admin/financial-management', label: 'مدیریت مالی', icon: CreditCard },
+    { href: '/admin/commissions', label: 'مدیریت پورسانت‌ها', icon: Wallet },
+    { href: '/admin/sales-customers', label: 'مشتریان فروش', icon: ShoppingBag },
+    { href: '/admin/reviews', label: 'مدیریت نظرات', icon: MessageSquareText },
+    { href: '/admin/roles', label: 'نقش‌ها', icon: Shield },
+    { href: '/admin/permissions', label: 'دسترسی‌ها', icon: Shield },
+    { href: '/admin/audit-logs', label: 'گزارش فعالیت‌ها', icon: BarChart3 },
   ]
+
+  // Rule 5: Exactly ONE single item active per route
+  const activeNavItem = [...navItems]
+    .sort((a, b) => b.href.length - a.href.length)
+    .find((item) => {
+      const demoAlias = item.href.replace('/admin', '') || '/dashboard'
+      return (
+        pathname === item.href ||
+        pathname?.startsWith(item.href + '/') ||
+        pathname === demoAlias ||
+        pathname?.startsWith(demoAlias + '/')
+      )
+    })
 
   const renderSidebarContent = (isMobile = false) => (
     <div className="flex flex-col justify-between h-full">
@@ -73,31 +94,26 @@ export function DashboardAppShell({ children, activeMenu = 'dashboard' }: Dashbo
           )}
         </div>
 
-        {/* Navigation Items */}
-        <nav className="space-y-1.5">
+        {/* Navigation Items - Production Contract 12 items with Premium Style */}
+        <nav className="space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon
-            const isActive = activeMenu === item.id || pathname === item.href
+            const isActive = activeNavItem?.href === item.href
             return (
               <Link
-                key={item.id}
+                key={item.href}
                 href={item.href}
                 onClick={() => isMobile && setMobileMenuOpen(false)}
-                className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 group ${
                   isActive
-                    ? 'bg-[#0D5C58] text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+                    ? 'bg-gradient-to-r from-[#0D5C58] to-[#12827B] text-white shadow-sm ring-1 ring-[#0D5C58]/30 font-extrabold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <Icon className={`size-4.5 ${isActive ? 'text-white' : 'text-slate-500'}`} />
-                  <span>{item.label}</span>
+                <div className="flex items-center gap-2.5">
+                  <Icon className={`size-4 transition-colors ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-[#0D5C58]'}`} />
+                  <span className="truncate">{item.label}</span>
                 </div>
-                {item.badge && (
-                  <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${item.badgeColor || 'bg-slate-200 text-slate-700'}`}>
-                    {item.badge}
-                  </span>
-                )}
               </Link>
             )
           })}
