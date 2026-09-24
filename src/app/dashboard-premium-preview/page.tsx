@@ -30,10 +30,10 @@ export default function DashboardPremiumPreviewPage() {
   ]
 
   const quickActions = [
-    { title: 'ثبت مرکز درمانی', icon: Building2, color: 'text-teal-600 bg-teal-50', href: '/doctors-clinics-premium-preview' },
-    { title: 'افزودن کاربر', icon: UserPlus, color: 'text-sky-600 bg-sky-50', href: '/users-premium-preview' },
-    { title: 'مدیریت درخواست‌ها', icon: FileCheck2, color: 'text-amber-600 bg-amber-50', href: '/dashboard-premium-preview' },
-    { title: 'گزارش عملکرد', icon: BarChart3, color: 'text-purple-600 bg-purple-50', href: '/agents-premium-preview' },
+    { title: 'ثبت مرکز درمانی', icon: Building2, color: 'text-teal-600 bg-teal-50', href: '/doctors' },
+    { title: 'افزودن کاربر', icon: UserPlus, color: 'text-sky-600 bg-sky-50', href: '/users' },
+    { title: 'مدیریت درخواست‌ها', icon: FileCheck2, color: 'text-amber-600 bg-amber-50', href: '/dashboard' },
+    { title: 'گزارش عملکرد', icon: BarChart3, color: 'text-purple-600 bg-purple-50', href: '/agents' },
   ]
 
   return (

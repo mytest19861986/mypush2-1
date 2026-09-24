@@ -25,7 +25,7 @@ export function TwinRecentTables() {
       <div className="p-4 sm:p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-extrabold text-sm sm:text-base text-slate-800">آخرین مراکز درمانی</h3>
-          <Link href="/doctors-clinics-premium-preview" className="text-xs text-[#0D5C58] font-bold hover:underline">
+          <Link href="/doctors" className="text-xs text-[#0D5C58] font-bold hover:underline">
             مشاهده همه
           </Link>
         </div>
@@ -78,7 +78,7 @@ export function TwinRecentTables() {
       <div className="p-4 sm:p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-extrabold text-sm sm:text-base text-slate-800">آخرین کاربران</h3>
-          <Link href="/users-premium-preview" className="text-xs text-[#0D5C58] font-bold hover:underline">
+          <Link href="/users" className="text-xs text-[#0D5C58] font-bold hover:underline">
             مشاهده همه
           </Link>
         </div>

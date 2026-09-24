@@ -3,6 +3,6 @@
 import React from 'react'
 import DashboardPremiumPreviewPage from '@/app/dashboard-premium-preview/page'
 
-export default function AdminDashboardDefaultPage() {
+export default function DashboardRoutePage() {
   return <DashboardPremiumPreviewPage />
 }

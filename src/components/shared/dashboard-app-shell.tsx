@@ -36,14 +36,14 @@ export function DashboardAppShell({ children, activeMenu = 'dashboard' }: Dashbo
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const navItems = [
-    { id: 'dashboard', label: 'داشبورد', icon: LayoutDashboard, href: '/dashboard-premium-preview' },
-    { id: 'users', label: 'کاربران', icon: Users, href: '/users-premium-preview' },
-    { id: 'doctors', label: 'مراکز درمانی', icon: Building2, href: '/doctors-clinics-premium-preview' },
-    { id: 'requests', label: 'درخواست‌ها', icon: FileCheck2, badge: '۱۲', badgeColor: 'bg-[#EA580C] text-white', href: '/dashboard-premium-preview' },
-    { id: 'contracts', label: 'قراردادها', icon: FileText, href: '/doctors-clinics-premium-preview' },
-    { id: 'agents', label: 'نمایندگان و فروش', icon: CreditCard, href: '/agents-premium-preview' },
-    { id: 'reports', label: 'گزارش‌ها و هوش سلامت', icon: BarChart3, href: '/reports-bi-premium-preview' },
-    { id: 'settings', label: 'تنظیمات سامانه', icon: Settings, href: '/settings-premium-preview' },
+    { id: 'dashboard', label: 'داشبورد', icon: LayoutDashboard, href: '/dashboard' },
+    { id: 'users', label: 'کاربران', icon: Users, href: '/users' },
+    { id: 'doctors', label: 'مراکز درمانی', icon: Building2, href: '/doctors' },
+    { id: 'requests', label: 'درخواست‌ها', icon: FileCheck2, badge: '۱۲', badgeColor: 'bg-[#EA580C] text-white', href: '/dashboard' },
+    { id: 'contracts', label: 'قراردادها', icon: FileText, href: '/doctors' },
+    { id: 'agents', label: 'نمایندگان و فروش', icon: CreditCard, href: '/agents' },
+    { id: 'reports', label: 'گزارش‌ها و هوش سلامت', icon: BarChart3, href: '/reports' },
+    { id: 'settings', label: 'تنظیمات سامانه', icon: Settings, href: '/settings' },
   ]
 
   const renderSidebarContent = (isMobile = false) => (
@@ -113,7 +113,7 @@ export function DashboardAppShell({ children, activeMenu = 'dashboard' }: Dashbo
           <p className="text-xs font-bold text-slate-800">سلامت بهتر با همکاری شما ممکن است</p>
           <p className="text-[11px] text-slate-500">پیوستن به شبکه گسترده پزشکان حامی</p>
         </div>
-        <Link href="/doctors-clinics-premium-preview" className="block" onClick={() => isMobile && setMobileMenuOpen(false)}>
+        <Link href="/doctors" className="block" onClick={() => isMobile && setMobileMenuOpen(false)}>
           <Button size="sm" className="w-full bg-[#EA580C] hover:bg-[#D94E07] text-white text-xs font-bold rounded-xl shadow-xs py-2">
             افزودن مرکز درمانی
           </Button>
@@ -196,7 +196,7 @@ export function DashboardAppShell({ children, activeMenu = 'dashboard' }: Dashbo
 
             {/* User Profile Capsule */}
             <Link
-              href="/admin-profile-premium-preview"
+              href="/profile"
               className="flex items-center gap-2 sm:gap-3 ps-1.5 sm:ps-4 border-s border-slate-200/80 hover:opacity-85 transition-opacity cursor-pointer shrink-0"
             >
               <div className="size-9 sm:size-10 rounded-full bg-gradient-to-tr from-[#0D5C58] to-teal-500 text-white font-bold text-xs sm:text-sm flex items-center justify-center shadow-xs shrink-0">

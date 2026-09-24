@@ -3,6 +3,6 @@
 import React from 'react'
 import AgentsPremiumPreviewPage from '@/app/agents-premium-preview/page'
 
-export default function AdminAgentsDefaultPage() {
+export default function AgentsRoutePage() {
   return <AgentsPremiumPreviewPage />
 }

@@ -3,6 +3,6 @@
 import React from 'react'
 import UsersPremiumPreviewPage from '@/app/users-premium-preview/page'
 
-export default function AdminUsersDefaultPage() {
+export default function UsersRoutePage() {
   return <UsersPremiumPreviewPage />
 }
