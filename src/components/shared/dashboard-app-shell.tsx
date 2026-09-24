@@ -24,10 +24,12 @@ import {
   ArrowRight,
   ShieldPlus,
   Menu,
-  X
+  X,
+  LogOut
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { useAuthStore } from '@/stores/auth-store'
 import { phase1DemoVisibleItems } from '@/config/demo-scope'
 
 interface DashboardAppShellProps {
@@ -38,6 +40,17 @@ interface DashboardAppShellProps {
 export function DashboardAppShell({ children, activeMenu = 'dashboard' }: DashboardAppShellProps) {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { user, logout } = useAuthStore()
+
+  const displayName = user?.profile?.firstName && user?.profile?.lastName
+    ? `${user.profile.firstName} ${user.profile.lastName}`
+    : (user?.profile?.firstName || 'مدیر کل سیستم')
+
+  const roleTitle = user?.roles?.[0] || 'SUPER_ADMIN'
+
+  const userInitials = user?.profile?.firstName
+    ? `${(user.profile.firstName || '').charAt(0)}${(user.profile.lastName || '').charAt(0)}`
+    : (user?.mobile || '').slice(-2) || 'م‌س'
 
   // Production Navigation Contract filtered by DEMO_SCOPE_PHASE_1 (Exact 5 permitted items for Demo)
   const allNavItems = [
@@ -122,20 +135,35 @@ export function DashboardAppShell({ children, activeMenu = 'dashboard' }: Dashbo
         </nav>
       </div>
 
-      {/* Sidebar Bottom Promo Card */}
-      <div className="p-4 m-3 rounded-2xl bg-gradient-to-b from-[#E6F4F2] to-[#D1EDE9] border border-[#BCE1DB]/60 text-center space-y-3 relative overflow-hidden">
-        <div className="size-14 mx-auto rounded-full bg-white/90 shadow-xs flex items-center justify-center text-[#0D5C58]">
-          <Building2 className="size-7" />
+      {/* Sidebar Bottom User & Logout Controls (Mission 551-Demo-B4-FIX2) */}
+      <div className="p-3 m-3 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-2.5">
+        <div className="flex items-center gap-3 px-1">
+          <div className="size-9 rounded-full bg-gradient-to-tr from-[#0D5C58] to-teal-500 text-white font-bold text-xs flex items-center justify-center shadow-2xs shrink-0">
+            {userInitials}
+          </div>
+          <div className="flex-1 min-w-0 text-right">
+            <p className="text-xs font-bold text-slate-800 truncate" title={displayName}>
+              {displayName}
+            </p>
+            <p className="text-[10px] text-emerald-600 font-mono font-medium truncate">
+              {roleTitle}
+            </p>
+          </div>
         </div>
-        <div className="space-y-1">
-          <p className="text-xs font-bold text-slate-800">سلامت بهتر با همکاری شما ممکن است</p>
-          <p className="text-[11px] text-slate-500">پیوستن به شبکه گسترده پزشکان حامی</p>
-        </div>
-        <Link href="/doctors" className="block" onClick={() => isMobile && setMobileMenuOpen(false)}>
-          <Button size="sm" className="w-full bg-[#EA580C] hover:bg-[#D94E07] text-white text-xs font-bold rounded-xl shadow-xs py-2">
-            افزودن مرکز درمانی
-          </Button>
-        </Link>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            if (isMobile) setMobileMenuOpen(false)
+            void logout()
+          }}
+          className="w-full justify-center gap-2 text-xs font-bold text-red-600 hover:text-red-700 hover:bg-red-50/80 border-red-200/80 rounded-xl py-2 transition-all cursor-pointer shadow-2xs"
+          data-testid="sidebar-logout-button"
+        >
+          <LogOut className="size-3.5" />
+          <span>خروج از حساب</span>
+        </Button>
       </div>
     </div>
   )
@@ -218,14 +246,14 @@ export function DashboardAppShell({ children, activeMenu = 'dashboard' }: Dashbo
               className="flex items-center gap-2 sm:gap-3 ps-1.5 sm:ps-4 border-s border-slate-200/80 hover:opacity-85 transition-opacity cursor-pointer shrink-0"
             >
               <div className="size-9 sm:size-10 rounded-full bg-gradient-to-tr from-[#0D5C58] to-teal-500 text-white font-bold text-xs sm:text-sm flex items-center justify-center shadow-xs shrink-0">
-                م‌س
+                {userInitials}
               </div>
               <div className="hidden sm:block text-right">
                 <div className="flex items-center gap-1">
-                  <span className="text-xs font-bold text-slate-800">مدیر سیستم</span>
+                  <span className="text-xs font-bold text-slate-800">{displayName}</span>
                   <ChevronDown className="size-3.5 text-slate-400" />
                 </div>
-                <span className="text-[11px] text-emerald-600 font-medium">سطح دسترسی کل</span>
+                <span className="text-[11px] text-emerald-600 font-medium">{roleTitle}</span>
               </div>
             </Link>
           </div>
