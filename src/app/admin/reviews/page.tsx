@@ -200,37 +200,33 @@ export default function AdminReviewsPage() {
     setErrorMessage(null)
 
     try {
-      const params = new URLSearchParams({ take: '50' })
-      if (statusFilter !== 'all') {
-        params.set('status', statusFilter)
-      }
-
-      const res = await apiClient.get<AdminReview[]>(`/reviews?${params.toString()}`)
-
-      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
-        setReviews(res.data)
-      } else if (DEMO_SCOPE_PHASE_1) {
-        const filtered =
-          statusFilter === 'all'
-            ? DEMO_REVIEWS
-            : DEMO_REVIEWS.filter((r) => r.status === statusFilter)
-        setReviews(filtered)
-      } else {
-        const message = res.error?.message || res.message || 'خطا در دریافت فهرست نظرات'
-        setErrorMessage(message)
-        setReviews([])
-      }
-    } catch {
       if (DEMO_SCOPE_PHASE_1) {
         const filtered =
           statusFilter === 'all'
             ? DEMO_REVIEWS
             : DEMO_REVIEWS.filter((r) => r.status === statusFilter)
         setReviews(filtered)
+        setIsLoading(false)
+        return
+      }
+
+      const params = new URLSearchParams({ take: '50' })
+      if (statusFilter !== 'all') {
+        params.set('status', statusFilter)
+      }
+
+      const res = await apiClient.get<AdminReview[]>(/reviews?)
+
+      if (res.success && Array.isArray(res.data)) {
+        setReviews(res.data)
       } else {
-        setErrorMessage('خطا در دریافت فهرست نظرات')
+        const message = res.error?.message || res.message || 'خطا در دریافت فهرست نظرات'
+        setErrorMessage(message)
         setReviews([])
       }
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error, 'خطا در دریافت فهرست نظرات'))
+      setReviews([])
     } finally {
       setIsLoading(false)
     }
