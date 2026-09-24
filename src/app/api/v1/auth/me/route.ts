@@ -24,10 +24,7 @@ export async function GET(request: NextRequest) {
     const { authenticated, payload, error } = await authenticateRequest(request)
 
     if (!authenticated) {
-      if (DEMO_SCOPE_PHASE_1) {
-        return successResponse(DEMO_SUPER_ADMIN_USER)
-      }
-      return errorResponse('UNAUTHORIZED', error!, 401)
+      return errorResponse('UNAUTHORIZED', error || 'احراز هویت انجام نشده است', 401)
     }
 
     const userId = payload!.sub

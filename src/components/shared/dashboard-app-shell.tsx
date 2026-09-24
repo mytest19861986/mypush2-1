@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useAuthStore } from '@/stores/auth-store'
 import { phase1DemoVisibleItems } from '@/config/demo-scope'
+import { AdminRoute } from '@/components/guards/AdminRoute'
 
 interface DashboardAppShellProps {
   children: React.ReactNode
@@ -192,8 +193,9 @@ export function DashboardAppShell({ children, activeMenu = 'dashboard' }: Dashbo
   )
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-800 flex overflow-x-hidden w-full max-w-full" dir="rtl">
-      {/* ─── Mobile Drawer Overlay & Sidebar ─── */}
+    <AdminRoute>
+      <div className="min-h-screen bg-[#F8FAFC] text-slate-800 flex overflow-x-hidden w-full max-w-full" dir="rtl">
+        {/* ─── Mobile Drawer Overlay & Sidebar ─── */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 md:hidden flex">
           {/* Backdrop */}
@@ -331,5 +333,6 @@ export function DashboardAppShell({ children, activeMenu = 'dashboard' }: Dashbo
         </footer>
       </div>
     </div>
-  )
+  </AdminRoute>
+)
 }
