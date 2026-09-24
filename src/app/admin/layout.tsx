@@ -314,20 +314,8 @@ export default function AdminLayout({
   children: React.ReactNode
 }) {
   return (
-    <AdminRoute>
-      <div className="min-h-screen bg-background" dir="rtl">
-        <AdminSidebar />
-
-        {/* Main content area */}
-        <div className="md:pr-64">
-          <AdminTopbar />
-
-          {/* Page content */}
-          <main className="p-4 md:p-6">
-            <AdminSectionGuard>{children}</AdminSectionGuard>
-          </main>
-        </div>
-      </div>
-    </AdminRoute>
+    <div className="min-h-screen bg-background" dir="rtl">
+      {children}
+    </div>
   )
 }
