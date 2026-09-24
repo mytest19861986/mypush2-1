@@ -4,6 +4,8 @@ import { successResponse, errorResponse } from '@/lib/api-response'
 import { db } from '@/lib/db'
 import { verifyOTP } from '@/lib/otp'
 import { buildUserResponse, generateAuthTokens, getClientIp } from '../_helpers'
+import { DEMO_SCOPE_PHASE_1 } from '@/config/demo-scope'
+import { generateAccessToken, generateRefreshToken } from '@/lib/jwt'
 
 // Zod schema for request body
 const verifyOtpSchema = z.object({
@@ -33,6 +35,41 @@ export async function POST(request: NextRequest) {
     }
 
     const { mobile, code, device } = parsed.data
+
+    if (DEMO_SCOPE_PHASE_1) {
+      if (code !== '12345') {
+        return errorResponse('OTP_INVALID', 'کد تایید اشتباه است (کد تایید دمو: 12345)', 401)
+      }
+
+      const demoUser = {
+        id: 'admin-demo-user-1',
+        mobile: mobile,
+        email: mobile === '09999999999' ? 'admin@hamicard.ir' : 'user@hamicard.ir',
+        isMobileVerified: true,
+        status: 'ACTIVE',
+        roles: mobile === '09999999999' ? ['SUPER_ADMIN'] : ['USER'],
+        permissions: mobile === '09999999999' ? ['*'] : [],
+        profile: {
+          firstName: mobile === '09999999999' ? 'مدیر کل' : 'کاربر',
+          lastName: 'سیستم',
+          nationalCode: '0011223344',
+          avatar: null,
+        },
+      }
+
+      const accessToken = await generateAccessToken(demoUser.id, demoUser.roles, demoUser.permissions)
+      const refreshToken = await generateRefreshToken()
+
+      return successResponse(
+        {
+          accessToken,
+          refreshToken,
+          user: demoUser,
+        },
+        'ورود با موفقیت انجام شد'
+      )
+    }
+
     const ip = getClientIp(request)
 
     // Verify OTP (includes rate limiting: 5 attempts per OTP, stored in DB)

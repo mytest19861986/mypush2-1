@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { getOTPForSend, storeOTP, canResendOTP, recordOTPSend, getOTPAttempts } from '@/lib/otp'
 import { rateLimit } from '@/lib/rate-limit'
 import { createAuditLog, AuditActions } from '@/lib/audit'
+import { DEMO_SCOPE_PHASE_1 } from '@/config/demo-scope'
 
 // Rate limiter: 3 requests per 5 minutes per mobile
 const sendOtpLimiter = rateLimit({ limitPerWindow: 3, windowMs: 5 * 60 * 1000 })
@@ -32,6 +33,32 @@ export async function POST(request: NextRequest) {
     }
 
     const { mobile } = parsed.data
+
+    if (DEMO_SCOPE_PHASE_1) {
+      const DEMO_ACCOUNTS: Record<string, string> = {
+        '09999999999': '12345',
+        '09123456789': '12345',
+        '09111111111': '12345',
+      }
+
+      if (DEMO_ACCOUNTS[mobile]) {
+        return successResponse(
+          {
+            canResend: true,
+            expiresIn: 120,
+            otp: '12345',
+          },
+          'کد تایید ارسال شد (محیط دمو: 12345)'
+        )
+      }
+
+      return errorResponse(
+        'USER_NOT_FOUND',
+        'در محیط دمو لطفاً از شماره‌های تاییدشده آزمایشی (مانند 09999999999) استفاده کنید',
+        400
+      )
+    }
+
 
     // Rate limit check
     const { allowed, retryAfter } = sendOtpLimiter.check(`send-otp:${mobile}`)
