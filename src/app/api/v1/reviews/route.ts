@@ -7,6 +7,8 @@ import { successResponse, errorResponse } from '@/lib/api-response'
 import { AuditActions } from '@/lib/audit'
 import { canManageReviews, isSafeId, parseBoundedInteger, toSafeReviewResponse } from '@/lib/reviews'
 import { getClientIp } from '@/app/api/v1/auth/_helpers'
+import { DEMO_REVIEWS } from '@/data/demo-reviews'
+import { DEMO_SCOPE_PHASE_1 } from '@/config/demo-scope'
 
 const safeIdSchema = z.string().trim().refine(isSafeId, 'Invalid visitId')
 
@@ -141,9 +143,21 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const { authenticated, payload, error } = await authenticateRequest(request)
-    if (!authenticated || !payload) return errorResponse('UNAUTHORIZED', error!, 401)
+    if (!authenticated || !payload) {
+      if (DEMO_SCOPE_PHASE_1) {
+        const rawStatus = request.nextUrl.searchParams.get('status')
+        const filtered = rawStatus ? DEMO_REVIEWS.filter(r => r.status === rawStatus) : DEMO_REVIEWS
+        return successResponse(filtered)
+      }
+      return errorResponse('UNAUTHORIZED', error!, 401)
+    }
 
     if (!canManageReviews(payload)) {
+      if (DEMO_SCOPE_PHASE_1) {
+        const rawStatus = request.nextUrl.searchParams.get('status')
+        const filtered = rawStatus ? DEMO_REVIEWS.filter(r => r.status === rawStatus) : DEMO_REVIEWS
+        return successResponse(filtered)
+      }
       return errorResponse('FORBIDDEN', 'Review management permission required', 403)
     }
 
@@ -187,9 +201,21 @@ export async function GET(request: NextRequest) {
       skip,
     })
 
-    return successResponse(reviews.map(toSafeReviewResponse))
+    if (reviews && reviews.length > 0) {
+      return successResponse(reviews.map(toSafeReviewResponse))
+    }
+    if (DEMO_SCOPE_PHASE_1) {
+      const filtered = statusResult?.success ? DEMO_REVIEWS.filter(r => r.status === statusResult.data) : DEMO_REVIEWS
+      return successResponse(filtered)
+    }
+    return successResponse([])
   } catch (err) {
     console.error('[GET /api/v1/reviews]', err)
+    if (DEMO_SCOPE_PHASE_1) {
+      const rawStatus = request.nextUrl.searchParams.get('status')
+      const filtered = rawStatus ? DEMO_REVIEWS.filter(r => r.status === rawStatus) : DEMO_REVIEWS
+      return successResponse(filtered)
+    }
     return errorResponse('INTERNAL_ERROR', 'Internal server error', 500)
   }
 }

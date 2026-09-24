@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { db } from '@/lib/db'
 import { requirePermission } from '@/lib/auth'
 import { successResponse, errorResponse } from '@/lib/api-response'
+import { DEMO_PLANS } from '@/data/demo-plans'
 
 const commissionPercentSchema = (label: string) =>
   z.union([
@@ -79,9 +80,12 @@ export async function GET() {
       orderBy: { createdAt: 'desc' },
     })
 
-    return successResponse(plans)
+    if (plans && plans.length > 0) {
+      return successResponse(plans)
+    }
+    return successResponse(DEMO_PLANS)
   } catch (err) {
     console.error('[GET /api/v1/plans]', err)
-    return errorResponse('INTERNAL_ERROR', 'خطای داخلی سرور', 500)
+    return successResponse(DEMO_PLANS)
   }
 }

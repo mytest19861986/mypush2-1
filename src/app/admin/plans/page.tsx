@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+
 import {
   Plus,
   CreditCard,
@@ -200,17 +200,15 @@ export default function AdminPlansPage() {
     }
   }, [])
 
-  const searchParams = useSearchParams()
-
   useEffect(() => {
     fetchPlans()
-  }, [fetchPlans])
-
-  useEffect(() => {
-    if (searchParams && searchParams.get('action') === 'new') {
-      openCreateDialog()
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('action') === 'new') {
+        openCreateDialog()
+      }
     }
-  }, [searchParams])
+  }, [fetchPlans])
 
   /* ── Dialog handlers ──────────────────────────────────── */
 
