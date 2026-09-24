@@ -22,6 +22,21 @@ import {
 import { Button } from '@/components/ui/button'
 
 export default function DashboardPremiumPreviewPage() {
+  const [greeting, setGreeting] = React.useState('وقت بخیر')
+
+  React.useEffect(() => {
+    const hour = new Date().getHours()
+    if (hour >= 5 && hour < 12) {
+      setGreeting('صبح بخیر')
+    } else if (hour >= 12 && hour < 16) {
+      setGreeting('ظهر بخیر')
+    } else if (hour >= 16 && hour < 20) {
+      setGreeting('عصر بخیر')
+    } else {
+      setGreeting('شب بخیر')
+    }
+  }, [])
+
   const activities = [
     { text: 'دکتر احمدی درخواست همکاری ثبت کرد', time: '۱۰ دقیقه پیش', icon: Users, color: 'text-teal-600 bg-teal-50' },
     { text: 'کلینیک سپید فعال شد', time: '۲۵ دقیقه پیش', icon: Building2, color: 'text-sky-600 bg-sky-50' },
@@ -44,7 +59,7 @@ export default function DashboardPremiumPreviewPage() {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              صبح بخیر، مدیر 👋
+              {greeting}، مدیر 👋
             </h1>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 font-medium">
