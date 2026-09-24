@@ -187,9 +187,9 @@ function LoadingReviews() {
 
 export default function AdminReviewsPage() {
   const { toast } = useToast()
-  const [reviews, setReviews] = useState<AdminReview[]>([])
+  const [reviews, setReviews] = useState<AdminReview[]>(DEMO_SCOPE_PHASE_1 ? DEMO_REVIEWS : [])
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [processing, setProcessing] = useState<{ id: string; action: ReviewAction } | null>(null)
   const [rejectTarget, setRejectTarget] = useState<AdminReview | null>(null)

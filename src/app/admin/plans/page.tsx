@@ -168,8 +168,8 @@ function buildPlanPayload(formData: PlanFormData): { payload: PlanMutationData }
 
 export default function AdminPlansPage() {
   const { toast } = useToast()
-  const [plans, setPlans] = useState<DiscountPlanItem[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [plans, setPlans] = useState<DiscountPlanItem[]>(DEMO_SCOPE_PHASE_1 ? DEMO_PLANS : [])
+  const [isLoading, setIsLoading] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingPlan, setEditingPlan] = useState<DiscountPlanItem | null>(null)
   const [formData, setFormData] = useState<PlanFormData>(emptyForm)
@@ -181,20 +181,20 @@ export default function AdminPlansPage() {
   const fetchPlans = useCallback(async () => {
     setIsLoading(true)
     try {
+      if (DEMO_SCOPE_PHASE_1) {
+        setPlans(DEMO_PLANS)
+        setIsLoading(false)
+        return
+      }
+
       const res = await plansService.getList()
       if (res.success && res.data && Array.isArray(res.data) && res.data.length > 0) {
         setPlans(res.data)
-      } else if (DEMO_SCOPE_PHASE_1) {
-        setPlans(DEMO_PLANS)
       } else {
         setPlans([])
       }
     } catch {
-      if (DEMO_SCOPE_PHASE_1) {
-        setPlans(DEMO_PLANS)
-      } else {
-        setPlans([])
-      }
+      setPlans([])
     } finally {
       setIsLoading(false)
     }
