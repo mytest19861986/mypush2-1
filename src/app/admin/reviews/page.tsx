@@ -187,7 +187,22 @@ function LoadingReviews() {
 
 export default function AdminReviewsPage() {
   const { toast } = useToast()
-  const [reviews, setReviews] = useState<AdminReview[]>(DEMO_SCOPE_PHASE_1 ? DEMO_REVIEWS : [])
+  const DEMO_REVIEWS_STORAGE_KEY = 'hami_demo_reviews_store'
+
+  const getStoredReviews = (): AdminReview[] => {
+    if (typeof window !== 'undefined' && DEMO_SCOPE_PHASE_1) {
+      try {
+        const stored = localStorage.getItem(DEMO_REVIEWS_STORAGE_KEY)
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed
+        }
+      } catch {}
+    }
+    return DEMO_SCOPE_PHASE_1 ? DEMO_REVIEWS : []
+  }
+
+  const [reviews, setReviews] = useState<AdminReview[]>(getStoredReviews)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -201,10 +216,11 @@ export default function AdminReviewsPage() {
 
     try {
       if (DEMO_SCOPE_PHASE_1) {
+        const allDemoReviews = getStoredReviews()
         const filtered =
           statusFilter === 'all'
-            ? DEMO_REVIEWS
-            : DEMO_REVIEWS.filter((r) => r.status === statusFilter)
+            ? allDemoReviews
+            : allDemoReviews.filter((r) => r.status === statusFilter)
         setReviews(filtered)
         setIsLoading(false)
         return
@@ -242,11 +258,21 @@ export default function AdminReviewsPage() {
   )
 
   const updateReview = (updatedReview: Partial<AdminReview> & { reviewId: string }) => {
-    setReviews((currentReviews) =>
-      currentReviews.map((review) =>
+    setReviews((currentReviews) => {
+      const next = currentReviews.map((review) =>
         review.reviewId === updatedReview.reviewId ? { ...review, ...updatedReview } : review
       )
-    )
+      if (typeof window !== 'undefined' && DEMO_SCOPE_PHASE_1) {
+        try {
+          const allCurrent = getStoredReviews()
+          const updatedAll = allCurrent.map((r) =>
+            r.reviewId === updatedReview.reviewId ? { ...r, ...updatedReview } : r
+          )
+          localStorage.setItem(DEMO_REVIEWS_STORAGE_KEY, JSON.stringify(updatedAll))
+        } catch {}
+      }
+      return next
+    })
   }
 
   const handleApprove = async (review: AdminReview) => {

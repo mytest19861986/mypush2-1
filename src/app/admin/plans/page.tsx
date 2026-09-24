@@ -168,7 +168,22 @@ function buildPlanPayload(formData: PlanFormData): { payload: PlanMutationData }
 
 export default function AdminPlansPage() {
   const { toast } = useToast()
-  const [plans, setPlans] = useState<DiscountPlanItem[]>(DEMO_SCOPE_PHASE_1 ? DEMO_PLANS : [])
+  const DEMO_STORAGE_KEY = 'hami_demo_plans_store'
+
+  const getInitialPlans = (): DiscountPlanItem[] => {
+    if (typeof window !== 'undefined' && DEMO_SCOPE_PHASE_1) {
+      try {
+        const stored = localStorage.getItem(DEMO_STORAGE_KEY)
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed
+        }
+      } catch {}
+    }
+    return DEMO_SCOPE_PHASE_1 ? DEMO_PLANS : []
+  }
+
+  const [plans, setPlans] = useState<DiscountPlanItem[]>(getInitialPlans)
   const [isLoading, setIsLoading] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingPlan, setEditingPlan] = useState<DiscountPlanItem | null>(null)
@@ -178,10 +193,35 @@ export default function AdminPlansPage() {
   const [isDeleting, setIsDeleting] = useState(false)
   const [togglingId, setTogglingId] = useState<string | null>(null)
 
+  const updatePlansWithPersistence = useCallback((updater: (prev: DiscountPlanItem[]) => DiscountPlanItem[]) => {
+    setPlans((prev) => {
+      const next = updater(prev)
+      if (typeof window !== 'undefined' && DEMO_SCOPE_PHASE_1) {
+        try {
+          localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(next))
+        } catch {}
+      }
+      return next
+    })
+  }, [])
+
   const fetchPlans = useCallback(async () => {
     setIsLoading(true)
     try {
       if (DEMO_SCOPE_PHASE_1) {
+        if (typeof window !== 'undefined') {
+          const stored = localStorage.getItem(DEMO_STORAGE_KEY)
+          if (stored) {
+            try {
+              const parsed = JSON.parse(stored)
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                setPlans(parsed)
+                setIsLoading(false)
+                return
+              }
+            } catch {}
+          }
+        }
         setPlans(DEMO_PLANS)
         setIsLoading(false)
         return
@@ -253,7 +293,7 @@ export default function AdminPlansPage() {
         } catch (apiErr) {
           if (!DEMO_SCOPE_PHASE_1) throw apiErr
         }
-        setPlans((prev) =>
+        updatePlansWithPersistence((prev) =>
           prev.map((p) =>
             p.id === editingPlan.id
               ? {
@@ -286,7 +326,7 @@ export default function AdminPlansPage() {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }
-        setPlans((prev) => [createdItem, ...prev])
+        updatePlansWithPersistence((prev) => [createdItem, ...prev])
         toast({ title: 'موفق', description: 'طرح جدید با موفقیت ایجاد شد' })
       }
       setDialogOpen(false)
@@ -313,7 +353,7 @@ export default function AdminPlansPage() {
       } catch (apiErr) {
         if (!DEMO_SCOPE_PHASE_1) throw apiErr
       }
-      setPlans((prev) => prev.filter((p) => p.id !== deleteTarget.id))
+      updatePlansWithPersistence((prev) => prev.filter((p) => p.id !== deleteTarget.id))
       toast({ title: 'موفق', description: 'طرح با موفقیت حذف شد' })
       setDeleteTarget(null)
     } catch {
@@ -336,7 +376,7 @@ export default function AdminPlansPage() {
       } catch (apiErr) {
         if (!DEMO_SCOPE_PHASE_1) throw apiErr
       }
-      setPlans((prev) =>
+      updatePlansWithPersistence((prev) =>
         prev.map((p) => (p.id === plan.id ? { ...p, status: newStatus } : p))
       )
       toast({
