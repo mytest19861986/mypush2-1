@@ -38,7 +38,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useAuthStore } from '@/stores/auth-store'
-import { AdminRoute } from '@/components/guards/AdminRoute'
 import { phase1DemoVisibleItems } from '@/config/demo-scope'
 
 interface DashboardAppShellProps {

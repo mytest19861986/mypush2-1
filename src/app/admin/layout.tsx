@@ -314,10 +314,8 @@ export default function AdminLayout({
   children: React.ReactNode
 }) {
   return (
-    <AdminRoute>
-      <div className="min-h-screen bg-background" dir="rtl">
-        {children}
-      </div>
-    </AdminRoute>
+    <div className="min-h-screen bg-background" dir="rtl">
+      {children}
+    </div>
   )
 }
