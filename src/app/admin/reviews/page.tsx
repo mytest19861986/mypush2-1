@@ -35,6 +35,8 @@ import { useToast } from '@/hooks/use-toast'
 import { ApiError, apiClient } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
 import { formatDateTime, toPersianNum } from '@/utils/formatters'
+import { DEMO_REVIEWS } from '@/data/demo-reviews'
+import { DEMO_SCOPE_PHASE_1 } from '@/config/demo-scope'
 
 type ReviewStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 type StatusFilter = 'all' | ReviewStatus
@@ -205,16 +207,30 @@ export default function AdminReviewsPage() {
 
       const res = await apiClient.get<AdminReview[]>(`/reviews?${params.toString()}`)
 
-      if (res.success && Array.isArray(res.data)) {
+      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
         setReviews(res.data)
+      } else if (DEMO_SCOPE_PHASE_1) {
+        const filtered =
+          statusFilter === 'all'
+            ? DEMO_REVIEWS
+            : DEMO_REVIEWS.filter((r) => r.status === statusFilter)
+        setReviews(filtered)
       } else {
         const message = res.error?.message || res.message || 'خطا در دریافت فهرست نظرات'
         setErrorMessage(message)
         setReviews([])
       }
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error, 'خطا در دریافت فهرست نظرات'))
-      setReviews([])
+    } catch {
+      if (DEMO_SCOPE_PHASE_1) {
+        const filtered =
+          statusFilter === 'all'
+            ? DEMO_REVIEWS
+            : DEMO_REVIEWS.filter((r) => r.status === statusFilter)
+        setReviews(filtered)
+      } else {
+        setErrorMessage('خطا در دریافت فهرست نظرات')
+        setReviews([])
+      }
     } finally {
       setIsLoading(false)
     }
@@ -229,7 +245,7 @@ export default function AdminReviewsPage() {
     [reviews]
   )
 
-  const updateReview = (updatedReview: AdminReview) => {
+  const updateReview = (updatedReview: Partial<AdminReview> & { reviewId: string }) => {
     setReviews((currentReviews) =>
       currentReviews.map((review) =>
         review.reviewId === updatedReview.reviewId ? { ...review, ...updatedReview } : review
@@ -242,10 +258,19 @@ export default function AdminReviewsPage() {
 
     setProcessing({ id: review.reviewId, action: 'approve' })
     try {
-      const updatedReview = await apiClient.patch<AdminReview>(
-        `/reviews/${review.reviewId}/approve`
-      )
-      updateReview(updatedReview)
+      try {
+        const updatedReview = await apiClient.patch<AdminReview>(
+          `/reviews/${review.reviewId}/approve`
+        )
+        if (updatedReview) {
+          updateReview(updatedReview)
+        } else {
+          updateReview({ reviewId: review.reviewId, status: 'APPROVED' })
+        }
+      } catch (apiErr) {
+        if (!DEMO_SCOPE_PHASE_1) throw apiErr
+        updateReview({ reviewId: review.reviewId, status: 'APPROVED' })
+      }
       toast({
         title: 'موفق',
         description: 'نظر با موفقیت تأیید شد.',
@@ -267,11 +292,20 @@ export default function AdminReviewsPage() {
     const reason = rejectReason.trim()
     setProcessing({ id: rejectTarget.reviewId, action: 'reject' })
     try {
-      const updatedReview = await apiClient.patch<AdminReview>(
-        `/reviews/${rejectTarget.reviewId}/reject`,
-        reason ? { reason } : undefined
-      )
-      updateReview(updatedReview)
+      try {
+        const updatedReview = await apiClient.patch<AdminReview>(
+          `/reviews/${rejectTarget.reviewId}/reject`,
+          reason ? { reason } : undefined
+        )
+        if (updatedReview) {
+          updateReview(updatedReview)
+        } else {
+          updateReview({ reviewId: rejectTarget.reviewId, status: 'REJECTED' })
+        }
+      } catch (apiErr) {
+        if (!DEMO_SCOPE_PHASE_1) throw apiErr
+        updateReview({ reviewId: rejectTarget.reviewId, status: 'REJECTED' })
+      }
       setRejectTarget(null)
       setRejectReason('')
       toast({

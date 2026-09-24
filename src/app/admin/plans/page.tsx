@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   Plus,
   CreditCard,
@@ -43,6 +44,8 @@ import { ApiError } from '@/lib/api-client'
 import { plansService } from '@/services'
 import type { DiscountPlanItem, PlanMutationData, PlanStatus } from '@/types'
 import { toPersianNum, formatPrice } from '@/utils/formatters'
+import { DEMO_PLANS } from '@/data/demo-plans'
+import { DEMO_SCOPE_PHASE_1 } from '@/config/demo-scope'
 
 /* ── Types ────────────────────────────────────────────────── */
 
@@ -179,19 +182,35 @@ export default function AdminPlansPage() {
     setIsLoading(true)
     try {
       const res = await plansService.getList()
-      if (res.success && res.data) {
-        setPlans(Array.isArray(res.data) ? res.data : [])
+      if (res.success && res.data && Array.isArray(res.data) && res.data.length > 0) {
+        setPlans(res.data)
+      } else if (DEMO_SCOPE_PHASE_1) {
+        setPlans(DEMO_PLANS)
+      } else {
+        setPlans([])
       }
     } catch {
-      setPlans([])
+      if (DEMO_SCOPE_PHASE_1) {
+        setPlans(DEMO_PLANS)
+      } else {
+        setPlans([])
+      }
     } finally {
       setIsLoading(false)
     }
   }, [])
 
+  const searchParams = useSearchParams()
+
   useEffect(() => {
     fetchPlans()
   }, [fetchPlans])
+
+  useEffect(() => {
+    if (searchParams && searchParams.get('action') === 'new') {
+      openCreateDialog()
+    }
+  }, [searchParams])
 
   /* ── Dialog handlers ──────────────────────────────────── */
 
@@ -231,14 +250,48 @@ export default function AdminPlansPage() {
     setIsSaving(true)
     try {
       if (editingPlan) {
-        await plansService.update(editingPlan.id, planPayload.payload)
+        try {
+          await plansService.update(editingPlan.id, planPayload.payload)
+        } catch (apiErr) {
+          if (!DEMO_SCOPE_PHASE_1) throw apiErr
+        }
+        setPlans((prev) =>
+          prev.map((p) =>
+            p.id === editingPlan.id
+              ? {
+                  ...p,
+                  ...planPayload.payload,
+                  updatedAt: new Date().toISOString(),
+                }
+              : p
+          )
+        )
         toast({ title: 'موفق', description: 'طرح با موفقیت بروزرسانی شد' })
       } else {
-        await plansService.create(planPayload.payload)
+        const newPlanId = `plan-${Date.now()}`
+        try {
+          await plansService.create(planPayload.payload)
+        } catch (apiErr) {
+          if (!DEMO_SCOPE_PHASE_1) throw apiErr
+        }
+        const createdItem: DiscountPlanItem = {
+          id: newPlanId,
+          name: planPayload.payload.name,
+          description: planPayload.payload.description || '',
+          price: planPayload.payload.price,
+          discountPercent: planPayload.payload.discountPercent,
+          durationDays: planPayload.payload.durationDays,
+          maxUses: planPayload.payload.maxUses ?? -1,
+          salesPartnerCommissionPercent: planPayload.payload.salesPartnerCommissionPercent ?? 0,
+          referralCommissionPercent: planPayload.payload.referralCommissionPercent ?? 0,
+          status: planPayload.payload.status || 'ACTIVE',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }
+        setPlans((prev) => [createdItem, ...prev])
         toast({ title: 'موفق', description: 'طرح جدید با موفقیت ایجاد شد' })
       }
       setDialogOpen(false)
-      fetchPlans()
     } catch (error) {
       toast({
         title: 'خطا',
@@ -257,10 +310,14 @@ export default function AdminPlansPage() {
     if (!deleteTarget) return
     setIsDeleting(true)
     try {
-      await plansService.delete(deleteTarget.id)
+      try {
+        await plansService.delete(deleteTarget.id)
+      } catch (apiErr) {
+        if (!DEMO_SCOPE_PHASE_1) throw apiErr
+      }
+      setPlans((prev) => prev.filter((p) => p.id !== deleteTarget.id))
       toast({ title: 'موفق', description: 'طرح با موفقیت حذف شد' })
       setDeleteTarget(null)
-      fetchPlans()
     } catch {
       toast({
         title: 'خطا',
@@ -276,12 +333,18 @@ export default function AdminPlansPage() {
     setTogglingId(plan.id)
     const newStatus = plan.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
     try {
-      await plansService.update(plan.id, { status: newStatus })
+      try {
+        await plansService.update(plan.id, { status: newStatus })
+      } catch (apiErr) {
+        if (!DEMO_SCOPE_PHASE_1) throw apiErr
+      }
+      setPlans((prev) =>
+        prev.map((p) => (p.id === plan.id ? { ...p, status: newStatus } : p))
+      )
       toast({
         title: 'موفق',
         description: `طرح ${newStatus === 'ACTIVE' ? 'فعال' : 'غیرفعال'} شد`,
       })
-      fetchPlans()
     } catch {
       toast({
         title: 'خطا',
