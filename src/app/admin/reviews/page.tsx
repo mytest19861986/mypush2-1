@@ -215,7 +215,7 @@ export default function AdminReviewsPage() {
         params.set('status', statusFilter)
       }
 
-      const res = await apiClient.get<AdminReview[]>(/reviews?)
+      const res = await apiClient.get<AdminReview[]>('/reviews')
 
       if (res.success && Array.isArray(res.data)) {
         setReviews(res.data)
