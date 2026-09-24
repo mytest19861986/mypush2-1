@@ -26,11 +26,11 @@ export default function DashboardPremiumPreviewPage() {
 
   React.useEffect(() => {
     const hour = new Date().getHours()
-    if (hour >= 5 && hour < 12) {
+    if (hour >= 5 && hour < 11) {
       setGreeting('صبح بخیر')
-    } else if (hour >= 12 && hour < 16) {
+    } else if (hour >= 11 && hour < 15) {
       setGreeting('ظهر بخیر')
-    } else if (hour >= 16 && hour < 20) {
+    } else if (hour >= 15 && hour < 19) {
       setGreeting('عصر بخیر')
     } else {
       setGreeting('شب بخیر')
