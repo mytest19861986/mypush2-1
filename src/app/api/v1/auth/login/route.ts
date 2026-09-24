@@ -50,32 +50,40 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (DEMO_SCOPE_PHASE_1 && mobile === '09999999999' && password === 'Admin@123456') {
-      const demoUser = {
-        id: 'admin-demo-user-1',
-        mobile: '09999999999',
-        email: 'admin@hamicard.ir',
-        isMobileVerified: true,
-        status: 'ACTIVE',
-        roles: ['SUPER_ADMIN'],
-        permissions: ['*'],
-        profile: {
-          firstName: 'مدیر کل',
-          lastName: 'سیستم',
-          nationalCode: '0011223344',
-          avatar: null,
-        },
+    if (DEMO_SCOPE_PHASE_1 && mobile === '09999999999') {
+      if (password === 'Admin@123456') {
+        const demoUser = {
+          id: 'admin-demo-user-1',
+          mobile: '09999999999',
+          email: 'admin@hamicard.ir',
+          isMobileVerified: true,
+          status: 'ACTIVE',
+          roles: ['SUPER_ADMIN'],
+          permissions: ['*'],
+          profile: {
+            firstName: 'مدیر کل',
+            lastName: 'سیستم',
+            nationalCode: '0011223344',
+            avatar: null,
+          },
+        }
+        const accessToken = await generateAccessToken(demoUser.id, demoUser.roles, demoUser.permissions)
+        const refreshToken = await generateRefreshToken()
+        return successResponse(
+          {
+            accessToken,
+            refreshToken,
+            user: demoUser,
+          },
+          'ورود با موفقیت انجام شد'
+        )
+      } else {
+        return errorResponse('INVALID_CREDENTIALS', 'شماره موبایل یا رمز عبور اشتباه است', 401)
       }
-      const accessToken = await generateAccessToken(demoUser.id, demoUser.roles, demoUser.permissions)
-      const refreshToken = await generateRefreshToken()
-      return successResponse(
-        {
-          accessToken,
-          refreshToken,
-          user: demoUser,
-        },
-        'ورود با موفقیت انجام شد'
-      )
+    }
+
+    if (DEMO_SCOPE_PHASE_1) {
+      return errorResponse('INVALID_CREDENTIALS', 'شماره موبایل یا رمز عبور اشتباه است', 401)
     }
 
     // Find user by mobile
