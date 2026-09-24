@@ -29,7 +29,16 @@ import {
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { useAuthStore } from '@/stores/auth-store'
+import { AdminRoute } from '@/components/guards/AdminRoute'
 import { phase1DemoVisibleItems } from '@/config/demo-scope'
 
 interface DashboardAppShellProps {
@@ -51,6 +60,21 @@ export function DashboardAppShell({ children, activeMenu = 'dashboard' }: Dashbo
   const userInitials = user?.profile?.firstName
     ? `${(user.profile.firstName || '').charAt(0)}${(user.profile.lastName || '').charAt(0)}`
     : (user?.mobile || '').slice(-2) || 'م‌س'
+
+  const handleLogout = async () => {
+    try {
+      await logout({ redirectTo: '/auth/login', callApi: true })
+    } catch {
+      // Fallback in case of timeout or unhandled exception
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('accessToken')
+        localStorage.removeItem('refreshToken')
+        document.cookie = 'accessToken=; path=/; max-age=0'
+        document.cookie = 'refreshToken=; path=/; max-age=0'
+        window.location.href = '/auth/login'
+      }
+    }
+  }
 
   // Production Navigation Contract filtered by DEMO_SCOPE_PHASE_1 (Exact 5 permitted items for Demo)
   const allNavItems = [
@@ -156,7 +180,7 @@ export function DashboardAppShell({ children, activeMenu = 'dashboard' }: Dashbo
           size="sm"
           onClick={() => {
             if (isMobile) setMobileMenuOpen(false)
-            void logout()
+            void handleLogout()
           }}
           className="w-full justify-center gap-2 text-xs font-bold text-red-600 hover:text-red-700 hover:bg-red-50/80 border-red-200/80 rounded-xl py-2 transition-all cursor-pointer shadow-2xs"
           data-testid="sidebar-logout-button"
@@ -240,22 +264,50 @@ export function DashboardAppShell({ children, activeMenu = 'dashboard' }: Dashbo
               <span className="size-2 rounded-full bg-[#EA580C] absolute top-2 end-2 sm:top-2.5 sm:end-2.5 ring-2 ring-white" />
             </button>
 
-            {/* User Profile Capsule */}
-            <Link
-              href="/profile"
-              className="flex items-center gap-2 sm:gap-3 ps-1.5 sm:ps-4 border-s border-slate-200/80 hover:opacity-85 transition-opacity cursor-pointer shrink-0"
-            >
-              <div className="size-9 sm:size-10 rounded-full bg-gradient-to-tr from-[#0D5C58] to-teal-500 text-white font-bold text-xs sm:text-sm flex items-center justify-center shadow-xs shrink-0">
-                {userInitials}
-              </div>
-              <div className="hidden sm:block text-right">
-                <div className="flex items-center gap-1">
-                  <span className="text-xs font-bold text-slate-800">{displayName}</span>
-                  <ChevronDown className="size-3.5 text-slate-400" />
-                </div>
-                <span className="text-[11px] text-emerald-600 font-medium">{roleTitle}</span>
-              </div>
-            </Link>
+            {/* User Profile Capsule Dropdown (Mission 551-Demo-B4-FIX2) */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="flex items-center gap-2 sm:gap-3 ps-1.5 sm:ps-4 border-s border-slate-200/80 hover:opacity-90 transition-opacity cursor-pointer shrink-0 outline-none"
+                  aria-label="منوی کاربر"
+                >
+                  <div className="size-9 sm:size-10 rounded-full bg-gradient-to-tr from-[#0D5C58] to-teal-500 text-white font-bold text-xs sm:text-sm flex items-center justify-center shadow-xs shrink-0">
+                    {userInitials}
+                  </div>
+                  <div className="hidden sm:block text-right">
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs font-bold text-slate-800">{displayName}</span>
+                      <ChevronDown className="size-3.5 text-slate-400" />
+                    </div>
+                    <span className="text-[11px] text-emerald-600 font-medium">{roleTitle}</span>
+                  </div>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52 p-1.5 rounded-2xl shadow-xl border border-slate-200" dir="rtl">
+                <DropdownMenuLabel className="px-3 py-2">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-xs font-bold text-slate-900">{displayName}</span>
+                    <span className="text-[11px] text-emerald-600 font-medium">{roleTitle}</span>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator className="my-1 bg-slate-100" />
+                <DropdownMenuItem asChild>
+                  <Link href="/profile" className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors">
+                    <Users className="size-4 text-slate-500" />
+                    <span>پروفایل من</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="my-1 bg-slate-100" />
+                <DropdownMenuItem
+                  onClick={() => void handleLogout()}
+                  className="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl cursor-pointer transition-colors"
+                >
+                  <LogOut className="size-4" />
+                  <span>خروج از حساب</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 
