@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     if (DEMO_SCOPE_PHASE_1) {
       if (code !== '12345') {
-        return errorResponse('OTP_INVALID', 'کد تایید اشتباه است (کد تایید دمو: 12345)', 401)
+        return errorResponse('OTP_INVALID', 'کد تایید وارد شده نادرست است', 401)
       }
 
       const demoUser = {

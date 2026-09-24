@@ -571,24 +571,7 @@ export default function LoginPage() {
                           </span>
                         </div>
 
-                        {/* Dev OTP hint */}
-                        {devOtp && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-center"
-                          >
-                            <p className="text-xs text-primary">
-                              کد تایید (محیط توسعه):{' '}
-                              <span
-                                dir="ltr"
-                                className="font-mono font-bold text-base"
-                              >
-                                {devOtp}
-                              </span>
-                            </p>
-                          </motion.div>
-                        )}
+
 
                         {/* OTP Input */}
                         <div className="space-y-2">
@@ -765,43 +748,7 @@ export default function LoginPage() {
             </Card>
           </motion.div>
 
-          {/* Dev Helper Info */}
-          <motion.div
-            variants={itemVariants}
-            className={`mt-4 space-y-1 p-4 text-center text-xs text-muted-foreground ${authCardClassName}`}
-          >
-            <p className="font-medium">حساب‌های آزمایشی:</p>
-            <p>
-              مدیر کل:{' '}
-              <span dir="ltr" className="font-mono">
-                09999999999
-              </span>{' '}
-              /{' '}
-              <span dir="ltr" className="font-mono">
-                Admin@123456
-              </span>
-            </p>
-            <p>
-              همکار فروش:{' '}
-              <span dir="ltr" className="font-mono">
-                09123456789
-              </span>{' '}
-              /{' '}
-              <span dir="ltr" className="font-mono">
-                Agent@123456
-              </span>
-            </p>
-            <p>
-              کاربر عادی:{' '}
-              <span dir="ltr" className="font-mono">
-                09111111111
-              </span>{' '}
-              /{' '}
-              <span dir="ltr" className="font-mono">
-                User@123456
-              </span>
-            </p>
-          </motion.div>
+
         </motion.div>
       </div>
     </div>

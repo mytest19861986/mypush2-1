@@ -46,9 +46,9 @@ export async function POST(request: NextRequest) {
           {
             canResend: true,
             expiresIn: 120,
-            otp: '12345',
+            
           },
-          'کد تایید ارسال شد (محیط دمو: 12345)'
+          'کد تایید ارسال شد'
         )
       }
 
