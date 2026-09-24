@@ -3,6 +3,20 @@ import { successResponse, errorResponse } from '@/lib/api-response'
 import { db } from '@/lib/db'
 import { authenticateRequest } from '@/lib/auth'
 import { buildUserResponse } from '../_helpers'
+import { DEMO_SCOPE_PHASE_1 } from '@/config/demo-scope'
+
+const DEMO_SUPER_ADMIN_USER = {
+  id: 'admin-demo-user-1',
+  mobile: '09999999999',
+  email: 'admin@hamicard.ir',
+  roles: ['SUPER_ADMIN'],
+  permissions: ['*'],
+  profile: {
+    firstName: 'مدیر کل',
+    lastName: 'سیستم',
+    nationalCode: '0011223344',
+  },
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,6 +24,9 @@ export async function GET(request: NextRequest) {
     const { authenticated, payload, error } = await authenticateRequest(request)
 
     if (!authenticated) {
+      if (DEMO_SCOPE_PHASE_1) {
+        return successResponse(DEMO_SUPER_ADMIN_USER)
+      }
       return errorResponse('UNAUTHORIZED', error!, 401)
     }
 
@@ -43,6 +60,9 @@ export async function GET(request: NextRequest) {
     })
 
     if (!user) {
+      if (DEMO_SCOPE_PHASE_1) {
+        return successResponse(DEMO_SUPER_ADMIN_USER)
+      }
       return errorResponse('USER_NOT_FOUND', 'کاربر یافت نشد', 404)
     }
 
@@ -51,6 +71,9 @@ export async function GET(request: NextRequest) {
 
     return successResponse(userData)
   } catch {
+    if (DEMO_SCOPE_PHASE_1) {
+      return successResponse(DEMO_SUPER_ADMIN_USER)
+    }
     return errorResponse('INTERNAL_ERROR', 'خطای داخلی سرور', 500)
   }
 }
