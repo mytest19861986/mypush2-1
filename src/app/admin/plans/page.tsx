@@ -673,7 +673,7 @@ export default function AdminPlansPage() {
                   <span>دریافت خروجی</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 p-1.5 rounded-2xl shadow-xl border border-border" dir="rtl">
+              <DropdownMenuContent align="end" className="w-56 p-1.5 rounded-2xl shadow-xl border border-border">
                 <DropdownMenuLabel className="px-3 py-1.5 text-xs text-muted-foreground font-medium">
                   {hasActiveFilters
                     ? `خروجی نتایج فیلترشده (${toPersianNum(filteredPlans.length)} طرح)`

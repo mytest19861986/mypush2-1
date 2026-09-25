@@ -285,7 +285,7 @@ export function DashboardAppShell({ children, activeMenu = 'dashboard' }: Dashbo
                   </div>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52 p-1.5 rounded-2xl shadow-xl border border-slate-200" dir="rtl">
+              <DropdownMenuContent align="end" className="w-52 p-1.5 rounded-2xl shadow-xl border border-slate-200">
                 <DropdownMenuLabel className="px-3 py-2">
                   <div className="flex flex-col gap-0.5">
                     <span className="text-xs font-bold text-slate-900">{displayName}</span>
