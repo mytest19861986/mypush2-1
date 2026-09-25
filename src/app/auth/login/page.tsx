@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { motion, type Variants } from 'framer-motion'
 import { toast } from 'sonner'
 import {
@@ -736,7 +737,16 @@ export default function LoginPage() {
               </CardContent>
 
               {/* Footer */}
-              <div className="px-5 pb-6 sm:px-7">
+              <div className="px-5 pb-6 sm:px-7 space-y-3">
+                <div className="text-center">
+                  <span className="text-sm text-muted-foreground">حساب کاربری ندارید؟ </span>
+                  <Link
+                    href="/register/user"
+                    className="text-sm font-semibold text-primary hover:underline transition-colors"
+                  >
+                    ثبت‌نام کاربر جدید
+                  </Link>
+                </div>
                 <p className="text-xs text-muted-foreground text-center leading-relaxed">
                   با ورود به سیستم،{' '}
                   <span className="text-foreground font-medium">

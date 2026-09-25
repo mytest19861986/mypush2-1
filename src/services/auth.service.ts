@@ -18,13 +18,28 @@ interface RefreshResponse {
   refreshToken: string
 }
 
+export interface RegisterUserData {
+  mobile: string
+  otpCode: string
+  password: string
+  firstName: string
+  lastName: string
+  nationalCode?: string
+  referralCode?: string
+  device?: string
+}
+
 export class AuthService extends BaseService {
-  async sendOtp(mobile: string) {
-    return this.post<SendOtpResponse>('/auth/send-otp', { mobile })
+  async sendOtp(mobile: string, purpose?: 'login' | 'register') {
+    return this.post<SendOtpResponse>('/auth/send-otp', { mobile, purpose })
   }
 
   async verifyOtp(mobile: string, code: string) {
     return this.post<AuthTokens>('/auth/verify-otp', { mobile, code })
+  }
+
+  async registerUser(data: RegisterUserData) {
+    return this.post<AuthTokens>('/auth/register', data)
   }
 
   async login(mobile: string, password: string) {

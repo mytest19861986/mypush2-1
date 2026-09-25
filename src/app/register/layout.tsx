@@ -13,19 +13,19 @@ export default function RegisterLayout({
   const router = useRouter()
   const pathname = usePathname()
   const { isAuthenticated, isLoading, initialize } = useAuthStore()
-  const isPublicAgentRegistration = pathname === '/register/agent'
+  const isPublicRegistration = pathname === '/register/agent' || pathname === '/register/user'
 
   useEffect(() => {
     initialize()
   }, [initialize])
 
   useEffect(() => {
-    if (!isPublicAgentRegistration && !isLoading && !isAuthenticated) {
+    if (!isPublicRegistration && !isLoading && !isAuthenticated) {
       router.replace('/auth/login')
     }
-  }, [isPublicAgentRegistration, isLoading, isAuthenticated, router])
+  }, [isPublicRegistration, isLoading, isAuthenticated, router])
 
-  if (isLoading || (!isPublicAgentRegistration && !isAuthenticated)) {
+  if (isLoading || (!isPublicRegistration && !isAuthenticated)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">

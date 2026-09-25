@@ -15,6 +15,7 @@ const sendOtpSchema = z.object({
   mobile: z
     .string()
     .regex(/^09\d{9}$/, 'فرمت شماره موبایل نامعتبر است'),
+  purpose: z.enum(['login', 'register']).optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -34,6 +35,8 @@ export async function POST(request: NextRequest) {
 
     const { mobile } = parsed.data
 
+    const purpose = parsed.data.purpose ?? 'login'
+
     if (DEMO_SCOPE_PHASE_1) {
       const DEMO_ACCOUNTS: Record<string, string> = {
         '09999999999': '12345',
@@ -41,12 +44,11 @@ export async function POST(request: NextRequest) {
         '09111111111': '12345',
       }
 
-      if (DEMO_ACCOUNTS[mobile]) {
+      if (DEMO_ACCOUNTS[mobile] || purpose === 'register') {
         return successResponse(
           {
             canResend: true,
             expiresIn: 120,
-            
           },
           'کد تایید ارسال شد'
         )
