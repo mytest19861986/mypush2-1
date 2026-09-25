@@ -12,6 +12,10 @@ import {
   Users,
   Tag,
   Loader2,
+  Search,
+  RotateCcw,
+  Filter,
+  SlidersHorizontal,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -192,6 +196,77 @@ export default function AdminPlansPage() {
   const [deleteTarget, setDeleteTarget] = useState<DiscountPlanItem | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [togglingId, setTogglingId] = useState<string | null>(null)
+
+  /* ── FB-102: Advanced Plan Filter States ────────────────── */
+  const [searchTerm, setSearchTerm] = useState('')
+  const [minPrice, setMinPrice] = useState('')
+  const [maxPrice, setMaxPrice] = useState('')
+  const [discountFilter, setDiscountFilter] = useState<'ALL' | '20' | '30' | '50'>('ALL')
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL')
+
+  const resetFilters = useCallback(() => {
+    setSearchTerm('')
+    setMinPrice('')
+    setMaxPrice('')
+    setDiscountFilter('ALL')
+    setStatusFilter('ALL')
+  }, [])
+
+  const hasActiveFilters = Boolean(
+    searchTerm.trim() ||
+    minPrice !== '' ||
+    maxPrice !== '' ||
+    discountFilter !== 'ALL' ||
+    statusFilter !== 'ALL'
+  )
+
+  const filteredPlans = plans.filter((plan) => {
+    // 1. Text Search in name & description
+    if (searchTerm.trim()) {
+      const q = searchTerm.trim().toLowerCase()
+      const matchesName = plan.name.toLowerCase().includes(q)
+      const matchesDesc = (plan.description || '').toLowerCase().includes(q)
+      if (!matchesName && !matchesDesc) return false
+    }
+
+    // 2. Status Filter
+    if (statusFilter !== 'ALL' && plan.status !== statusFilter) {
+      return false
+    }
+
+    // 3. Discount Percent Filter
+    if (discountFilter !== 'ALL') {
+      const minPercent = Number(discountFilter)
+      if (plan.discountPercent < minPercent) return false
+    }
+
+    // 4. Min Price Filter (controlled against negative)
+    if (minPrice !== '') {
+      const parsedMin = Math.max(0, Number(minPrice))
+      if (!isNaN(parsedMin) && plan.price < parsedMin) return false
+    }
+
+    // 5. Max Price Filter
+    if (maxPrice !== '') {
+      const parsedMax = Math.max(0, Number(maxPrice))
+      if (!isNaN(parsedMax)) {
+        // If min > max, controlled: ensure bound applies without crash
+        if (minPrice !== '') {
+          const parsedMin = Math.max(0, Number(minPrice))
+          if (parsedMin > parsedMax) {
+            // When min > max, empty or strict intersection
+            if (plan.price < parsedMin || plan.price > parsedMax) return false
+          } else {
+            if (plan.price > parsedMax) return false
+          }
+        } else {
+          if (plan.price > parsedMax) return false
+        }
+      }
+    }
+
+    return true
+  })
 
   const updatePlansWithPersistence = useCallback((updater: (prev: DiscountPlanItem[]) => DiscountPlanItem[]) => {
     setPlans((prev) => {
@@ -403,7 +478,9 @@ export default function AdminPlansPage() {
         description={
           <>
             مدیریت طرح‌های تخفیف درمانی —{' '}
-            <span className="font-semibold text-emerald-600">{toPersianNum(plans.length)}</span>{' '}
+            <span className="font-semibold text-emerald-600">{toPersianNum(filteredPlans.length)}</span>{' '}
+            از{' '}
+            <span className="font-semibold text-slate-700">{toPersianNum(plans.length)}</span>{' '}
             طرح
           </>
         }
@@ -414,6 +491,136 @@ export default function AdminPlansPage() {
           </Button>
         }
       />
+
+      {/* ── FB-102: Advanced Filter Bar ── */}
+      <Card className="rounded-2xl border border-border/60 bg-card shadow-sm">
+        <CardContent className="p-4 sm:p-5 space-y-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-border/40 pb-3">
+            <div className="flex items-center gap-2 text-sm font-bold text-foreground">
+              <SlidersHorizontal className="size-4 text-emerald-600" />
+              <span>فیلترهای پیشرفته طرح‌ها</span>
+              {hasActiveFilters && (
+                <span className="rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 text-[11px] font-bold">
+                  فعال
+                </span>
+              )}
+            </div>
+
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={resetFilters}
+                className="h-8 text-xs text-muted-foreground hover:text-foreground gap-1.5 self-end sm:self-auto"
+              >
+                <RotateCcw className="size-3.5" />
+                پاک‌سازی فیلترها
+              </Button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {/* 1. Search Name & Description */}
+            <div className="space-y-1.5">
+              <Label htmlFor="plan-search" className="text-xs font-medium text-muted-foreground">
+                جستجو در نام و توضیحات
+              </Label>
+              <div className="relative">
+                <Search className="size-3.5 absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="plan-search"
+                  placeholder="مثلاً: دندانپزشکی، طلایی..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-9 pe-9 text-xs rounded-xl"
+                />
+              </div>
+            </div>
+
+            {/* 2. Price Range (Min & Max) */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">
+                محدوده قیمت (تومان)
+              </Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  id="plan-min-price"
+                  type="number"
+                  placeholder="از قیمت"
+                  value={minPrice}
+                  onChange={(e) => setMinPrice(e.target.value)}
+                  className="h-9 text-xs rounded-xl font-mono"
+                  min="0"
+                />
+                <Input
+                  id="plan-max-price"
+                  type="number"
+                  placeholder="تا قیمت"
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(e.target.value)}
+                  className="h-9 text-xs rounded-xl font-mono"
+                  min="0"
+                />
+              </div>
+            </div>
+
+            {/* 3. Discount Percent Threshold */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">
+                حداقل درصد تخفیف
+              </Label>
+              <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-xl">
+                {[
+                  { value: 'ALL', label: 'همه' },
+                  { value: '20', label: '۲۰٪+' },
+                  { value: '30', label: '۳۰٪+' },
+                  { value: '50', label: '۵۰٪+' },
+                ].map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => setDiscountFilter(item.value as any)}
+                    className={`flex-1 py-1 text-xs rounded-lg font-medium transition-colors ${
+                      discountFilter === item.value
+                        ? 'bg-emerald-600 text-white shadow-xs font-bold'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 4. Status Filter */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">
+                وضعیت طرح
+              </Label>
+              <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-xl">
+                {[
+                  { value: 'ALL', label: 'همه' },
+                  { value: 'ACTIVE', label: 'فعال' },
+                  { value: 'INACTIVE', label: 'غیرفعال' },
+                ].map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => setStatusFilter(item.value as any)}
+                    className={`flex-1 py-1 text-xs rounded-lg font-medium transition-colors ${
+                      statusFilter === item.value
+                        ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-xs font-bold'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Plan cards grid */}
       {isLoading ? (
@@ -442,9 +649,19 @@ export default function AdminPlansPage() {
             onClick: openCreateDialog,
           }}
         />
+      ) : filteredPlans.length === 0 ? (
+        <EmptyState
+          icon={Filter}
+          title="هیچ طرحی با فیلترهای انتخابی یافت نشد"
+          description="لطفاً عبارات جستجو یا فیلترهای قیمت و تخفیف را تغییر دهید"
+          action={{
+            label: 'پاک‌سازی تمام فیلترها',
+            onClick: resetFilters,
+          }}
+        />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {plans.map((plan) => (
+          {filteredPlans.map((plan) => (
             <Card
               key={plan.id}
               className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm transition-shadow hover:shadow-md"
