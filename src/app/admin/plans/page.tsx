@@ -16,6 +16,9 @@ import {
   RotateCcw,
   Filter,
   SlidersHorizontal,
+  Download,
+  FileSpreadsheet,
+  FileText,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -42,6 +45,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { useToast } from '@/hooks/use-toast'
 import { PageHeader, StatusBadge, EmptyState } from '@/components/shared'
 import { ApiError } from '@/lib/api-client'
@@ -268,6 +279,169 @@ export default function AdminPlansPage() {
     return true
   })
 
+  /* ── FB-103: CSV & Excel Export Utilities ──────────────── */
+  const getTimestamp = () => {
+    const d = new Date()
+    const pad = (n: number) => n.toString().padStart(2, '0')
+    return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`
+  }
+
+  const exportToCsv = (items: DiscountPlanItem[], isFiltered: boolean) => {
+    if (items.length === 0) {
+      toast({
+        title: 'خروجی ناموفق',
+        description: 'هیچ طرحی برای دریافت فایل خروجی وجود ندارد',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    const headers = [
+      'شناسه طرح',
+      'نام طرح',
+      'توضیحات',
+      'قیمت (تومان)',
+      'درصد تخفیف',
+      'مدت (روز)',
+      'سقف ویزیت/استفاده',
+      'پورسانت همکار (%)',
+      'پورسانت رفرال (%)',
+      'وضعیت',
+    ]
+
+    const escapeCsv = (val: string | number | null | undefined) => {
+      if (val === null || val === undefined) return '""'
+      const str = String(val).replace(/"/g, '""')
+      return `"${str}"`
+    }
+
+    const rows = items.map((p) => [
+      escapeCsv(p.id),
+      escapeCsv(p.name),
+      escapeCsv(p.description || ''),
+      escapeCsv(p.price),
+      escapeCsv(p.discountPercent),
+      escapeCsv(p.durationDays),
+      escapeCsv(p.maxUses === -1 ? 'نامحدود' : p.maxUses),
+      escapeCsv(p.salesPartnerCommissionPercent ?? 0),
+      escapeCsv(p.referralCommissionPercent ?? 0),
+      escapeCsv(p.status === 'ACTIVE' ? 'فعال' : 'غیرفعال'),
+    ])
+
+    // Prepend UTF-8 BOM for perfect Persian encoding in Excel & viewers
+    const BOM = '\uFEFF'
+    const csvContent = BOM + [headers.map(escapeCsv).join(','), ...rows.map((r) => r.join(','))].join('\r\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    const scopeLabel = isFiltered ? 'filtered' : 'all'
+    link.href = url
+    link.download = `plans_export_${scopeLabel}_${getTimestamp()}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+
+    toast({
+      title: 'خروجی CSV آماده شد',
+      description: `فایل شامل ${toPersianNum(items.length)} طرح با موفقیت دانلود شد`,
+    })
+  }
+
+  const exportToExcel = (items: DiscountPlanItem[], isFiltered: boolean) => {
+    if (items.length === 0) {
+      toast({
+        title: 'خروجی ناموفق',
+        description: 'هیچ طرحی برای دریافت فایل خروجی وجود ندارد',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    const headers = [
+      'شناسه طرح',
+      'نام طرح',
+      'توضیحات',
+      'قیمت (تومان)',
+      'درصد تخفیف',
+      'مدت (روز)',
+      'سقف ویزیت/استفاده',
+      'پورسانت همکار (%)',
+      'پورسانت رفرال (%)',
+      'وضعیت',
+    ]
+
+    const xmlEscape = (val: string | number | null | undefined) => {
+      if (val === null || val === undefined) return ''
+      return String(val)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;')
+    }
+
+    const rowsXml = items
+      .map((p) => {
+        const cells = [
+          `<Cell><Data ss:Type="String">${xmlEscape(p.id)}</Data></Cell>`,
+          `<Cell><Data ss:Type="String">${xmlEscape(p.name)}</Data></Cell>`,
+          `<Cell><Data ss:Type="String">${xmlEscape(p.description || '')}</Data></Cell>`,
+          `<Cell><Data ss:Type="Number">${p.price}</Data></Cell>`,
+          `<Cell><Data ss:Type="Number">${p.discountPercent}</Data></Cell>`,
+          `<Cell><Data ss:Type="Number">${p.durationDays}</Data></Cell>`,
+          `<Cell><Data ss:Type="String">${p.maxUses === -1 ? 'نامحدود' : p.maxUses}</Data></Cell>`,
+          `<Cell><Data ss:Type="Number">${p.salesPartnerCommissionPercent ?? 0}</Data></Cell>`,
+          `<Cell><Data ss:Type="Number">${p.referralCommissionPercent ?? 0}</Data></Cell>`,
+          `<Cell><Data ss:Type="String">${p.status === 'ACTIVE' ? 'فعال' : 'غیرفعال'}</Data></Cell>`,
+        ].join('')
+        return `<Row>${cells}</Row>`
+      })
+      .join('')
+
+    const headerCells = headers
+      .map((h) => `<Cell ss:StyleID="header"><Data ss:Type="String">${xmlEscape(h)}</Data></Cell>`)
+      .join('')
+
+    const excelXml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+ <Styles>
+  <Style ss:ID="header">
+   <Font ss:Bold="1" ss:Color="#FFFFFF"/>
+   <Interior ss:Color="#0D5C58" ss:Pattern="Solid"/>
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+  </Style>
+ </Styles>
+ <Worksheet ss:Name="طرح‌های تخفیف" ss:RightToLeft="1">
+  <Table>
+   <Row>${headerCells}</Row>
+   ${rowsXml}
+  </Table>
+ </Worksheet>
+</Workbook>`
+
+    const blob = new Blob([excelXml], { type: 'application/vnd.ms-excel;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    const scopeLabel = isFiltered ? 'filtered' : 'all'
+    link.href = url
+    link.download = `plans_export_${scopeLabel}_${getTimestamp()}.xls`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+
+    toast({
+      title: 'خروجی Excel آماده شد',
+      description: `فایل اکسل شامل ${toPersianNum(items.length)} طرح با موفقیت دانلود شد`,
+    })
+  }
+
   const updatePlansWithPersistence = useCallback((updater: (prev: DiscountPlanItem[]) => DiscountPlanItem[]) => {
     setPlans((prev) => {
       const next = updater(prev)
@@ -485,10 +659,80 @@ export default function AdminPlansPage() {
           </>
         }
         action={
-          <Button type="button" onClick={openCreateDialog} className="shrink-0 bg-emerald-600 hover:bg-emerald-700">
-            <Plus className="ml-2 size-4" />
-            ایجاد طرح جدید
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* ── FB-103: Export Dropdown Button ── */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-xl border-border/80 bg-background text-xs font-semibold gap-1.5 shadow-2xs"
+                  id="btn-plans-export"
+                >
+                  <Download className="size-3.5 text-muted-foreground" />
+                  <span>دریافت خروجی</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 p-1.5 rounded-2xl shadow-xl border border-border" dir="rtl">
+                <DropdownMenuLabel className="px-3 py-1.5 text-xs text-muted-foreground font-medium">
+                  {hasActiveFilters
+                    ? `خروجی نتایج فیلترشده (${toPersianNum(filteredPlans.length)} طرح)`
+                    : `خروجی کل طرح‌ها (${toPersianNum(plans.length)} طرح)`}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator className="my-1 bg-border/40" />
+
+                {/* CSV current/filtered */}
+                <DropdownMenuItem
+                  id="export-csv-current"
+                  onClick={() => exportToCsv(filteredPlans, hasActiveFilters)}
+                  className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-xl cursor-pointer hover:bg-muted transition-colors"
+                >
+                  <FileText className="size-4 text-emerald-600" />
+                  <span>دانلود CSV (نتایج فعلی)</span>
+                </DropdownMenuItem>
+
+                {/* Excel current/filtered */}
+                <DropdownMenuItem
+                  id="export-excel-current"
+                  onClick={() => exportToExcel(filteredPlans, hasActiveFilters)}
+                  className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-xl cursor-pointer hover:bg-muted transition-colors"
+                >
+                  <FileSpreadsheet className="size-4 text-emerald-600" />
+                  <span>دانلود اکسل (Excel - نتایج فعلی)</span>
+                </DropdownMenuItem>
+
+                {hasActiveFilters && (
+                  <>
+                    <DropdownMenuSeparator className="my-1 bg-border/40" />
+                    <DropdownMenuLabel className="px-3 py-1 text-[11px] text-muted-foreground">
+                      خروجی بدون فیلتر (کل {toPersianNum(plans.length)} طرح)
+                    </DropdownMenuLabel>
+                    <DropdownMenuItem
+                      id="export-csv-all"
+                      onClick={() => exportToCsv(plans, false)}
+                      className="flex items-center gap-2.5 px-3 py-1.5 text-xs font-medium rounded-xl cursor-pointer hover:bg-muted transition-colors text-muted-foreground"
+                    >
+                      <FileText className="size-3.5" />
+                      <span>دانلود CSV همه طرح‌ها</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      id="export-excel-all"
+                      onClick={() => exportToExcel(plans, false)}
+                      className="flex items-center gap-2.5 px-3 py-1.5 text-xs font-medium rounded-xl cursor-pointer hover:bg-muted transition-colors text-muted-foreground"
+                    >
+                      <FileSpreadsheet className="size-3.5" />
+                      <span>دانلود اکسل همه طرح‌ها</span>
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button type="button" onClick={openCreateDialog} className="shrink-0 bg-emerald-600 hover:bg-emerald-700">
+              <Plus className="ml-2 size-4" />
+              ایجاد طرح جدید
+            </Button>
+          </div>
         }
       />
 
