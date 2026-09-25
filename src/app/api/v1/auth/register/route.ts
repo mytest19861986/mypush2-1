@@ -100,6 +100,16 @@ export async function POST(request: NextRequest) {
         return errorResponse('CONFLICT', 'این شماره موبایل قبلاً در سامانه ثبت شده است', 409)
       }
 
+      // Check national code uniqueness if provided
+      if (cleanNationalCode) {
+        const existingProfile = await db.userProfile.findUnique({
+          where: { nationalCode: cleanNationalCode },
+        })
+        if (existingProfile) {
+          return errorResponse('CONFLICT', 'این کد ملی قبلاً در سامانه ثبت شده است', 409)
+        }
+      }
+
       const passwordHash = await hashPassword(password)
 
       // Ensure 'USER' role exists
