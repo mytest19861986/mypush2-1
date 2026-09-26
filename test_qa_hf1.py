@@ -70,22 +70,32 @@ wrong_login = test_endpoint('4. User Wrong Password', f'{base}/api/v1/auth/login
     'password': 'WrongPassword!'
 })
 
-# 5. Doctor registration test
-doc_mobile = f'0936{int(time.time()) % 10000000:07d}'
-print(f"Registering doctor with mobile: {doc_mobile}")
-doc_reg = test_endpoint('5. Doctor Register', f'{base}/api/v1/doctor/register', 'POST', {
-    'firstName': 'آرش',
-    'lastName': 'امیدی',
-    'mobile': doc_mobile,
+# 5. Doctor registration test (Needs user session first)
+doc_user_mobile = f'0936{int(time.time()) % 10000000:07d}'
+print(f"Registering base user for doctor with mobile: {doc_user_mobile}")
+doc_user_reg = test_endpoint('5a. Doctor Base User Register', f'{base}/api/v1/auth/register', 'POST', {
+    'mobile': doc_user_mobile,
+    'otpCode': '12345',
     'password': 'DoctorPass123!',
-    'medicalCode': f'MED-{int(time.time()) % 100000:05d}',
-    'nationalCode': '0012345678',
-    'specialty': 'دندانپزشکی ترمیمی',
-    'clinicName': 'کلینیک دندان امید',
-    'clinicAddress': 'تهران ولیعصر',
-    'city': 'تهران',
-    'province': 'تهران'
+    'firstName': 'دکتر آرش',
+    'lastName': 'امیدی'
 })
+doc_user_token = None
+if isinstance(doc_user_reg, dict):
+    doc_user_token = doc_user_reg.get('data', {}).get('accessToken')
+
+if doc_user_token:
+    doc_headers = {'Authorization': f'Bearer {doc_user_token}'}
+    doc_reg = test_endpoint('5b. Doctor Profile Submit', f'{base}/api/v1/doctor/register', 'POST', {
+        'medicalCode': f'MED-{int(time.time()) % 100000:05d}',
+        'specialty': 'دندانپزشکی ترمیمی',
+        'clinicName': 'کلینیک دندان امید',
+        'clinicAddress': 'تهران ولیعصر',
+        'city': 'تهران',
+        'province': 'تهران',
+        'phone': '02188889999',
+        'bio': 'متخصص دندانپزشکی با ۱۰ سال سابقه'
+    }, headers=doc_headers)
 
 # 6. Admin GET Users
 if admin_token:

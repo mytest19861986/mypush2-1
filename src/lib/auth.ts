@@ -155,18 +155,23 @@ export async function requirePermission(
     }
   }
 
-  if (!payload.permissions.includes(permission)) {
+  if (
+    payload.permissions.includes('*') ||
+    payload.roles.includes('SUPER_ADMIN') ||
+    payload.roles.includes('SUPERADMIN') ||
+    payload.permissions.includes(permission)
+  ) {
     return {
-      authorized: false,
+      authorized: true,
       payload,
-      error: `Permission denied: required '${permission}'`,
+      error: null,
     }
   }
 
   return {
-    authorized: true,
+    authorized: false,
     payload,
-    error: null,
+    error: Permission denied: required '',
   }
 }
 

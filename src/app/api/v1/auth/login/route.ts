@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
           isMobileVerified: true,
           status: 'ACTIVE',
           roles: ['SUPER_ADMIN'],
-          permissions: ['*'],
+          permissions: ['*', 'manage_users', 'manage_doctors', 'manage_plans', 'manage_reviews', 'manage_agents', 'view_reports', 'manage_settings'],
           profile: {
             firstName: 'مدیر کل',
             lastName: 'سیستم',
