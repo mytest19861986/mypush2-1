@@ -738,14 +738,23 @@ export default function LoginPage() {
 
               {/* Footer */}
               <div className="px-5 pb-6 sm:px-7 space-y-3">
-                <div className="text-center">
-                  <span className="text-sm text-muted-foreground">حساب کاربری ندارید؟ </span>
-                  <Link
-                    href="/register/user"
-                    className="text-sm font-semibold text-primary hover:underline transition-colors"
-                  >
-                    ثبت‌نام کاربر جدید
-                  </Link>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-center text-sm">
+                  <span className="text-muted-foreground">حساب کاربری ندارید؟</span>
+                  <div className="flex items-center gap-2 font-semibold">
+                    <Link
+                      href="/register/user"
+                      className="text-primary hover:underline transition-colors"
+                    >
+                      ثبت‌نام کاربر جدید
+                    </Link>
+                    <span className="text-muted-foreground">•</span>
+                    <Link
+                      href="/register/doctor"
+                      className="text-primary hover:underline transition-colors"
+                    >
+                      ثبت‌نام پزشک
+                    </Link>
+                  </div>
                 </div>
                 <p className="text-xs text-muted-foreground text-center leading-relaxed">
                   با ورود به سیستم،{' '}

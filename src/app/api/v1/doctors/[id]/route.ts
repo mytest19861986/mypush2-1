@@ -68,7 +68,19 @@ export async function PATCH(
     if (!authorized) return errorResponse('UNAUTHORIZED', error!, 401)
 
     const { id } = await params
-    const body = (await request.json()) as { discountPercent?: number }
+    const body = (await request.json()) as {
+      discountPercent?: number
+      specialty?: string
+      clinicName?: string
+      clinicAddress?: string
+      city?: string
+      province?: string
+      phone?: string
+      bio?: string
+      status?: string
+      firstName?: string
+      lastName?: string
+    }
 
     if (
       body.discountPercent !== undefined &&
@@ -79,18 +91,48 @@ export async function PATCH(
       return errorResponse('VALIDATION_ERROR', 'درصد تخفیف باید بین ۰ تا ۱۰۰ باشد', 400)
     }
 
-    const existingDoctor = await db.doctor.findUnique({ where: { id } })
+    const existingDoctor = await db.doctor.findUnique({
+      where: { id },
+      include: { user: true },
+    })
     if (!existingDoctor) {
       return errorResponse('NOT_FOUND', 'پزشک مورد نظر یافت نشد', 404)
     }
 
+    const doctorData: Record<string, unknown> = {}
+    if (body.discountPercent !== undefined) doctorData.discountPercent = Math.round(body.discountPercent)
+    if (body.specialty !== undefined) doctorData.specialty = body.specialty
+    if (body.clinicName !== undefined) doctorData.clinicName = body.clinicName
+    if (body.clinicAddress !== undefined) doctorData.clinicAddress = body.clinicAddress
+    if (body.city !== undefined) doctorData.city = body.city
+    if (body.province !== undefined) doctorData.province = body.province
+    if (body.phone !== undefined) doctorData.phone = body.phone
+    if (body.bio !== undefined) doctorData.bio = body.bio
+    if (body.status !== undefined && ['PENDING', 'APPROVED', 'REJECTED', 'SUSPENDED'].includes(body.status)) {
+      doctorData.status = body.status
+      if (body.status === 'APPROVED') {
+        doctorData.verifiedAt = new Date()
+      }
+    }
+
+    if (body.firstName !== undefined || body.lastName !== undefined) {
+      await db.userProfile.upsert({
+        where: { userId: existingDoctor.userId },
+        create: {
+          userId: existingDoctor.userId,
+          firstName: body.firstName ?? '',
+          lastName: body.lastName ?? '',
+        },
+        update: {
+          ...(body.firstName !== undefined && { firstName: body.firstName }),
+          ...(body.lastName !== undefined && { lastName: body.lastName }),
+        },
+      })
+    }
+
     const updatedDoctor = await db.doctor.update({
       where: { id },
-      data: {
-        ...(body.discountPercent !== undefined && {
-          discountPercent: Math.round(body.discountPercent),
-        }),
-      },
+      data: doctorData,
       include: {
         user: {
           select: {

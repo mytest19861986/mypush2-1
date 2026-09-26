@@ -7,6 +7,8 @@ import { rateLimit } from '@/lib/rate-limit'
 import { createAuditLog, AuditActions } from '@/lib/audit'
 import { DEMO_SCOPE_PHASE_1 } from '@/config/demo-scope'
 
+import { normalizeMobile } from '@/lib/phone'
+
 // Rate limiter: 3 requests per 5 minutes per mobile
 const sendOtpLimiter = rateLimit({ limitPerWindow: 3, windowMs: 5 * 60 * 1000 })
 
@@ -14,7 +16,10 @@ const sendOtpLimiter = rateLimit({ limitPerWindow: 3, windowMs: 5 * 60 * 1000 })
 const sendOtpSchema = z.object({
   mobile: z
     .string()
-    .regex(/^09\d{9}$/, 'فرمت شماره موبایل نامعتبر است'),
+    .transform(normalizeMobile)
+    .refine((val) => /^09\d{9}$/.test(val), {
+      message: 'فرمت شماره موبایل نامعتبر است (مثال: 09121234567)',
+    }),
   purpose: z.enum(['login', 'register']).optional(),
 })
 

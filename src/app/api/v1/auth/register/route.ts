@@ -10,13 +10,18 @@ import { buildUserResponse, generateAuthTokens, getClientIp } from '../_helpers'
 import { DEMO_SCOPE_PHASE_1 } from '@/config/demo-scope'
 import { generateAccessToken, generateRefreshToken } from '@/lib/jwt'
 
+import { normalizeMobile } from '@/lib/phone'
+
 // Rate limiter: 5 registration attempts per 15 minutes per IP
 const registerLimiter = rateLimit({ limitPerWindow: 5, windowMs: 15 * 60 * 1000 })
 
 const registerSchema = z.object({
   mobile: z
     .string()
-    .regex(/^09\d{9}$/, 'فرمت شماره موبایل نامعتبر است (مثال: 09121234567)'),
+    .transform(normalizeMobile)
+    .refine((val) => /^09\d{9}$/.test(val), {
+      message: 'فرمت شماره موبایل نامعتبر است (مثال: 09121234567)',
+    }),
   otpCode: z
     .string()
     .length(5, 'کد تایید باید ۵ رقم باشد')
@@ -173,8 +178,13 @@ export async function POST(request: NextRequest) {
         details: { method: 'SELF_REGISTER', referralCode: referralCode || null },
       })
 
-      const accessToken = await generateAccessToken(newUser.id, ['USER'], [])
-      const refreshToken = await generateRefreshToken()
+      const { accessToken, refreshToken } = await generateAuthTokens({
+        userId: newUser.id,
+        device,
+        ip,
+        createLogs: true,
+        mobile: newUser.mobile,
+      })
 
       const demoUserData = {
         id: newUser.id,

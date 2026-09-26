@@ -9,6 +9,8 @@ import { buildUserResponse, generateAuthTokens, getClientIp } from '../_helpers'
 import { DEMO_SCOPE_PHASE_1 } from '@/config/demo-scope'
 import { generateAccessToken, generateRefreshToken } from '@/lib/jwt'
 
+import { normalizeMobile } from '@/lib/phone'
+
 // Rate limiter: 5 attempts per 15 minutes per mobile
 const loginLimiter = rateLimit({ limitPerWindow: 5, windowMs: 15 * 60 * 1000 })
 
@@ -16,7 +18,10 @@ const loginLimiter = rateLimit({ limitPerWindow: 5, windowMs: 15 * 60 * 1000 })
 const loginSchema = z.object({
   mobile: z
     .string()
-    .regex(/^09\d{9}$/, 'فرمت شماره موبایل نامعتبر است'),
+    .transform(normalizeMobile)
+    .refine((val) => /^09\d{9}$/.test(val), {
+      message: 'فرمت شماره موبایل نامعتبر است (مثال: 09121234567)',
+    }),
   password: z
     .string()
     .min(6, 'رمز عبور باید حداقل ۶ کاراکتر باشد'),
@@ -80,10 +85,6 @@ export async function POST(request: NextRequest) {
       } else {
         return errorResponse('INVALID_CREDENTIALS', 'شماره موبایل یا رمز عبور اشتباه است', 401)
       }
-    }
-
-    if (DEMO_SCOPE_PHASE_1) {
-      return errorResponse('INVALID_CREDENTIALS', 'شماره موبایل یا رمز عبور اشتباه است', 401)
     }
 
     // Find user by mobile

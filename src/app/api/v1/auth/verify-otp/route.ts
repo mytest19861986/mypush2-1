@@ -7,11 +7,16 @@ import { buildUserResponse, generateAuthTokens, getClientIp } from '../_helpers'
 import { DEMO_SCOPE_PHASE_1 } from '@/config/demo-scope'
 import { generateAccessToken, generateRefreshToken } from '@/lib/jwt'
 
+import { normalizeMobile } from '@/lib/phone'
+
 // Zod schema for request body
 const verifyOtpSchema = z.object({
   mobile: z
     .string()
-    .regex(/^09\d{9}$/, 'فرمت شماره موبایل نامعتبر است'),
+    .transform(normalizeMobile)
+    .refine((val) => /^09\d{9}$/.test(val), {
+      message: 'فرمت شماره موبایل نامعتبر است',
+    }),
   code: z
     .string()
     .length(5, 'کد تایید باید ۵ رقم باشد')
@@ -39,6 +44,34 @@ export async function POST(request: NextRequest) {
     if (DEMO_SCOPE_PHASE_1) {
       if (code !== '12345') {
         return errorResponse('OTP_INVALID', 'کد تایید وارد شده نادرست است', 401)
+      }
+
+      // Check if user exists in DB first
+      const dbUser = await db.user.findUnique({
+        where: { mobile },
+        include: {
+          profile: true,
+          agent: { select: { id: true, businessName: true, status: true } },
+        },
+      })
+
+      if (dbUser) {
+        const tokens = await generateAuthTokens({
+          userId: dbUser.id,
+          device,
+          ip: getClientIp(request),
+          createLogs: true,
+          mobile: dbUser.mobile,
+        })
+        const userData = await buildUserResponse(dbUser)
+        return successResponse(
+          {
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+            user: userData,
+          },
+          'ورود با موفقیت انجام شد'
+        )
       }
 
       const demoUser = {

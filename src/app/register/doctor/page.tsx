@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { toast } from 'sonner'
 import { motion, type Variants } from 'framer-motion'
+import { useAuthStore } from '@/stores/auth-store'
 import { doctorsService } from '@/services/doctors.service'
 import { ApiError } from '@/lib/api-client'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -70,6 +72,7 @@ const selectTriggerClassName =
 
 export default function RegisterDoctorPage() {
   const router = useRouter()
+  const { isAuthenticated } = useAuthStore()
 
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -111,6 +114,12 @@ export default function RegisterDoctorPage() {
       return
     }
 
+    if (!isAuthenticated) {
+      toast.error('برای ثبت درخواست پزشکی، لطفاً ابتدا وارد حساب کاربری خود شوید')
+      router.push('/auth/login')
+      return
+    }
+
     setLoading(true)
     try {
       await doctorsService.register(form)
@@ -118,7 +127,12 @@ export default function RegisterDoctorPage() {
       toast.success('درخواست ثبت‌نام پزشکی با موفقیت ثبت شد')
     } catch (error) {
       if (error instanceof ApiError) {
-        toast.error(error.message || 'خطا در ثبت درخواست')
+        if (error.status === 401) {
+          toast.error('نشست شما منقضی شده است. لطفاً وارد شوید')
+          router.push('/auth/login')
+        } else {
+          toast.error(error.message || 'خطا در ثبت درخواست')
+        }
       } else {
         toast.error('خطای شبکه. لطفاً دوباره تلاش کنید')
       }
@@ -189,6 +203,23 @@ export default function RegisterDoctorPage() {
             </p>
           </div>
         </div>
+
+        {!isAuthenticated && (
+          <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-800 dark:text-amber-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <p className="font-semibold">برای ارسال مدارک و درخواست همکاری پزشکی باید حساب کاربری داشته باشید.</p>
+              <p className="text-xs opacity-90 mt-0.5">ابتدا وارد شوید یا ثبت‌نام کنید، سپس فرم زیر را ارسال فرمایید.</p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Link href="/auth/login" className="px-3 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-xs hover:opacity-90">
+                ورود به حساب
+              </Link>
+              <Link href="/register/user" className="px-3 py-1.5 rounded-xl bg-card border border-border text-foreground text-xs font-bold shadow-xs hover:bg-muted">
+                ثبت‌نام اولیه
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* Form Card */}
         <Card className={pageCardClassName}>

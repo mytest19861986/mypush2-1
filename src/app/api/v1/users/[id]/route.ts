@@ -61,6 +61,32 @@ export async function GET(
           },
         },
       },
+      wallet: {
+        select: {
+          balance: true,
+          status: true,
+        },
+      },
+      userPlans: {
+        where: {
+          status: 'ACTIVE',
+        },
+        orderBy: { endDate: 'desc' },
+        take: 3,
+        select: {
+          id: true,
+          status: true,
+          startDate: true,
+          endDate: true,
+          plan: {
+            select: {
+              name: true,
+              price: true,
+              discountPercent: true,
+            },
+          },
+        },
+      },
       devices: {
         select: {
           deviceName: true,
@@ -87,6 +113,96 @@ export async function GET(
   }
 
   return successResponse(formattedUser)
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { authorized, payload, error } = await requirePermission(request, 'manage_users')
+  if (!authorized) {
+    return errorResponse('FORBIDDEN', error!, payload ? 403 : 401)
+  }
+
+  const { id } = await params
+  const currentUserId = payload!.sub
+
+  const user = await db.user.findUnique({
+    where: { id, deletedAt: null },
+    include: { profile: true },
+  })
+
+  if (!user) {
+    return errorResponse('NOT_FOUND', 'User not found', 404)
+  }
+
+  try {
+    const body = await request.json()
+    const { firstName, lastName, nationalCode, address, status } = body
+
+    if (status && !['ACTIVE', 'INACTIVE', 'BLOCKED'].includes(status)) {
+      return errorResponse('VALIDATION_ERROR', 'وضعیت کاربر نامعتبر است', 400)
+    }
+
+    if (status) {
+      await db.user.update({
+        where: { id },
+        data: { status },
+      })
+    }
+
+    if (
+      firstName !== undefined ||
+      lastName !== undefined ||
+      nationalCode !== undefined ||
+      address !== undefined
+    ) {
+      await db.userProfile.upsert({
+        where: { userId: id },
+        create: {
+          userId: id,
+          firstName: firstName ?? '',
+          lastName: lastName ?? '',
+          nationalCode: nationalCode ?? null,
+          address: address ?? null,
+        },
+        update: {
+          ...(firstName !== undefined && { firstName }),
+          ...(lastName !== undefined && { lastName }),
+          ...(nationalCode !== undefined && { nationalCode }),
+          ...(address !== undefined && { address }),
+        },
+      })
+    }
+
+    createAuditLog({
+      userId: currentUserId,
+      action: AuditActions.USER_UPDATED,
+      entity: 'User',
+      entityId: id,
+      details: { changes: body },
+      ip: request.headers.get('x-forwarded-for') || undefined,
+      device: request.headers.get('user-agent') || undefined,
+    })
+
+    const updatedUser = await db.user.findUnique({
+      where: { id },
+      include: {
+        profile: true,
+        wallet: true,
+        roles: {
+          include: {
+            role: true,
+          },
+        },
+      },
+    })
+
+    return successResponse(updatedUser, 'اطلاعات کاربر با موفقیت بروزرسانی شد')
+  } catch (err) {
+    console.error('[PATCH /api/v1/users/[id]]', err)
+    return errorResponse('INTERNAL_ERROR', 'خطا در ویرایش اطلاعات کاربر', 500)
+  }
 }
 
 export async function DELETE(
