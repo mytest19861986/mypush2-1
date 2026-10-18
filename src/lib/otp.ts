@@ -12,7 +12,11 @@ const RESEND_WINDOW_MS = 5 * 60 * 1000 // 5 minutes
 const OTP_CODE_PATTERN = /^\d{5}$/
 
 export function isDemoFixedOTPEnabled(): boolean {
-  return process.env.DEMO_FIXED_OTP_ENABLED === 'true'
+  const env = process.env
+  if (env['NODE_ENV'] === 'production' && !env['ALLOW_FIXED_OTP_IN_TEST']) {
+    return false
+  }
+  return env['DEMO_FIXED_OTP_ENABLED'] === 'true'
 }
 
 /**
@@ -24,7 +28,7 @@ export function getOTPForSend(): string {
     return generateOTP()
   }
 
-  const fixedOTP = process.env.DEMO_FIXED_OTP?.trim()
+  const fixedOTP = process.env['DEMO_FIXED_OTP']?.trim()
   if (!fixedOTP || !OTP_CODE_PATTERN.test(fixedOTP)) {
     throw new Error('DEMO_FIXED_OTP must be exactly 5 digits when DEMO_FIXED_OTP_ENABLED is true')
   }
@@ -70,7 +74,8 @@ export async function storeOTP(mobile: string, code: string): Promise<void> {
  */
 export async function verifyOTP(
   mobile: string,
-  code: string
+  code: string,
+  options?: { keepRecord?: boolean }
 ): Promise<{ valid: boolean; error?: string }> {
   // Find the latest OTP for this mobile
   const otp = await db.otpCode.findFirst({
@@ -113,8 +118,10 @@ export async function verifyOTP(
     }
   }
 
-  // Valid — clean up the OTP
-  await db.otpCode.delete({ where: { id: otp.id } })
+  // Valid — clean up the OTP unless keepRecord is true
+  if (!options?.keepRecord) {
+    await db.otpCode.delete({ where: { id: otp.id } })
+  }
   return { valid: true }
 }
 
