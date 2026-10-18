@@ -292,6 +292,57 @@ export default function Home() {
     <div dir="rtl" className="hami-landing min-h-screen overflow-x-hidden bg-[#fbfeff] text-slate-900">
       <header className="sticky top-0 z-50 border-b border-sky-100/70 bg-white/85 backdrop-blur-xl">
         <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          {/* Mobile hamburger menu button on the right (start in RTL) */}
+          <div className="flex items-center md:hidden">
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="باز کردن منو">
+                  <Menu className="size-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-72 bg-white pt-10 text-right" dir="rtl">
+                <SheetTitle className="sr-only">منوی اصلی</SheetTitle>
+                <div className="flex flex-col gap-2">
+                  {mobileMenuLinks.map((link) => (
+                    <a
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="rounded-lg px-3 py-3 text-sm font-bold text-slate-700 hover:bg-teal-50 hover:text-teal-700 text-right"
+                    >
+                      {link.label}
+                    </a>
+                  ))}
+                  <div className="mt-4 grid gap-2">
+                    {isAuthenticated ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setMobileMenuOpen(false)
+                          goToDashboard()
+                        }}
+                      >
+                        داشبورد من
+                      </Button>
+                    ) : (
+                      <Button asChild variant="outline" onClick={() => setMobileMenuOpen(false)}>
+                        <Link href={loginHref}>ورود</Link>
+                      </Button>
+                    )}
+                    <Button
+                      asChild
+                      className="bg-[#F28C45] font-bold text-white shadow-sm shadow-orange-500/20 hover:bg-[#E97A32]"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Link href={plansHref}>دریافت حامی‌کارت</Link>
+                    </Button>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+
           <Link href="/" className="flex items-center gap-3" aria-label={brandName}>
             <BrandLogo
               showText
@@ -331,57 +382,6 @@ export default function Home() {
               </Button>
             )}
           </div>
-
-          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden" aria-label="باز کردن منو">
-                <Menu className="size-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-72 bg-white pt-10">
-              <SheetTitle className="sr-only">منوی اصلی</SheetTitle>
-              <div className="flex flex-col gap-2">
-                {mobileMenuLinks.map((link) => (
-                  <a
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="rounded-lg px-3 py-3 text-sm font-bold text-slate-700 hover:bg-teal-50 hover:text-teal-700"
-                  >
-                    {link.label}
-                  </a>
-                ))}
-                <div className="mt-4 grid gap-2">
-                  {isAuthenticated ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setMobileMenuOpen(false)
-                        goToDashboard()
-                      }}
-                    >
-                      داشبورد من
-                    </Button>
-                  ) : (
-                    <Button asChild variant="outline" onClick={() => setMobileMenuOpen(false)}>
-                      <Link href={loginHref}>ورود</Link>
-                    </Button>
-                  )}
-                  <Button
-                    asChild
-                    className="bg-orange-500 text-white hover:bg-orange-600"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <Link href={plansHref}>خرید طرح حامی کارت</Link>
-                  </Button>
-                  <Button asChild variant="ghost" onClick={() => setMobileMenuOpen(false)}>
-                    <Link href="/doctors">مشاهده پزشکان طرف قرارداد</Link>
-                  </Button>
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
         </div>
       </header>
 
