@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { motion, type Variants } from 'framer-motion'
 import { toast } from 'sonner'
 import {
@@ -572,7 +571,24 @@ export default function LoginPage() {
                           </span>
                         </div>
 
-
+                        {/* Dev OTP hint */}
+                        {devOtp && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-center"
+                          >
+                            <p className="text-xs text-primary">
+                              کد تایید (محیط توسعه):{' '}
+                              <span
+                                dir="ltr"
+                                className="font-mono font-bold text-base"
+                              >
+                                {devOtp}
+                              </span>
+                            </p>
+                          </motion.div>
+                        )}
 
                         {/* OTP Input */}
                         <div className="space-y-2">
@@ -737,25 +753,7 @@ export default function LoginPage() {
               </CardContent>
 
               {/* Footer */}
-              <div className="px-5 pb-6 sm:px-7 space-y-3">
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-center text-sm">
-                  <span className="text-muted-foreground">حساب کاربری ندارید؟</span>
-                  <div className="flex items-center gap-2 font-semibold">
-                    <Link
-                      href="/register/user"
-                      className="text-primary hover:underline transition-colors"
-                    >
-                      ثبت‌نام کاربر جدید
-                    </Link>
-                    <span className="text-muted-foreground">•</span>
-                    <Link
-                      href="/register/doctor"
-                      className="text-primary hover:underline transition-colors"
-                    >
-                      ثبت‌نام پزشک
-                    </Link>
-                  </div>
-                </div>
+              <div className="px-5 pb-6 sm:px-7">
                 <p className="text-xs text-muted-foreground text-center leading-relaxed">
                   با ورود به سیستم،{' '}
                   <span className="text-foreground font-medium">
@@ -767,7 +765,43 @@ export default function LoginPage() {
             </Card>
           </motion.div>
 
-
+          {/* Dev Helper Info */}
+          <motion.div
+            variants={itemVariants}
+            className={`mt-4 space-y-1 p-4 text-center text-xs text-muted-foreground ${authCardClassName}`}
+          >
+            <p className="font-medium">حساب‌های آزمایشی:</p>
+            <p>
+              مدیر کل:{' '}
+              <span dir="ltr" className="font-mono">
+                09999999999
+              </span>{' '}
+              /{' '}
+              <span dir="ltr" className="font-mono">
+                Admin@123456
+              </span>
+            </p>
+            <p>
+              همکار فروش:{' '}
+              <span dir="ltr" className="font-mono">
+                09123456789
+              </span>{' '}
+              /{' '}
+              <span dir="ltr" className="font-mono">
+                Agent@123456
+              </span>
+            </p>
+            <p>
+              کاربر عادی:{' '}
+              <span dir="ltr" className="font-mono">
+                09111111111
+              </span>{' '}
+              /{' '}
+              <span dir="ltr" className="font-mono">
+                User@123456
+              </span>
+            </p>
+          </motion.div>
         </motion.div>
       </div>
     </div>

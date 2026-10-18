@@ -25,6 +25,7 @@ import {
   UserRound,
   UsersRound,
 } from 'lucide-react'
+import { SmartPwaInstallButton } from '@/components/pwa/smart-pwa-install-button'
 
 const navigationLinks = [
   { label: 'خانه', href: '#home' },
@@ -274,7 +275,7 @@ export default function Home() {
   }
 
   const loginHref = withReferral('/auth/login', referralCode)
-  const plansHref = withReferral('/user/plans', referralCode)
+  const plansHref = withReferral('/plans', referralCode)
 
   if (isLoading) {
     return (
@@ -308,7 +309,13 @@ export default function Home() {
             ))}
           </nav>
 
-          <div className="hidden items-center gap-2 md:flex">
+          <div className="hidden items-center gap-3 md:flex">
+            <Button
+              asChild
+              className="h-9 rounded-full bg-[#F28C45] px-5 font-bold text-white shadow-sm shadow-orange-500/20 hover:bg-[#E97A32] transition-colors"
+            >
+              <Link href={plansHref}>دریافت حامی‌کارت</Link>
+            </Button>
             {isAuthenticated ? (
               <Button
                 type="button"
@@ -424,6 +431,7 @@ export default function Home() {
                       <ChevronLeft className="size-4" />
                     </Link>
                   </Button>
+                  <SmartPwaInstallButton />
                 </div>
               </div>
 
