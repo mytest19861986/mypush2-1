@@ -155,7 +155,13 @@ export default function DoctorPatientsPage() {
     }
   }
 
-  const handleCreateVisit = async () => {
+  const [pendingVisitId, setPendingVisitId] = useState<string | null>(null)
+  const [patientMobileMasked, setPatientMobileMasked] = useState<string | null>(null)
+  const [consentOtpCode, setConsentOtpCode] = useState('')
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false)
+  const [consentMode, setConsentMode] = useState<'IDLE' | 'OTP_SENT' | 'CONFIRMED'>('IDLE')
+
+  const handleRequestConsent = async () => {
     if (isCreatingVisit || !lookupResult?.hasActivePlan || !validateNationalCode()) return
 
     setIsCreatingVisit(true)
@@ -163,13 +169,63 @@ export default function DoctorPatientsPage() {
     setVisitMessage(null)
 
     try {
-      await apiClient.post<VisitCreateResult>('/visits', {
+      const res = await apiClient.post<{ visitId: string; mobileMasked: string }>('/visits/request-consent', {
         nationalCode: nationalCode.trim(),
         ...(notes.trim() ? { notes: notes.trim().slice(0, 1000) } : {}),
       })
 
-      setVisitMessage('ویزیت با موفقیت ثبت شد.')
+      if (res?.visitId) {
+        setPendingVisitId(res.visitId)
+        setPatientMobileMasked(res.mobileMasked || null)
+        setConsentMode('OTP_SENT')
+        setVisitMessage('درخواست ویزیت ثبت شد و کد تأیید ۵ رقمی برای شماره همراه بیمار ارسال گردید. لطفاً کد را از بیمار دریافت و وارد کنید.')
+      } else {
+        setVisitMessage('درخواست ویزیت در انتظار تأیید بیمار قرار گرفت.')
+      }
+    } catch (error) {
+      setVisitError(visitErrorMessage(error))
+    } finally {
+      setIsCreatingVisit(false)
+    }
+  }
+
+  const handleVerifyConsentOtp = async () => {
+    if (!pendingVisitId || consentOtpCode.trim().length !== 5 || isVerifyingOtp) return
+
+    setIsVerifyingOtp(true)
+    setVisitError(null)
+
+    try {
+      await apiClient.post<{ visitId: string; status: string }>('/visits/verify-consent', {
+        visitId: pendingVisitId,
+        otpCode: consentOtpCode.trim(),
+      })
+
+      setConsentMode('CONFIRMED')
+      setVisitMessage('رضایت بیمار با موفقیت تأیید شد. اکنون می‌توانید ارائه خدمت را تکمیل و ثبت نهایی فرمایید.')
       setVisitRegistered(true)
+    } catch (error) {
+      setVisitError(visitErrorMessage(error))
+    } finally {
+      setIsVerifyingOtp(false)
+    }
+  }
+
+  const handleCompleteService = async () => {
+    if (!pendingVisitId || isCreatingVisit) return
+
+    setIsCreatingVisit(true)
+    setVisitError(null)
+
+    try {
+      await apiClient.post('/visits/complete-service', {
+        visitId: pendingVisitId,
+        medicalNotes: notes.trim() || undefined,
+      })
+
+      setVisitMessage('خدمت درمانی تکمیل و سهمیه ویزیت از طرح بیمار با موفقیت کسر شد.')
+      setPendingVisitId(null)
+      setConsentMode('IDLE')
     } catch (error) {
       setVisitError(visitErrorMessage(error))
     } finally {
@@ -343,25 +399,79 @@ export default function DoctorPatientsPage() {
                 </p>
               </div>
 
-              <div className="flex justify-end">
-                <Button
-                  onClick={handleCreateVisit}
-                  disabled={!canCreateVisit || isCreatingVisit || visitRegistered}
-                  className="h-12 w-full gap-2 rounded-xl text-base shadow-sm sm:w-auto sm:min-w-44"
-                >
-                  {isCreatingVisit ? (
-                    <>
-                      <Loader2 className="size-4 animate-spin" />
-                      در حال ثبت ویزیت...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="size-4" />
-                      ثبت ویزیت
-                    </>
-                  )}
-                </Button>
-              </div>
+              {consentMode === 'OTP_SENT' && (
+                <div className="rounded-2xl border border-sky-200 bg-sky-50/70 p-4 space-y-3 dark:border-sky-900/60 dark:bg-sky-950/20">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-sky-800 dark:text-sky-300">
+                    <ShieldCheck className="size-4" />
+                    <span>تأیید رضایت بیمار (ورود کد پیامک‌شده)</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    کد تأیید ۵ رقمی به شماره همراه بیمار {patientMobileMasked ? `(${patientMobileMasked})` : ''} ارسال شده است.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Input
+                      type="tel"
+                      dir="ltr"
+                      maxLength={5}
+                      value={consentOtpCode}
+                      onChange={(e) => setConsentOtpCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                      placeholder="کد ۵ رقمی OTP"
+                      className="h-11 rounded-xl text-center font-mono text-base tracking-widest sm:max-w-48"
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleVerifyConsentOtp}
+                      disabled={isVerifyingOtp || consentOtpCode.trim().length !== 5}
+                      className="h-11 gap-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white"
+                    >
+                      {isVerifyingOtp && <Loader2 className="size-4 animate-spin" />}
+                      <span>تأیید رضایت بیمار</span>
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {consentMode === 'CONFIRMED' && (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 space-y-3 dark:border-emerald-900/60 dark:bg-emerald-950/20">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-emerald-800 dark:text-emerald-300">
+                    <CheckCircle2 className="size-4" />
+                    <span>رضایت بیمار احراز شد - آماده ثبت نهایی خدمت</span>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      onClick={handleCompleteService}
+                      disabled={isCreatingVisit}
+                      className="h-12 w-full gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white sm:w-auto"
+                    >
+                      {isCreatingVisit && <Loader2 className="size-4 animate-spin" />}
+                      <span>تکمیل خدمت و کسر سهمیه</span>
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {consentMode === 'IDLE' && (
+                <div className="flex justify-end">
+                  <Button
+                    onClick={handleRequestConsent}
+                    disabled={!canCreateVisit || isCreatingVisit || visitRegistered}
+                    className="h-12 w-full gap-2 rounded-xl text-base shadow-sm sm:w-auto sm:min-w-44"
+                  >
+                    {isCreatingVisit ? (
+                      <>
+                        <Loader2 className="size-4 animate-spin" />
+                        در حال ارسال درخواست...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="size-4" />
+                        ارسال درخواست رضایت به بیمار
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         ) : (

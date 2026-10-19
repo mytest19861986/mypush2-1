@@ -93,7 +93,7 @@ export default function AdminProfilePremiumPreviewPage() {
   ]
 
   return (
-    <DashboardAppShell activeMenu="settings">
+    <DashboardAppShell activeMenu="settings" requireAdmin={false}>
       <div className="space-y-8">
         {/* ─── بخش 1: Profile Hero ─── */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">

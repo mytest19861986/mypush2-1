@@ -34,8 +34,8 @@ export class AuthService extends BaseService {
     return this.post<SendOtpResponse>('/auth/send-otp', { mobile, purpose })
   }
 
-  async verifyOtp(mobile: string, code: string) {
-    return this.post<AuthTokens>('/auth/verify-otp', { mobile, code })
+  async verifyOtp(mobile: string, code: string, purpose?: 'login' | 'register') {
+    return this.post<AuthTokens>('/auth/verify-otp', { mobile, code, purpose })
   }
 
   async registerUser(data: RegisterUserData) {

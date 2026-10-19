@@ -81,6 +81,21 @@ export async function generateAuthTokens(params: {
 }): Promise<AuthTokens> {
   const { userId, device, ip, createLogs = true, mobile } = params
 
+  const DEMO_PERSONA_ROLES: Record<string, { roles: string[]; permissions: string[] }> = {
+    'admin-demo-user-1': { roles: ['SUPER_ADMIN'], permissions: ['*'] },
+    'doctor-demo-user-1': { roles: ['DOCTOR'], permissions: ['view_doctor_dashboard', 'manage_patients'] },
+    'agent-demo-user-1': { roles: ['AGENT'], permissions: ['view_agent_dashboard', 'manage_referrals'] },
+    'user-demo-user-1': { roles: ['USER'], permissions: [] },
+    'support-demo-user-1': { roles: ['SUPPORT'], permissions: ['view_users', 'view_reports'] },
+  }
+
+  if (DEMO_PERSONA_ROLES[userId]) {
+    const demoInfo = DEMO_PERSONA_ROLES[userId]
+    const accessToken = await generateAccessToken(userId, demoInfo.roles, demoInfo.permissions)
+    const refreshToken = `demo-refresh-token:${userId}`
+    return { accessToken, refreshToken }
+  }
+
   const [roles, permissions] = await Promise.all([
     getUserRoles(userId),
     getUserPermissions(userId),

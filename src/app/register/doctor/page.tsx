@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
+import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
@@ -33,6 +34,12 @@ import {
   User,
   ShieldCheck,
   CheckCircle2,
+  Users,
+  Award,
+  Sparkles,
+  HelpCircle,
+  Clock,
+  ChevronDown,
 } from 'lucide-react'
 import { getCitiesByProvince, getProvinceNames } from '@/constants/iran-locations'
 
@@ -64,11 +71,11 @@ const fadeInUp: Variants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: easeOut } },
 }
 
-const pageCardClassName = 'rounded-2xl border border-border/50 bg-card shadow-sm'
+const pageCardClassName = 'rounded-2xl border border-slate-200/90 bg-white shadow-xs overflow-hidden'
 const fieldClassName =
-  'border border-input bg-background shadow-sm focus-visible:ring-1 focus-visible:ring-primary'
+  'h-11 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs shadow-2xs focus-visible:ring-1 focus-visible:ring-teal-600 focus-visible:border-teal-600'
 const selectTriggerClassName =
-  'w-full border border-input bg-background shadow-sm focus-visible:ring-1 focus-visible:ring-primary'
+  'h-11 w-full rounded-xl border border-slate-200 bg-white text-slate-800 text-xs shadow-2xs focus-visible:ring-1 focus-visible:ring-teal-600 focus-visible:border-teal-600'
 
 export default function RegisterDoctorPage() {
   const router = useRouter()
@@ -76,6 +83,7 @@ export default function RegisterDoctorPage() {
 
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [openFaq, setOpenFaq] = useState<number | null>(null)
 
   const [form, setForm] = useState({
     medicalCode: '',
@@ -124,7 +132,7 @@ export default function RegisterDoctorPage() {
     try {
       await doctorsService.register(form)
       setSubmitted(true)
-      toast.success('درخواست ثبت‌نام پزشکی با موفقیت ثبت شد')
+      toast.success('درخواست عضویت در شبکه سلامت با موفقیت ثبت شد')
     } catch (error) {
       if (error instanceof ApiError) {
         if (error.status === 401) {
@@ -143,30 +151,32 @@ export default function RegisterDoctorPage() {
 
   if (submitted) {
     return (
-      <div className="flex min-h-screen items-center justify-center overflow-x-hidden bg-background p-4 text-foreground">
+      <div className="flex min-h-screen items-center justify-center overflow-x-hidden bg-slate-50 p-4 text-foreground" dir="rtl">
         <motion.div
           initial="hidden"
           animate="visible"
           variants={fadeInUp}
-          className="w-full max-w-md"
+          className="w-full max-w-lg"
         >
-          <Card className={`${pageCardClassName} border-primary/20`}>
-            <CardContent className="p-8 text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <CheckCircle2 className="h-8 w-8" />
+          <Card className={`${pageCardClassName} border-teal-200 shadow-md`}>
+            <CardContent className="p-8 text-center space-y-4">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-teal-50 text-teal-700 border border-teal-100 shadow-inner">
+                <CheckCircle2 className="h-8 w-8 text-emerald-600" />
               </div>
-              <h2 className="text-xl font-bold mb-2">درخواست شما ثبت شد</h2>
-              <p className="text-muted-foreground mb-6">
-                درخواست ثبت‌نام پزشکی شما با موفقیت ارسال شد و در انتظار بررسی و تأیید مدیریت قرار گرفت.
-                پس از تأیید، به پنل پزشکی دسترسی خواهید داشت.
+              <h2 className="text-xl font-black text-slate-900">درخواست عضویت شما در شبکه سلامت ثبت شد</h2>
+              <p className="text-slate-600 text-xs leading-relaxed max-w-md mx-auto">
+                مدارک و اطلاعات نظام پزشکی شما جهت احراز صلاحیت حرفه‌ای به کارشناسان شبکه سلامت حامی‌کارت ارسال شد. 
+                پس از بررسی و فعال‌سازی حساب، به پیشخوان مدیریت بیماران و خدمات دسترسی خواهید داشت.
               </p>
-              <Button
-                onClick={() => router.push('/user/dashboard')}
-                className="h-11 w-full rounded-xl font-semibold shadow-sm"
-              >
-                بازگشت به داشبورد
-                <ArrowLeft className="h-4 w-4 mr-1" />
-              </Button>
+              <div className="pt-2">
+                <Button
+                  onClick={() => router.push('/user/dashboard')}
+                  className="h-11 w-full rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs shadow-xs"
+                >
+                  ورود به پورتال کاربری
+                  <ArrowLeft className="h-4 w-4 mr-1.5" />
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </motion.div>
@@ -175,71 +185,148 @@ export default function RegisterDoctorPage() {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-background px-4 py-8 text-foreground sm:px-6 lg:px-8">
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        variants={fadeInUp}
-        className="mx-auto w-full max-w-3xl"
-      >
-        {/* Back button */}
-        <button
-          onClick={() => router.back()}
-          className="mb-5 inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          بازگشت
-        </button>
-
-        {/* Header */}
-        <div className={`${pageCardClassName} mb-6 flex items-start gap-4 p-5 sm:items-center sm:p-6`}>
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <Stethoscope className="h-7 w-7" />
+    <div className="min-h-screen overflow-x-hidden bg-slate-50/60 pb-16 text-foreground" dir="rtl">
+      {/* ─── 1. Hero مخصوص پزشکان (Doctor Acquisition Hero) ─── */}
+      <section className="bg-gradient-to-br from-teal-900 via-teal-800 to-emerald-900 text-white pt-10 pb-16 px-4 sm:px-6 lg:px-8 border-b border-teal-800/80">
+        <div className="mx-auto max-w-4xl space-y-4">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => router.back()}
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-white/10 px-3 text-xs text-teal-100 transition-colors hover:bg-white/20"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              بازگشت
+            </button>
+            <Badge className="bg-emerald-400/20 text-emerald-200 border border-emerald-300/30 text-2xs font-bold px-3 py-1">
+              ✓ درگاه رسمی همکاری پزشکان و مراکز درمانی
+            </Badge>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold leading-8">ثبت‌نام پزشک</h1>
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              فرم ثبت‌نام پزشک در شبکه حامی کارت
+
+          <div className="space-y-3 pt-2">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-teal-200 backdrop-blur-sm">
+              <Stethoscope className="size-4 text-emerald-300" />
+              <span>پیوستن به شبکه سلامت حامی‌کارت</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-white leading-tight">
+              به شبکه‌ای از مراجعین وفادار و مدیریت‌شده بپیوندید
+            </h1>
+            <p className="text-xs sm:text-sm text-teal-100/90 leading-relaxed max-w-2xl font-normal">
+              پروفایل حرفه‌ای خود را در شبکه سلامت حامی‌کارت فعال کرده و در بستری استاندارد، شفاف و بدون واسطه به جامعه گسترده اعضای تحت پوشش سلامت خدمات ارائه دهید.
             </p>
           </div>
         </div>
+      </section>
 
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 -mt-8 space-y-8">
+        {/* ─── 2. مزایای همکاری برای پزشک (Value Proposition Grid) ─── */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className={`${pageCardClassName} p-5 hover:shadow-md transition-shadow`}>
+            <div className="size-10 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center mb-3 border border-teal-100">
+              <Users className="size-5 text-teal-700" />
+            </div>
+            <h3 className="font-bold text-sm text-slate-900 mb-1">دسترسی به بیماران جدید</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              ارتباط با جامعه هدف گسترده‌ای از اعضای متعهد و دارای عضویت فعال سلامت در شهر و منطقه شما.
+            </p>
+          </Card>
+
+          <Card className={`${pageCardClassName} p-5 hover:shadow-md transition-shadow`}>
+            <div className="size-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center mb-3 border border-emerald-100">
+              <ShieldCheck className="size-5 text-emerald-700" />
+            </div>
+            <h3 className="font-bold text-sm text-slate-900 mb-1">تعامل حرفه‌ای و شفاف</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              مدیریت شفاف مراجعین با احراز هویت یکپارچه و رعایت استانداردهای اخلاقی و حرفه‌ای پزشکی.
+            </p>
+          </Card>
+
+          <Card className={`${pageCardClassName} p-5 hover:shadow-md transition-shadow`}>
+            <div className="size-10 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center mb-3 border border-teal-100">
+              <Award className="size-5 text-teal-700" />
+            </div>
+            <h3 className="font-bold text-sm text-slate-900 mb-1">ارتقای اعتبار و برند مطب</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              نمایش رسمی پروفایل تاییدشده پزشک و کلینیک به عنوان عضو رسمی شبکه سلامت حامی‌کارت.
+            </p>
+          </Card>
+        </section>
+
+        {/* ─── 3. روند عضویت و تایید (4-Step Onboarding Workflow) ─── */}
+        <Card className={`${pageCardClassName} p-6 bg-white border border-slate-200`}>
+          <div className="flex items-center gap-2 mb-5">
+            <Clock className="size-4 text-teal-700" />
+            <h2 className="font-bold text-sm text-slate-900">مراحل پیوستن به شبکه پزشکان همکار</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 relative">
+            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 text-center space-y-1">
+              <span className="inline-block size-6 rounded-full bg-teal-700 text-white text-xs font-bold leading-6 mb-1">۱</span>
+              <p className="font-bold text-xs text-slate-800">ثبت فرم اطلاعات</p>
+              <p className="text-2xs text-slate-500 leading-normal">تکمیل مشخصات نظام پزشکی و مطب</p>
+            </div>
+            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 text-center space-y-1">
+              <span className="inline-block size-6 rounded-full bg-teal-700 text-white text-xs font-bold leading-6 mb-1">۲</span>
+              <p className="font-bold text-xs text-slate-800">بررسی و استعلام</p>
+              <p className="text-2xs text-slate-500 leading-normal">احراز هویت و صلاحیت حرفه‌ای</p>
+            </div>
+            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 text-center space-y-1">
+              <span className="inline-block size-6 rounded-full bg-teal-700 text-white text-xs font-bold leading-6 mb-1">۳</span>
+              <p className="font-bold text-xs text-slate-800">تایید عضویت رسمی</p>
+              <p className="text-2xs text-slate-500 leading-normal">دریافت نشان رسمی شبکه سلامت</p>
+            </div>
+            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 text-center space-y-1">
+              <span className="inline-block size-6 rounded-full bg-emerald-600 text-white text-xs font-bold leading-6 mb-1">۴</span>
+              <p className="font-bold text-xs text-slate-800">شروع پذیرش اعضا</p>
+              <p className="text-2xs text-slate-500 leading-normal">مدیریت مراجعین در پنل پزشک</p>
+            </div>
+          </div>
+        </Card>
+
+        {/* Auth Guidance Notice */}
         {!isAuthenticated && (
-          <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-800 dark:text-amber-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <p className="font-semibold">برای ارسال مدارک و درخواست همکاری پزشکی باید حساب کاربری داشته باشید.</p>
-              <p className="text-xs opacity-90 mt-0.5">ابتدا وارد شوید یا ثبت‌نام کنید، سپس فرم زیر را ارسال فرمایید.</p>
+          <div className="rounded-2xl border border-teal-200 bg-teal-50/70 p-4 text-xs text-teal-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+            <div className="space-y-0.5">
+              <p className="font-bold text-teal-950">جهت ارسال رسمی درخواست همکاری پزشکی، ورود به حساب کاربری الزامی است.</p>
+              <p className="text-teal-700 font-medium">ابتدا وارد حساب کاربری خود شوید یا حساب اولیه بسازید، سپس فرم درخواست را ثبت فرمایید.</p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <Link href="/auth/login" className="px-3 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-xs hover:opacity-90">
+              <Link href="/auth/login" className="px-4 py-2 rounded-xl bg-teal-700 text-white text-xs font-bold shadow-xs hover:bg-teal-800 transition-colors">
                 ورود به حساب
               </Link>
-              <Link href="/register/user" className="px-3 py-1.5 rounded-xl bg-card border border-border text-foreground text-xs font-bold shadow-xs hover:bg-muted">
+              <Link href="/register/user" className="px-4 py-2 rounded-xl bg-white border border-teal-200 text-teal-800 text-xs font-bold shadow-xs hover:bg-slate-50 transition-colors">
                 ثبت‌نام اولیه
               </Link>
             </div>
           </div>
         )}
 
-        {/* Form Card */}
-        <Card className={pageCardClassName}>
+        {/* ─── 4. فرم ثبت درخواست (Professional Registration Form) ─── */}
+        <Card className={`${pageCardClassName} border border-slate-200`}>
+          <CardHeader className="bg-slate-50/70 border-b border-slate-100 p-5">
+            <CardTitle className="text-base font-black text-slate-900 flex items-center gap-2">
+              <Stethoscope className="size-4 text-teal-700" />
+              <span>فرم ثبت درخواست عضویت پزشک در شبکه سلامت</span>
+            </CardTitle>
+            <CardDescription className="text-xs text-slate-500">
+              اطلاعات واردشده جهت اعتبارسنجی و تشکیل پرونده همکاری در سامانه حامی‌کارت استفاده می‌شود.
+            </CardDescription>
+          </CardHeader>
           <CardContent className="p-5 sm:p-7">
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Section 1: Basic Info */}
+              {/* بخش ۱: اطلاعات حرفه‌ای و نظام پزشکی */}
               <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <ShieldCheck className="h-4 w-4 text-primary" />
-                  <h3 className="text-sm font-semibold">اطلاعات تخصصی</h3>
+                <div className="flex items-center gap-2 mb-3">
+                  <ShieldCheck className="h-4 w-4 text-teal-700" />
+                  <h3 className="text-xs font-bold text-slate-800">۱. مشخصات تخصصی و نظام پزشکی</h3>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="medicalCode" className="flex items-center gap-1.5">
-                      <Hash className="h-3.5 w-3.5" />
-                      کد نظام پزشکی <span className="text-red-500">*</span>
+                    <Label htmlFor="medicalCode" className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                      <Hash className="h-3.5 w-3.5 text-teal-600" />
+                      شماره نظام پزشکی <span className="text-rose-500">*</span>
                     </Label>
                     <Input
                       id="medicalCode"
-                      placeholder="مثلاً: ۱۲۳۴۵"
+                      placeholder="مثال: ۱۲۳۴۵"
                       value={form.medicalCode}
                       onChange={(e) => handleChange('medicalCode', e.target.value)}
                       className={fieldClassName}
@@ -247,9 +334,9 @@ export default function RegisterDoctorPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="specialty" className="flex items-center gap-1.5">
-                      <Stethoscope className="h-3.5 w-3.5" />
-                      تخصص <span className="text-red-500">*</span>
+                    <Label htmlFor="specialty" className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                      <Stethoscope className="h-3.5 w-3.5 text-teal-600" />
+                      تخصص اصلی <span className="text-rose-500">*</span>
                     </Label>
                     <Select
                       value={form.specialty}
@@ -270,23 +357,23 @@ export default function RegisterDoctorPage() {
                 </div>
               </div>
 
-              <Separator />
+              <Separator className="bg-slate-100" />
 
-              {/* Section 2: Clinic Info */}
+              {/* بخش ۲: اطلاعات مطب و مرکز درمانی */}
               <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <Building className="h-4 w-4 text-primary" />
-                  <h3 className="text-sm font-semibold">اطلاعات مطب</h3>
+                <div className="flex items-center gap-2 mb-3">
+                  <Building className="h-4 w-4 text-teal-700" />
+                  <h3 className="text-xs font-bold text-slate-800">۲. اطلاعات مطب یا کلینیک همکار</h3>
                 </div>
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="clinicName" className="flex items-center gap-1.5">
-                      <Building className="h-3.5 w-3.5" />
-                      نام مطب / کلینیک <span className="text-red-500">*</span>
+                    <Label htmlFor="clinicName" className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                      <Building className="h-3.5 w-3.5 text-teal-600" />
+                      نام مطب یا مرکز درمانی <span className="text-rose-500">*</span>
                     </Label>
                     <Input
                       id="clinicName"
-                      placeholder="مثلاً: کلینیک آریا"
+                      placeholder="مثال: کلینیک تخصصی دکتر ..."
                       value={form.clinicName}
                       onChange={(e) => handleChange('clinicName', e.target.value)}
                       className={fieldClassName}
@@ -294,13 +381,13 @@ export default function RegisterDoctorPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="clinicAddress" className="flex items-center gap-1.5">
-                      <MapPin className="h-3.5 w-3.5" />
-                      آدرس مطب
+                    <Label htmlFor="clinicAddress" className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                      <MapPin className="h-3.5 w-3.5 text-teal-600" />
+                      آدرس دقیق مطب
                     </Label>
                     <Input
                       id="clinicAddress"
-                      placeholder="آدرس کامل مطب"
+                      placeholder="خیابان، پلاک، طبقه و واحد"
                       value={form.clinicAddress}
                       onChange={(e) => handleChange('clinicAddress', e.target.value)}
                       className={fieldClassName}
@@ -308,8 +395,8 @@ export default function RegisterDoctorPage() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="province" className="flex items-center gap-1.5">
-                        <MapPin className="h-3.5 w-3.5" />
+                      <Label htmlFor="province" className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                        <MapPin className="h-3.5 w-3.5 text-teal-600" />
                         استان
                       </Label>
                       <Select
@@ -330,8 +417,8 @@ export default function RegisterDoctorPage() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="city" className="flex items-center gap-1.5">
-                        <MapPin className="h-3.5 w-3.5" />
+                      <Label htmlFor="city" className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                        <MapPin className="h-3.5 w-3.5 text-teal-600" />
                         شهر
                       </Label>
                       <Select
@@ -354,13 +441,13 @@ export default function RegisterDoctorPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="phone" className="flex items-center gap-1.5">
-                      <Phone className="h-3.5 w-3.5" />
-                      تلفن مطب
+                    <Label htmlFor="phone" className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                      <Phone className="h-3.5 w-3.5 text-teal-600" />
+                      شماره تماس پذیرش مطب
                     </Label>
                     <Input
                       id="phone"
-                      placeholder="مثلاً: ۰۲۱-۱۲۳۴۵۶۷۸"
+                      placeholder="مثال: ۰۲۱۱۲۳۴۵۶۷۸"
                       value={form.phone}
                       onChange={(e) => handleChange('phone', e.target.value)}
                       className={fieldClassName}
@@ -369,68 +456,103 @@ export default function RegisterDoctorPage() {
                 </div>
               </div>
 
-              <Separator />
+              <Separator className="bg-slate-100" />
 
-              {/* Section 3: Bio */}
+              {/* بخش ۳: بیوگرافی و سوابق */}
               <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <User className="h-4 w-4 text-primary" />
-                  <h3 className="text-sm font-semibold">اطلاعات فردی</h3>
+                <div className="flex items-center gap-2 mb-3">
+                  <User className="h-4 w-4 text-teal-700" />
+                  <h3 className="text-xs font-bold text-slate-800">۳. سوابق علمی و بالینی</h3>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="bio" className="flex items-center gap-1.5">
-                    <FileText className="h-3.5 w-3.5" />
-                    بیوگرافی
+                  <Label htmlFor="bio" className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                    <FileText className="h-3.5 w-3.5 text-teal-600" />
+                    خلاصه سوابق و بیوگرافی حرفه‌ای
                   </Label>
                   <Textarea
                     id="bio"
-                    placeholder="خلاصه‌ای از سوابق و تخصص‌های خود را بنویسید..."
+                    placeholder="سوابق دانشگاهی، تجارب تشخیصی و خدمات درمانی قابل ارائه به اعضای شبکه سلامت..."
                     value={form.bio}
                     onChange={(e) => handleChange('bio', e.target.value)}
-                    className={fieldClassName}
+                    className="min-h-24 rounded-xl border border-slate-200 bg-white text-xs shadow-2xs leading-relaxed focus-visible:ring-teal-600"
                     rows={4}
                   />
                 </div>
               </div>
 
-              {/* Submit */}
-              <div className="flex flex-col gap-3 pt-2 sm:flex-row">
+              {/* اکشن ثبت */}
+              <div className="pt-2">
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="h-12 flex-1 rounded-xl font-semibold shadow-sm"
+                  className="h-12 w-full rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs shadow-xs transition-colors"
                 >
                   {loading ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                      در حال ثبت...
+                      در حال ارسال درخواست عضویت...
                     </>
                   ) : (
                     <>
-                      ثبت درخواست
-                      <ArrowLeft className="h-4 w-4 mr-1" />
+                      ثبت و ارسال درخواست عضویت در شبکه سلامت
+                      <ArrowLeft className="h-4 w-4 mr-1.5" />
                     </>
                   )}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => router.back()}
-                  className="h-12 rounded-xl border-border/70 bg-background shadow-sm"
-                >
-                  انصراف
                 </Button>
               </div>
             </form>
           </CardContent>
         </Card>
 
-        {/* Info note */}
-        <p className="mt-4 text-center text-xs leading-6 text-muted-foreground">
-          فیلدهای دارای ستاره <span className="text-red-500">*</span> الزامی هستند.
-          پس از بررسی و تأیید مدیریت، نقش پزشکی فعال می‌شود.
-        </p>
-      </motion.div>
+        {/* ─── 5. سوالات متداول پزشکان (Doctor FAQ Accordion) ─── */}
+        <Card className={`${pageCardClassName} p-6 border border-slate-200`}>
+          <div className="flex items-center gap-2 mb-4">
+            <HelpCircle className="size-4 text-teal-700" />
+            <h2 className="font-bold text-sm text-slate-900">پرسش‌های متداول پزشکان و مراکز درمانی</h2>
+          </div>
+          <div className="space-y-3">
+            {[
+              {
+                q: 'عضویت در شبکه سلامت حامی‌کارت چه تعهداتی برای پزشک ایجاد می‌کند؟',
+                a: 'پزشکان محترم متعهد به رعایت بالاترین استانداردهای اخلاقی و بالینی و ارائه خدمات طبق توافق‌نامه کیفی به اعضای دارای عضویت فعال حامی‌کارت هستند.'
+              },
+              {
+                q: 'فرآیند احراز صلاحیت و تایید چقدر زمان می‌برد؟',
+                a: 'پس از ثبت مشخصات، استعلام شماره نظام پزشکی و مدارک ظرف مدت ۲۴ الی ۴۸ ساعت کاری توسط تیم نظارت شبکه سلامت انجام می‌شود.'
+              },
+              {
+                q: 'آیا امکان تعیین یا ویرایش ساعات پذیرش و مشخصات مطب وجود دارد؟',
+                a: 'بله، پس از تایید حساب، پنل اختصاصی پزشک برای مدیریت اطلاعات مطب، آدرس، تلفن و گزارش مراجعین در دسترس خواهد بود.'
+              }
+            ].map((faq, idx) => (
+              <div key={idx} className="rounded-xl border border-slate-100 bg-slate-50/60 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                  className="w-full p-3.5 text-right flex items-center justify-between text-xs font-bold text-slate-800 hover:bg-slate-100/60 transition-colors"
+                >
+                  <span>{faq.q}</span>
+                  <ChevronDown className={`size-4 text-slate-400 transition-transform ${openFaq === idx ? 'rotate-180 text-teal-700' : ''}`} />
+                </button>
+                {openFaq === idx && (
+                  <div className="p-3.5 pt-0 text-xs text-slate-600 leading-relaxed border-t border-slate-100 bg-white">
+                    {faq.a}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* ─── 6. CTA نهایی و تعهد اعتماد ─── */}
+        <div className="rounded-2xl bg-gradient-to-r from-teal-800 to-emerald-800 p-6 text-white text-center space-y-3 shadow-sm">
+          <Sparkles className="size-6 text-emerald-300 mx-auto" />
+          <h3 className="font-black text-base text-white">پیوستن به معتبرترین شبکه مراقبت و سلامت</h3>
+          <p className="text-xs text-teal-100 max-w-lg mx-auto leading-relaxed">
+            در چارچوبی شفاف، منضبط و حرفه‌ای، خدمات تشخیصی و درمانی خود را به هزاران عضو شبکه سلامت حامی‌کارت معرفی کنید.
+          </p>
+        </div>
+      </div>
     </div>
   )
 }

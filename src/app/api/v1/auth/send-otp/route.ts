@@ -8,9 +8,12 @@ import { createAuditLog, AuditActions } from '@/lib/audit'
 import { DEMO_SCOPE_PHASE_1 } from '@/config/demo-scope'
 
 import { normalizeMobile } from '@/lib/phone'
+import { getClientIp } from '../_helpers'
 
 // Rate limiter: 3 requests per 5 minutes per mobile
 const sendOtpLimiter = rateLimit({ limitPerWindow: 3, windowMs: 5 * 60 * 1000 })
+// Rate limiter: 10 requests per 5 minutes per IP
+const sendOtpIpLimiter = rateLimit({ limitPerWindow: 10, windowMs: 5 * 60 * 1000 })
 
 // Zod schema for request body
 const sendOtpSchema = z.object({
@@ -42,11 +45,14 @@ export async function POST(request: NextRequest) {
 
     const purpose = parsed.data.purpose ?? 'login'
 
-    if (DEMO_SCOPE_PHASE_1) {
+    // Demo Mode Isolation: strictly forbidden in real production environment
+    if (DEMO_SCOPE_PHASE_1 && process.env.NODE_ENV !== 'production') {
       const DEMO_ACCOUNTS: Record<string, string> = {
         '09999999999': '12345',
+        '09222222222': '12345',
         '09123456789': '12345',
         '09111111111': '12345',
+        '09333333333': '12345',
       }
 
       if (DEMO_ACCOUNTS[mobile] || purpose === 'register') {
@@ -67,7 +73,17 @@ export async function POST(request: NextRequest) {
     }
 
 
-    // Rate limit check
+    // Rate limit check: IP and Mobile
+    const ip = getClientIp(request)
+    const ipLimit = sendOtpIpLimiter.check(`send-otp-ip:${ip}`)
+    if (!ipLimit.allowed) {
+      return errorResponse(
+        'RATE_LIMITED',
+        `تعداد درخواست‌های بیش از حد از این آدرس اینترنتی. لطفاً ${ipLimit.retryAfter} ثانیه دیگر تلاش کنید`,
+        429
+      )
+    }
+
     const { allowed, retryAfter } = sendOtpLimiter.check(`send-otp:${mobile}`)
     if (!allowed) {
       return errorResponse(
@@ -110,7 +126,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!user) {
+    if (!user && purpose === 'register') {
+      // For registration requests, do NOT create an ACTIVE completed User prematurely.
+      // Verification and completion will occur securely in /api/v1/auth/register.
+    } else if (!user) {
       user = await db.user.create({
         data: {
           mobile,
@@ -182,7 +201,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check user status
-    if (user.status === 'BLOCKED') {
+    if (user && user.status === 'BLOCKED') {
       return errorResponse(
         'USER_BLOCKED',
         'حساب کاربری شما مسدود شده است',

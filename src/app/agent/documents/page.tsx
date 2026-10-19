@@ -296,7 +296,7 @@ function DocumentList({ documents }: { documents: AgentDocumentItem[] }) {
 
       const response = await fetch(`/api/v1/agents/documents/${doc.id}/download`, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          'X-App-Authorization': `Bearer ${token}`,
         },
       })
 

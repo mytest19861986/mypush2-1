@@ -1,10 +1,20 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog'
+import { toast } from 'sonner'
 import {
   Briefcase,
   TrendingUp,
@@ -24,7 +34,8 @@ import {
   CreditCard,
   Building,
   UserCheck,
-  Plus
+  Plus,
+  Loader2
 } from 'lucide-react'
 import { toPersianNum } from '@/utils/formatters'
 
@@ -60,6 +71,7 @@ interface SaleActivityMock {
 }
 
 export default function AgentsPremiumPreviewPage() {
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
 
@@ -132,7 +144,7 @@ export default function AgentsPremiumPreviewPage() {
       amount: '۲,۵۰۰,۰۰۰ تومان',
       commission: '۳۷۵,۰۰۰ تومان',
       status: 'PAID',
-      statusLabel: 'تسویه موفق',
+      statusLabel: 'تسویه دستی انجام‌شده (نمونه نمایشی)',
       time: '۱۵ دقیقه پیش'
     },
     {
@@ -144,7 +156,7 @@ export default function AgentsPremiumPreviewPage() {
       amount: '۱,۸۰۰,۰۰۰ تومان',
       commission: '۲۷۰,۰۰۰ تومان',
       status: 'PAID',
-      statusLabel: 'تسویه موفق',
+      statusLabel: 'تسویه دستی انجام‌شده (نمونه نمایشی)',
       time: '۱ ساعت پیش'
     },
     {
@@ -156,10 +168,68 @@ export default function AgentsPremiumPreviewPage() {
       amount: '۱,۲۰۰,۰۰۰ تومان',
       commission: '۱۸۰,۰۰۰ تومان',
       status: 'PENDING',
-      statusLabel: 'در انتظار تایید شاپرک',
+      statusLabel: 'در انتظار بررسی واریز دستی (نمونه نمایشی)',
       time: '۳ ساعت پیش'
     },
   ]
+
+  // Create Agent Modal state
+  const [createAgentModalOpen, setCreateAgentModalOpen] = useState(false)
+  const [createAgentMobile, setCreateAgentMobile] = useState('')
+  const [createAgentFirstName, setCreateAgentFirstName] = useState('')
+  const [createAgentLastName, setCreateAgentLastName] = useState('')
+  const [createAgentNationalCode, setCreateAgentNationalCode] = useState('')
+  const [createAgentBusinessName, setCreateAgentBusinessName] = useState('')
+  const [createAgentDescription, setCreateAgentDescription] = useState('')
+  const [createAgentAddress, setCreateAgentAddress] = useState('')
+  const [isSubmittingCreateAgent, setIsSubmittingCreateAgent] = useState(false)
+
+  const handleCreateAgent = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!createAgentMobile.trim() || !createAgentFirstName.trim() || !createAgentLastName.trim() || !createAgentBusinessName.trim()) {
+      toast.error('لطفاً فیلدهای الزامی (موبایل، نام، نام خانوادگی و نام تجاری) را تکمیل کنید')
+      return
+    }
+    setIsSubmittingCreateAgent(true)
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (typeof window !== 'undefined') {
+        const token = localStorage.getItem('accessToken')
+        if (token) headers['X-App-Authorization'] = `Bearer ${token}`
+      }
+      const res = await fetch('/api/v1/admin/agents', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          mobile: createAgentMobile.trim(),
+          firstName: createAgentFirstName.trim(),
+          lastName: createAgentLastName.trim(),
+          nationalCode: createAgentNationalCode.trim() || undefined,
+          businessName: createAgentBusinessName.trim(),
+          description: createAgentDescription.trim() || undefined,
+          address: createAgentAddress.trim() || undefined,
+        }),
+      })
+      const json = await res.json()
+      if (res.ok && json.success) {
+        toast.success('پرونده نماینده با موفقیت در وضعیت در انتظار بررسی (PENDING) ثبت شد')
+        setCreateAgentModalOpen(false)
+        setCreateAgentMobile('')
+        setCreateAgentFirstName('')
+        setCreateAgentLastName('')
+        setCreateAgentNationalCode('')
+        setCreateAgentBusinessName('')
+        setCreateAgentDescription('')
+        setCreateAgentAddress('')
+      } else {
+        toast.error(json.error?.message || json.message || 'خطا در ثبت نماینده')
+      }
+    } catch {
+      toast.error('ارتباط با سرور برقرار نشد')
+    } finally {
+      setIsSubmittingCreateAgent(false)
+    }
+  }
 
   const filteredAgents = agents.filter((a) => {
     const matchSearch = a.name.includes(searchQuery) || a.branch.includes(searchQuery) || a.location.includes(searchQuery)
@@ -168,7 +238,7 @@ export default function AgentsPremiumPreviewPage() {
   })
 
   return (
-    <DashboardAppShell activeMenu="agents">
+    <DashboardAppShell activeMenu="agents" requireAdmin={false}>
       <div className="space-y-8">
         {/* ─── Header ─── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/70 pb-6">
@@ -192,7 +262,12 @@ export default function AgentsPremiumPreviewPage() {
               <Download className="size-4" />
               <span>خروجی مالی کمیسیون</span>
             </Button>
-            <Button variant="premium" size="sm" className="hidden sm:inline-flex gap-2 rounded-xl text-xs font-bold shadow-xs">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => setCreateAgentModalOpen(true)}
+              className="hidden sm:inline-flex gap-2 rounded-xl text-xs font-bold shadow-xs cursor-pointer"
+            >
               <Plus className="size-4" />
               <span>ثبت قرارداد نماینده جدید</span>
             </Button>
@@ -202,9 +277,10 @@ export default function AgentsPremiumPreviewPage() {
         {/* Floating Action Button for Mobile (<640px) */}
         <div className="fixed bottom-6 end-6 z-40 sm:hidden">
           <Button
-            variant="premium"
+            variant="default"
             size="lg"
-            className="rounded-full shadow-xl text-xs font-bold gap-2 px-5 py-3 h-12 bg-[#0D5C58] hover:bg-[#0a4845] text-white flex items-center border border-white/20"
+            onClick={() => setCreateAgentModalOpen(true)}
+            className="rounded-full shadow-xl text-xs font-bold gap-2 px-5 py-3 h-12 bg-[#0D5C58] hover:bg-[#0a4845] text-white flex items-center border border-white/20 cursor-pointer"
           >
             <Plus className="size-5" />
             <span>ثبت نماینده جدید</span>
@@ -214,41 +290,41 @@ export default function AgentsPremiumPreviewPage() {
         {/* ─── KPI Section ─── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 w-full">
           <PremiumMetricCard
-            title="نمایندگان و همکاران فعال"
+            title="همکاران فعال (نمونه نمایشی)"
             value="۸۶"
-            trend="+۵ همکار در ماه جاری"
+            trend="داده‌های دمو"
             isUp={true}
             icon={Briefcase}
             variant="blue"
-            badge="شبکه فروش"
+            badge="نمونه نمایشی"
           />
           <PremiumMetricCard
-            title="حجم فروش موفق کل"
+            title="حجم فروش کل (نمونه نمایشی)"
             value="۱,۴۲۰M"
             unit="تومان"
-            trend="↑ ۲۴.۸٪ رشد فصلی"
+            trend="داده‌های دمو"
             isUp={true}
             icon={TrendingUp}
             variant="green"
-            badge="جریان درآمدی"
+            badge="نمونه نمایشی"
           />
           <PremiumMetricCard
-            title="مشتریان معرفی‌شده فعال"
+            title="مشتریان فعال (نمونه نمایشی)"
             value="۱,۷۴۰"
-            trend="۸۲٪ تبدیل به اشتراک"
+            trend="داده‌های دمو"
             isUp={true}
             icon={Users}
             variant="amber"
-            badge="تبدیل لید"
+            badge="نمونه نمایشی"
           />
           <PremiumMetricCard
-            title="کمیسیون پرداختی شاپرک"
+            title="مجموع کمیسیون‌ها (نمونه نمایشی)"
             value="۲۱۸.۵M"
             unit="تومان"
-            description="تسویه خودکار هفتگی"
+            description="محاسبه سیستمی / تسویه دستی"
             icon={DollarSign}
             variant="purple"
-            badge="تسویه‌شده"
+            badge="نمونه نمایشی"
           />
         </div>
 
@@ -334,13 +410,23 @@ export default function AgentsPremiumPreviewPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-2 border-t border-border/40">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-2 border-t border-border/40 gap-2">
                 <span className="text-xs font-mono text-muted-foreground">{agent.id}</span>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" className="h-8 px-3 text-xs">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 px-2.5 sm:px-3 text-xs cursor-pointer flex-1 sm:flex-none"
+                    onClick={() => router.push(`/admin/sales-customers?agent=${encodeURIComponent(agent.name)}`)}
+                  >
                     ریز عملکرد
                   </Button>
-                  <Button variant="premium" size="sm" className="h-8 px-3 text-xs">
+                  <Button 
+                    variant="premium" 
+                    size="sm" 
+                    className="h-8 px-2.5 sm:px-3 text-xs cursor-pointer flex-1 sm:flex-none"
+                    onClick={() => router.push(`/admin/commissions?agent=${encodeURIComponent(agent.name)}`)}
+                  >
                     مدیریت مالی و تسویه
                   </Button>
                 </div>
@@ -355,9 +441,9 @@ export default function AgentsPremiumPreviewPage() {
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
             <CreditCard className="size-4 text-primary" />
-            <span>آخرین تراکنش‌ها و فروش‌های ارجاعی نمایندگان</span>
+            <span>آخرین تراکنش‌ها و فروش‌های ارجاعی نمایندگان (نمونه نمایشی)</span>
           </h2>
-          <span className="text-xs text-muted-foreground">اتصال لحظه‌ای به درگاه</span>
+          <span className="text-xs text-muted-foreground">پرداخت و تسویه به صورت دستی با تایید مدیر</span>
         </div>
 
         <Card variant="default" className="overflow-hidden border border-border/60">
@@ -395,9 +481,9 @@ export default function AgentsPremiumPreviewPage() {
                     </td>
                     <td className="py-4 px-4">
                       {sale.status === 'PAID' ? (
-                        <Badge variant="success">تسویه خودکار</Badge>
+                        <Badge variant="success">تسویه دستی انجام‌شده (نمونه آزمایشی)</Badge>
                       ) : (
-                        <Badge variant="warning">در انتظار شاپرک</Badge>
+                        <Badge variant="warning">در انتظار بررسی واریز دستی (نمونه آزمایشی)</Badge>
                       )}
                     </td>
                     <td className="py-4 px-6 text-xs text-muted-foreground text-center font-mono">
@@ -410,6 +496,106 @@ export default function AgentsPremiumPreviewPage() {
           </div>
         </Card>
       </div>
+
+      {/* ─── Modal: Create Agent Modal ─── */}
+      <Dialog open={createAgentModalOpen} onOpenChange={setCreateAgentModalOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold text-slate-900">
+              <Plus className="size-5 text-primary" />
+              <span>ثبت پرونده و قرارداد نماینده جدید</span>
+            </DialogTitle>
+            <DialogDescription>
+              ایجاد پرونده نماینده با وضعیت اولیه «در انتظار بررسی» (PENDING) جهت احراز شرایط و صدور کد کارگزاری
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateAgent} className="space-y-4 py-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">نام نماینده / رابط *</label>
+                <Input
+                  value={createAgentFirstName}
+                  onChange={(e) => setCreateAgentFirstName(e.target.value)}
+                  placeholder="مثال: پیمان"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">نام خانوادگی *</label>
+                <Input
+                  value={createAgentLastName}
+                  onChange={(e) => setCreateAgentLastName(e.target.value)}
+                  placeholder="مثال: حسینی"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">شماره موبایل *</label>
+                <Input
+                  type="tel"
+                  dir="ltr"
+                  value={createAgentMobile}
+                  onChange={(e) => setCreateAgentMobile(e.target.value)}
+                  placeholder="09121234567"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">نام تجاری یا عنوان دفتر *</label>
+                <Input
+                  value={createAgentBusinessName}
+                  onChange={(e) => setCreateAgentBusinessName(e.target.value)}
+                  placeholder="مثال: نمایندگی البرز مرکزی"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">کد ملی (اختیاری)</label>
+              <Input
+                dir="ltr"
+                maxLength={10}
+                value={createAgentNationalCode}
+                onChange={(e) => setCreateAgentNationalCode(e.target.value)}
+                placeholder="۱۰ رقم"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">آدرس دفتر / محل فعالیت</label>
+              <Input
+                value={createAgentAddress}
+                onChange={(e) => setCreateAgentAddress(e.target.value)}
+                placeholder="شهر، خیابان و شماره دفتر"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">توضیحات و سوابق فعالیت</label>
+              <Input
+                value={createAgentDescription}
+                onChange={(e) => setCreateAgentDescription(e.target.value)}
+                placeholder="توضیحات مختصر در مورد حیطه و سابقه فروش"
+              />
+            </div>
+
+            <DialogFooter className="gap-2 sm:gap-0 pt-4">
+              <Button type="button" variant="outline" onClick={() => setCreateAgentModalOpen(false)}>
+                انصراف
+              </Button>
+              <Button type="submit" disabled={isSubmittingCreateAgent} className="gap-2">
+                {isSubmittingCreateAgent && <Loader2 className="size-4 animate-spin" />}
+                <span>ثبت پرونده نماینده</span>
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
       </div>
     </DashboardAppShell>
   )

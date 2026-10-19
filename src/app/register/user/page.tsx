@@ -129,7 +129,8 @@ export default function RegisterUserPage() {
 
     setVerifyLoading(true)
     try {
-      // Test OTP validity by verifying or moving forward
+      // Validate OTP via server API (must strictly reject wrong codes in server)
+      await authService.verifyOtp(mobile, code, 'register')
       setOtpVerified(true)
       toast.success('شماره موبایل با موفقیت تایید شد')
     } catch (error) {

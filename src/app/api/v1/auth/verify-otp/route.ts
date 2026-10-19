@@ -8,6 +8,12 @@ import { DEMO_SCOPE_PHASE_1 } from '@/config/demo-scope'
 import { generateAccessToken, generateRefreshToken } from '@/lib/jwt'
 
 import { normalizeMobile } from '@/lib/phone'
+import { rateLimit } from '@/lib/rate-limit'
+
+// Rate limiter: 5 verification attempts per 10 minutes per mobile
+const verifyOtpLimiter = rateLimit({ limitPerWindow: 5, windowMs: 10 * 60 * 1000 })
+// Rate limiter: 15 verification attempts per 10 minutes per IP
+const verifyOtpIpLimiter = rateLimit({ limitPerWindow: 15, windowMs: 10 * 60 * 1000 })
 
 // Zod schema for request body
 const verifyOtpSchema = z.object({
@@ -22,6 +28,7 @@ const verifyOtpSchema = z.object({
     .length(5, 'کد تایید باید ۵ رقم باشد')
     .regex(/^\d{5}$/, 'کد تایید فقط باید شامل اعداد باشد'),
   device: z.string().optional(),
+  purpose: z.enum(['login', 'register']).optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -39,9 +46,30 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { mobile, code, device } = parsed.data
+    const { mobile, code, device, purpose } = parsed.data
+    const ip = getClientIp(request)
 
-    if (DEMO_SCOPE_PHASE_1) {
+    // Rate limit check: IP and Mobile
+    const ipLimit = verifyOtpIpLimiter.check(`verify-otp-ip:${ip}`)
+    if (!ipLimit.allowed) {
+      return errorResponse(
+        'RATE_LIMITED',
+        `تعداد دفعات تلاش بیش از حد مجاز از این آدرس اینترنتی. لطفاً ${ipLimit.retryAfter} ثانیه دیگر تلاش کنید`,
+        429
+      )
+    }
+
+    const mobileLimit = verifyOtpLimiter.check(`verify-otp:${mobile}`)
+    if (!mobileLimit.allowed) {
+      return errorResponse(
+        'RATE_LIMITED',
+        `تعداد دفعات تلاش برای این شماره بیش از حد مجاز است. لطفاً ${mobileLimit.retryAfter} ثانیه دیگر تلاش کنید`,
+        429
+      )
+    }
+
+    // Demo Mode Isolation: Only allowed if explicitly in non-production AND DEMO_SCOPE_PHASE_1 is true
+    if (DEMO_SCOPE_PHASE_1 && process.env.NODE_ENV !== 'production') {
       if (code !== '12345') {
         return errorResponse('OTP_INVALID', 'کد تایید وارد شده نادرست است', 401)
       }
@@ -103,12 +131,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const ip = getClientIp(request)
-
-    // Verify OTP (includes rate limiting: 5 attempts per OTP, stored in DB)
-    const otpResult = await verifyOTP(mobile, code)
+    // Verify OTP (keep record if purpose === 'register' so final step can verify it)
+    const otpResult = await verifyOTP(mobile, code, { keepRecord: purpose === 'register' })
     if (!otpResult.valid) {
       return errorResponse('OTP_INVALID', otpResult.error!, 401)
+    }
+
+    // If purpose is registration and user does not exist yet, return success verification without tokens
+    if (purpose === 'register') {
+      const existingUser = await db.user.findUnique({
+        where: { mobile },
+      })
+      if (!existingUser) {
+        return successResponse(
+          { verified: true, mobile },
+          'شماره موبایل با موفقیت تایید شد'
+        )
+      }
     }
 
     // Find user

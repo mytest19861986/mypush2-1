@@ -12,11 +12,7 @@ const RESEND_WINDOW_MS = 5 * 60 * 1000 // 5 minutes
 const OTP_CODE_PATTERN = /^\d{5}$/
 
 export function isDemoFixedOTPEnabled(): boolean {
-  const env = process.env
-  if (env['NODE_ENV'] === 'production' && !env['ALLOW_FIXED_OTP_IN_TEST']) {
-    return false
-  }
-  return env['DEMO_FIXED_OTP_ENABLED'] === 'true'
+  return process.env['DEMO_FIXED_OTP_ENABLED'] === 'true'
 }
 
 /**

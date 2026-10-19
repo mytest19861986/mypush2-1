@@ -44,9 +44,14 @@ import { AdminRoute } from '@/components/guards/AdminRoute'
 interface DashboardAppShellProps {
   children: React.ReactNode
   activeMenu?: string
+  requireAdmin?: boolean
 }
 
-export function DashboardAppShell({ children, activeMenu = 'dashboard' }: DashboardAppShellProps) {
+export function DashboardAppShell({
+  children,
+  activeMenu = 'dashboard',
+  requireAdmin = true,
+}: DashboardAppShellProps) {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { user, logout } = useAuthStore()
@@ -192,9 +197,8 @@ export function DashboardAppShell({ children, activeMenu = 'dashboard' }: Dashbo
     </div>
   )
 
-  return (
-    <AdminRoute>
-      <div className="min-h-screen bg-[#F8FAFC] text-slate-800 flex overflow-x-hidden w-full max-w-full" dir="rtl">
+  const shellContent = (
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-800 flex overflow-x-hidden w-full max-w-full" dir="rtl">
         {/* ─── Mobile Drawer Overlay & Sidebar ─── */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 md:hidden flex">
@@ -285,7 +289,7 @@ export function DashboardAppShell({ children, activeMenu = 'dashboard' }: Dashbo
                   </div>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52 p-1.5 rounded-2xl shadow-xl border border-slate-200" dir="rtl">
+              <DropdownMenuContent align="end" className="w-52 p-1.5 rounded-2xl shadow-xl border border-slate-200">
                 <DropdownMenuLabel className="px-3 py-2">
                   <div className="flex flex-col gap-0.5">
                     <span className="text-xs font-bold text-slate-900">{displayName}</span>
@@ -333,6 +337,11 @@ export function DashboardAppShell({ children, activeMenu = 'dashboard' }: Dashbo
         </footer>
       </div>
     </div>
-  </AdminRoute>
-)
+  )
+
+  if (requireAdmin) {
+    return <AdminRoute>{shellContent}</AdminRoute>
+  }
+
+  return shellContent
 }

@@ -38,6 +38,7 @@ import {
   ClipboardList,
   Copy,
   CreditCard,
+  Headphones,
   HeartPulse,
   IdCard,
   Loader2,
@@ -151,6 +152,13 @@ const quickActions: {
     description: 'پیگیری ویزیت‌ها و وضعیت نظرها',
     href: '/user/contracts',
     icon: ClipboardList,
+  },
+  {
+    title: 'پشتیبانی و تیکت‌ها',
+    description: 'ارسال پیام و گفت‌وگو با پشتیبانی',
+    href: '/user/support',
+    icon: Headphones,
+    actionLabel: 'ورود به پشتیبانی',
   },
 ]
 
@@ -423,6 +431,91 @@ function QuickActionsCard() {
             </Link>
           )
         })}
+      </CardContent>
+    </Card>
+  )
+}
+
+function PendingConsentCard({
+  pendingVisits,
+  onConsentHandled,
+}: {
+  pendingVisits: UserVisit[]
+  onConsentHandled: () => void
+}) {
+  const [processingId, setProcessingId] = useState<string | null>(null)
+  const { toast } = useToast()
+
+  if (pendingVisits.length === 0) return null
+
+  const handleConsent = async (visitId: string, action: 'APPROVE' | 'REJECT') => {
+    try {
+      setProcessingId(visitId)
+      await apiClient.post('/visits/dashboard-consent', { visitId, action })
+      toast({
+        title: action === 'APPROVE' ? 'درخواست ویزیت تایید شد' : 'درخواست ویزیت رد شد',
+        description: action === 'APPROVE' ? 'سهمیه ویزیت با موفقیت کسر و دسترسی پزشک فعال گردید.' : 'درخواست بدون کسر سهمیه لغو شد.',
+        variant: action === 'APPROVE' ? 'default' : 'destructive',
+      })
+      onConsentHandled()
+    } catch (err: unknown) {
+      toast({
+        title: 'خطا در ثبت رضایت',
+        description: err instanceof Error ? err.message : 'خطای ناشناخته رخ داد',
+        variant: 'destructive',
+      })
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
+  return (
+    <Card className="rounded-2xl border-2 border-amber-300 bg-amber-50/50 shadow-md dark:border-amber-700/60 dark:bg-amber-950/20">
+      <CardHeader className="pb-3">
+        <div className="flex items-center gap-2">
+          <AlertCircle className="size-5 text-amber-600 dark:text-amber-400" />
+          <CardTitle className="text-base font-bold text-amber-900 dark:text-amber-200">
+            درخواست‌های ویزیت در انتظار تایید شما ({toPersianNum(pendingVisits.length)})
+          </CardTitle>
+        </div>
+        <p className="mt-1 text-xs text-amber-800/80 dark:text-amber-300/80">
+          پزشک طرف قرارداد درخواست ویزیت با طرح شما را ثبت کرده است. برای تایید خدمات و کسر سهمیه تایید کنید.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {pendingVisits.map((v) => (
+          <div
+            key={v.visitId}
+            className="flex flex-col gap-3 rounded-xl border border-amber-200 bg-white p-4 shadow-sm dark:border-amber-800 dark:bg-slate-900 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div>
+              <p className="font-bold text-card-foreground">{getDoctorName(v)}</p>
+              <p className="text-xs text-muted-foreground">{getDoctorSpecialty(v)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                تاریخ درخواست: {formatDate(v.createdAt)}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-800 dark:text-red-400"
+                disabled={processingId === v.visitId}
+                onClick={() => handleConsent(v.visitId, 'REJECT')}
+              >
+                {processingId === v.visitId ? <Loader2 className="size-3.5 animate-spin" /> : 'رد درخواست'}
+              </Button>
+              <Button
+                size="sm"
+                className="bg-emerald-600 text-white hover:bg-emerald-700"
+                disabled={processingId === v.visitId}
+                onClick={() => handleConsent(v.visitId, 'APPROVE')}
+              >
+                {processingId === v.visitId ? <Loader2 className="size-3.5 animate-spin" /> : 'تایید ویزیت'}
+              </Button>
+            </div>
+          </div>
+        ))}
       </CardContent>
     </Card>
   )
@@ -740,6 +833,68 @@ function ReferralCodeCard({ referralCode }: { referralCode?: string | null }) {
             </Button>
           </div>
         </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function ReferredUsersCard() {
+  const [stats, setStats] = useState<{ totalReferrals: number; referrals: Array<{ id: string; referredUserId: string; maskedMobile: string; name: string; attributedAt: string }> } | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let mounted = true
+    apiClient.get<{ totalReferrals: number; referrals: Array<{ id: string; referredUserId: string; maskedMobile: string; name: string; attributedAt: string }> }>('/referrals/stats')
+      .then(res => {
+        if (mounted && res.success && res.data) {
+          setStats(res.data)
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (mounted) setLoading(false)
+      })
+    return () => { mounted = false }
+  }, [])
+
+  return (
+    <Card className="rounded-2xl border border-slate-100/60 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-slate-800/60">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <UserRound className="size-5 text-primary" />
+            <span>اعضای معرفی‌شده شما</span>
+          </CardTitle>
+          <Badge variant="outline" className="text-xs">
+            {stats ? toPersianNum(stats.totalReferrals) : '۰'} نفر
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        ) : !stats || stats.referrals.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-200/80 bg-background/70 p-4 text-center text-xs text-muted-foreground">
+            هنوز عضوی با لینک معرفی شما ثبت‌نام نکرده است.
+          </div>
+        ) : (
+          <div className="divide-y rounded-xl border border-slate-100/70 bg-background dark:border-slate-800/70">
+            {stats.referrals.map((ref) => (
+              <div key={ref.id} className="flex items-center justify-between p-3 text-xs">
+                <div>
+                  <p className="font-semibold">{ref.name}</p>
+                  <p className="font-mono text-muted-foreground">{ref.maskedMobile}</p>
+                </div>
+                <Badge variant="secondary" className="text-[10px]">
+                  ثبت‌شده
+                </Badge>
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   )
@@ -1081,6 +1236,19 @@ export default function UserDashboardPage() {
 
   const reviewedVisitCount = visits.filter((visit) => reviewsByVisit[visit.visitId]).length
 
+  const pendingVisits = useMemo(() => visits.filter((v) => v.status === 'PENDING'), [visits])
+
+  const handleRefreshVisits = useCallback(async () => {
+    try {
+      const visitsRes = await apiClient.get<UserVisit[]>('/visits/my?take=100')
+      if (visitsRes.success && Array.isArray(visitsRes.data)) {
+        setVisits(visitsRes.data)
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }, [])
+
   if (loading) {
     return <LoadingState />
   }
@@ -1107,6 +1275,13 @@ export default function UserDashboardPage() {
         activePlan={activePlan}
         profileComplete={profileComplete}
       />
+
+      {pendingVisits.length > 0 && (
+        <PendingConsentCard
+          pendingVisits={pendingVisits}
+          onConsentHandled={handleRefreshVisits}
+        />
+      )}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
@@ -1144,11 +1319,12 @@ export default function UserDashboardPage() {
           />
           <RecentVisitsCard visits={visits} reviewsByVisit={reviewsByVisit} />
           <PlanSummaryCard plans={plans} />
-          {!DEMO_SCOPE_PHASE_1 && <ReferralCommissionReport />}
+          <ReferralCommissionReport />
         </main>
 
         <aside className="space-y-5">
-          {!DEMO_SCOPE_PHASE_1 && <ReferralCodeCard referralCode={referralCode} />}
+          <ReferralCodeCard referralCode={referralCode} />
+          <ReferredUsersCard />
           <ProfileCompletionCard nationalCode={nationalCode} />
           <QuickActionsCard />
           <ProductGuidanceCard />

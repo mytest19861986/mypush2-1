@@ -31,7 +31,9 @@ import {
   Phone,
   RefreshCw,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  Download,
+  Plus
 } from 'lucide-react'
 import { toPersianNum } from '@/utils/formatters'
 import { DashboardAppShell } from '@/components/shared/dashboard-app-shell'
@@ -155,12 +157,80 @@ export default function DoctorsClinicsPremiumPreviewPage() {
   const [statusActionOpen, setStatusActionOpen] = useState(false)
   const [isSubmittingStatus, setIsSubmittingStatus] = useState(false)
 
+  // Create Doctor Modal state
+  const [createDocModalOpen, setCreateDocModalOpen] = useState(false)
+  const [createDocMobile, setCreateDocMobile] = useState('')
+  const [createDocFirstName, setCreateDocFirstName] = useState('')
+  const [createDocLastName, setCreateDocLastName] = useState('')
+  const [createDocNationalCode, setCreateDocNationalCode] = useState('')
+  const [createDocMedicalCode, setCreateDocMedicalCode] = useState('')
+  const [createDocSpecialty, setCreateDocSpecialty] = useState('')
+  const [createDocClinicName, setCreateDocClinicName] = useState('')
+  const [createDocPhone, setCreateDocPhone] = useState('')
+  const [createDocAddress, setCreateDocAddress] = useState('')
+  const [createDocCity, setCreateDocCity] = useState('')
+  const [createDocProvince, setCreateDocProvince] = useState('')
+  const [createDocDiscount, setCreateDocDiscount] = useState('20')
+  const [isSubmittingCreateDoc, setIsSubmittingCreateDoc] = useState(false)
+
+  const handleCreateDoctor = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!createDocMobile.trim() || !createDocFirstName.trim() || !createDocLastName.trim() || !createDocMedicalCode.trim() || !createDocSpecialty.trim() || !createDocClinicName.trim()) {
+      toast.error('لطفاً فیلدهای الزامی (موبایل، نام، کد نظام، تخصص و مطب) را تکمیل کنید')
+      return
+    }
+    setIsSubmittingCreateDoc(true)
+    try {
+      const res = await fetch('/api/v1/admin/doctors', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          mobile: createDocMobile.trim(),
+          firstName: createDocFirstName.trim(),
+          lastName: createDocLastName.trim(),
+          nationalCode: createDocNationalCode.trim() || undefined,
+          medicalCode: createDocMedicalCode.trim(),
+          specialty: createDocSpecialty.trim(),
+          clinicName: createDocClinicName.trim(),
+          phone: createDocPhone.trim() || undefined,
+          clinicAddress: createDocAddress.trim() || undefined,
+          city: createDocCity.trim() || undefined,
+          province: createDocProvince.trim() || undefined,
+          discountPercent: Number(createDocDiscount) || 0,
+        }),
+      })
+      const json = await res.json()
+      if (res.ok && json.success) {
+        toast.success('پرونده پزشک با موفقیت در وضعیت در انتظار بررسی ثبت شد')
+        setCreateDocModalOpen(false)
+        setCreateDocMobile('')
+        setCreateDocFirstName('')
+        setCreateDocLastName('')
+        setCreateDocNationalCode('')
+        setCreateDocMedicalCode('')
+        setCreateDocSpecialty('')
+        setCreateDocClinicName('')
+        setCreateDocPhone('')
+        setCreateDocAddress('')
+        setCreateDocCity('')
+        setCreateDocProvince('')
+        fetchDoctors()
+      } else {
+        toast.error(json.error?.message || json.message || 'خطا در ثبت پزشک')
+      }
+    } catch {
+      toast.error('ارتباط با سرور برقرار نشد')
+    } finally {
+      setIsSubmittingCreateDoc(false)
+    }
+  }
+
   const getAuthHeaders = useCallback((): HeadersInit => {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' }
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('accessToken')
       if (token) {
-        headers['Authorization'] = `Bearer ${token}`
+        headers['X-App-Authorization'] = `Bearer ${token}`
       }
     }
     return headers
@@ -358,6 +428,48 @@ export default function DoctorsClinicsPremiumPreviewPage() {
     return matchSearch && matchStatus
   })
 
+  // Safe Export to Excel / CSV with UTF-8 BOM and formula sanitization
+  const handleExportExcel = () => {
+    if (!doctors || doctors.length === 0) {
+      toast.error('هیچ پزشکی برای خروجی اکسل در صفحه جاری موجود نیست')
+      return
+    }
+
+    const sanitizeCell = (val: string | number | null | undefined): string => {
+      if (val === null || val === undefined) return '""'
+      let str = String(val).replace(/"/g, '""')
+      if (/^[\=\+\-\@]/.test(str)) {
+        str = "'" + str
+      }
+      return `"${str}"`
+    }
+
+    const headers = ['شناسه', 'نام پزشک / مرکز', 'تخصص', 'نام کلینیک', 'شماره نظام پزشکی', 'موبایل', 'شهر/استان', 'درصد تخفیف', 'وضعیت']
+    const rows = doctors.map(d => [
+      sanitizeCell(d.id),
+      sanitizeCell(d.name),
+      sanitizeCell(d.specialty),
+      sanitizeCell(d.clinicName),
+      sanitizeCell(d.medicalCode || '—'),
+      sanitizeCell(d.mobile || '—'),
+      sanitizeCell(d.location || `${d.city || ''} ${d.province || ''}`.trim() || '—'),
+      sanitizeCell(d.discountRate),
+      sanitizeCell(d.status === 'ACTIVE' ? 'فعال' : d.status === 'PENDING' ? 'در انتظار' : 'معلق')
+    ].join(','))
+
+    const csvContent = '\uFEFF' + [headers.map(h => `"${h}"`).join(','), ...rows].join('\r\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `hami_doctors_export_${new Date().toISOString().slice(0, 10)}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    toast.success('فایل اکسل پزشکان با موفقیت صادر شد')
+  }
+
   return (
     <DashboardAppShell activeMenu="doctors">
       <div className="space-y-8">
@@ -380,6 +492,15 @@ export default function DoctorsClinicsPremiumPreviewPage() {
 
           <div className="flex items-center gap-3">
             <Button
+              variant="default"
+              size="sm"
+              onClick={() => setCreateDocModalOpen(true)}
+              className="gap-2 rounded-xl text-xs font-bold shadow-xs cursor-pointer"
+            >
+              <Plus className="size-4" />
+              <span>افزودن پزشک جدید</span>
+            </Button>
+            <Button
               variant="outline"
               size="sm"
               onClick={fetchDoctors}
@@ -388,6 +509,15 @@ export default function DoctorsClinicsPremiumPreviewPage() {
             >
               <RefreshCw className={`size-4 ${isLoading ? 'animate-spin' : ''}`} />
               <span>تازه‌سازی</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportExcel}
+              className="gap-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+            >
+              <Download className="size-4" />
+              <span>خروجی CSV (اکسل)</span>
             </Button>
             <div className="flex rounded-xl bg-muted/60 p-1 border border-border/40">
               <button
@@ -887,6 +1017,138 @@ export default function DoctorsClinicsPremiumPreviewPage() {
               <span>{statusActionDoc?.status === 'ACTIVE' ? 'تأیید و تعلیق' : 'تأیید و فعال‌سازی'}</span>
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Modal 4: Create Doctor Modal ─── */}
+      <Dialog open={createDocModalOpen} onOpenChange={setCreateDocModalOpen}>
+        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold text-slate-900">
+              <Plus className="size-5 text-primary" />
+              <span>افزودن پزشک همکار جدید (ثبت پرونده اداری)</span>
+            </DialogTitle>
+            <DialogDescription>
+              ایجاد پرونده پزشک با وضعیت اولیه «در انتظار بررسی» (PENDING) جهت تأیید و احراز مدارک نظام پزشکی
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateDoctor} className="space-y-4 py-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">نام پزشک *</label>
+                <Input
+                  value={createDocFirstName}
+                  onChange={(e) => setCreateDocFirstName(e.target.value)}
+                  placeholder="مثال: کامران"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">نام خانوادگی *</label>
+                <Input
+                  value={createDocLastName}
+                  onChange={(e) => setCreateDocLastName(e.target.value)}
+                  placeholder="مثال: نادری"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">شماره موبایل *</label>
+                <Input
+                  type="tel"
+                  dir="ltr"
+                  value={createDocMobile}
+                  onChange={(e) => setCreateDocMobile(e.target.value)}
+                  placeholder="09121234567"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">کد نظام پزشکی *</label>
+                <Input
+                  dir="ltr"
+                  value={createDocMedicalCode}
+                  onChange={(e) => setCreateDocMedicalCode(e.target.value)}
+                  placeholder="مثال: 98765"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">تخصص *</label>
+                <Input
+                  value={createDocSpecialty}
+                  onChange={(e) => setCreateDocSpecialty(e.target.value)}
+                  placeholder="مثال: متخصص قلب و عروق"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">نام مطب یا کلینیک *</label>
+                <Input
+                  value={createDocClinicName}
+                  onChange={(e) => setCreateDocClinicName(e.target.value)}
+                  placeholder="مثال: کلینیک تخصصی قلب مهر"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">استان</label>
+                <Input
+                  value={createDocProvince}
+                  onChange={(e) => setCreateDocProvince(e.target.value)}
+                  placeholder="تهران"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">شهر</label>
+                <Input
+                  value={createDocCity}
+                  onChange={(e) => setCreateDocCity(e.target.value)}
+                  placeholder="تهران"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">تخفیف پیش‌فرض (٪)</label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  dir="ltr"
+                  value={createDocDiscount}
+                  onChange={(e) => setCreateDocDiscount(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">آدرس مطب / مرکز درمانی</label>
+              <Input
+                value={createDocAddress}
+                onChange={(e) => setCreateDocAddress(e.target.value)}
+                placeholder="خیابان، پلاک، طبقه و واحد"
+              />
+            </div>
+
+            <DialogFooter className="sticky bottom-0 bg-background/95 backdrop-blur-sm z-10 gap-2 sm:gap-0 pt-3 pb-1 border-t sm:border-0">
+              <Button type="button" variant="outline" onClick={() => setCreateDocModalOpen(false)}>
+                انصراف
+              </Button>
+              <Button type="submit" disabled={isSubmittingCreateDoc} className="gap-2">
+                {isSubmittingCreateDoc && <Loader2 className="size-4 animate-spin" />}
+                <span>ثبت پرونده پزشک</span>
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </DashboardAppShell>

@@ -38,16 +38,29 @@ export async function GET(request: NextRequest) {
       return errorResponse('VALIDATION_ERROR', 'Invalid pagination parameters', 400)
     }
 
-    const visits = await db.visit.findMany({
+    // Find planHolders owned by or matching this user
+    const userProfile = await db.userProfile.findUnique({
       where: { userId: payload.sub },
+      select: { nationalCode: true },
+    })
+
+    const visits = await db.visit.findMany({
+      where: {
+        OR: [
+          { userId: payload.sub },
+          ...(userProfile?.nationalCode ? [{ planHolder: { nationalCode: userProfile.nationalCode } }] : []),
+        ],
+      },
       select: {
         id: true,
         status: true,
         visitedAt: true,
         createdAt: true,
+        doctorNote: true,
         doctor: {
           select: {
             specialty: true,
+            clinicName: true,
             user: {
               select: {
                 profile: {
@@ -64,6 +77,7 @@ export async function GET(request: NextRequest) {
           select: {
             firstName: true,
             lastName: true,
+            nationalCode: true,
           },
         },
         userPlan: {
@@ -77,7 +91,7 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: { visitedAt: 'desc' },
+      orderBy: { createdAt: 'desc' },
       take,
       skip,
     })

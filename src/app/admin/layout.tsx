@@ -315,7 +315,11 @@ export default function AdminLayout({
 }) {
   return (
     <div className="min-h-screen bg-background" dir="rtl">
-      {children}
+      <AdminRoute>
+        <AdminSectionGuard>
+          {children}
+        </AdminSectionGuard>
+      </AdminRoute>
     </div>
   )
 }

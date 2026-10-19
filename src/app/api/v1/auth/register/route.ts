@@ -91,8 +91,8 @@ export async function POST(request: NextRequest) {
 
     const cleanNationalCode = nationalCode && nationalCode.length === 10 ? nationalCode : null
 
-    // 1. In DEMO_SCOPE_PHASE_1 mode
-    if (DEMO_SCOPE_PHASE_1) {
+    // 1. In DEMO_SCOPE_PHASE_1 mode (strictly non-production only)
+    if (DEMO_SCOPE_PHASE_1 && process.env.NODE_ENV !== 'production') {
       if (otpCode !== '12345') {
         return errorResponse('OTP_INVALID', 'کد تایید وارد شده نادرست است', 401)
       }
@@ -218,11 +218,12 @@ export async function POST(request: NextRequest) {
       return errorResponse('OTP_INVALID', otpResult.error!, 401)
     }
 
-    // Check if user already exists
+    // Check if completed user already exists
     const existingUser = await db.user.findUnique({
       where: { mobile },
+      include: { profile: true }
     })
-    if (existingUser) {
+    if (existingUser && existingUser.passwordHash && existingUser.isPasswordLoginEnabled) {
       return errorResponse('CONFLICT', 'این شماره موبایل قبلاً در سامانه ثبت شده است', 409)
     }
 
@@ -250,42 +251,108 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Create user and profile in transaction
-    const newUser = await db.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          mobile,
-          passwordHash,
-          status: 'ACTIVE',
-          isMobileVerified: true,
-          isPasswordLoginEnabled: true,
-        },
-      })
+    // CMD-66: Validate referral code if provided
+    let validatedReferrer: { id: string; type: string } | null = null
+    if (referralCode) {
+      const { findReferrerByReferralCode } = await import('@/lib/referrals')
+      const referrer = await findReferrerByReferralCode(db, referralCode, existingUser?.id)
+      if (referrer) {
+        validatedReferrer = referrer
+      }
+    }
 
-      await tx.userRole.create({
-        data: {
+    // Create or complete user and profile in transaction
+    const newUser = await db.$transaction(async (tx) => {
+      const user = !existingUser
+        ? await tx.user.create({
+            data: {
+              mobile,
+              passwordHash,
+              status: 'ACTIVE',
+              isMobileVerified: true,
+              isPasswordLoginEnabled: true,
+            },
+          })
+        : await tx.user.update({
+            where: { id: existingUser.id },
+            data: {
+              passwordHash,
+              status: 'ACTIVE',
+              isMobileVerified: true,
+              isPasswordLoginEnabled: true,
+            },
+          })
+
+      await tx.userRole.upsert({
+        where: {
+          userId_roleId: {
+            userId: user.id,
+            roleId: userRole.id,
+          },
+        },
+        create: {
           userId: user.id,
           roleId: userRole.id,
         },
+        update: {},
       })
 
-      await tx.userProfile.create({
-        data: {
+      await tx.userProfile.upsert({
+        where: { userId: user.id },
+        create: {
           userId: user.id,
+          firstName,
+          lastName,
+          nationalCode: cleanNationalCode,
+        },
+        update: {
           firstName,
           lastName,
           nationalCode: cleanNationalCode,
         },
       })
 
-      // Initialize zero-balance wallet
-      await tx.wallet.create({
-        data: {
-          userId: user.id,
-          balance: 0,
-          currency: 'IRR',
-        },
-      })
+      // Initialize zero-balance wallet if not present
+      const existingWallet = await tx.wallet.findUnique({ where: { userId: user.id } })
+      if (!existingWallet) {
+        await tx.wallet.create({
+          data: {
+            userId: user.id,
+            balance: 0,
+            currency: 'IRR',
+          },
+        })
+      }
+
+      // CMD-73: Relational attribution in UserReferral + AuditLog inside registration transaction
+      if (validatedReferrer && validatedReferrer.id !== user.id) {
+        // 1. Authoritative relational record in UserReferral table
+        await tx.userReferral.create({
+          data: {
+            referrerId: validatedReferrer.id,
+            referredUserId: user.id,
+            referralCode: referralCode || '',
+          },
+        })
+
+        // 2. AuditLog event record
+        await tx.auditLog.create({
+          data: {
+            userId: user.id,
+            action: 'REFERRAL_ATTRIBUTED',
+            entity: 'User',
+            entityId: user.id,
+            details: JSON.stringify({
+              referrerId: validatedReferrer.id,
+              referrerType: validatedReferrer.type,
+              referralCode,
+              attributedAt: new Date().toISOString(),
+            }),
+            ip,
+            device,
+          },
+        })
+      }
 
       return user
     })
@@ -296,7 +363,11 @@ export async function POST(request: NextRequest) {
       entity: 'User',
       entityId: newUser.id,
       ip,
-      details: { method: 'SELF_REGISTER', referralCode: referralCode || null },
+      details: {
+        method: 'SELF_REGISTER',
+        referralCode: referralCode || null,
+        referrerId: validatedReferrer?.id || null,
+      },
     })
 
     const { accessToken, refreshToken } = await generateAuthTokens({

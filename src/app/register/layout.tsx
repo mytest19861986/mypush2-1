@@ -13,7 +13,10 @@ export default function RegisterLayout({
   const router = useRouter()
   const pathname = usePathname()
   const { isAuthenticated, isLoading, initialize } = useAuthStore()
-  const isPublicRegistration = pathname === '/register/agent' || pathname === '/register/user'
+  const isPublicRegistration =
+    pathname === '/register' ||
+    pathname === '/register/agent' ||
+    pathname === '/register/user'
 
   useEffect(() => {
     initialize()

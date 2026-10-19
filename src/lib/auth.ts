@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { verifyAccessToken, TokenPayload } from './jwt'
+import { db } from './db'
 
 interface AuthResult {
   authenticated: boolean
@@ -31,7 +32,13 @@ interface PermissionResult {
 export async function authenticateRequest(
   request: NextRequest
 ): Promise<AuthResult> {
-  const authHeader = request.headers.get('authorization')
+  let authHeader = request.headers.get('x-app-authorization')
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const standardHeader = request.headers.get('authorization')
+    if (standardHeader && standardHeader.startsWith('Bearer ')) {
+      authHeader = standardHeader
+    }
+  }
 
   if (!authHeader) {
     return {
@@ -59,6 +66,26 @@ export async function authenticateRequest(
       payload: null,
       error: 'Invalid or expired token',
     }
+  }
+
+  // Workstream C: Ensure disabled/blocked users immediately lose access
+  // bypassing stale JWT expiry.
+  try {
+    const user = await db.user.findUnique({
+      where: { id: payload.sub },
+      select: { status: true },
+    })
+
+    if (user && user.status !== 'ACTIVE') {
+      return {
+        authenticated: false,
+        payload: null,
+        error: 'حساب کاربری مسدود یا غیرفعال شده است',
+      }
+    }
+  } catch (err) {
+    // If DB fails transiently in test/dev, continue or log error
+    console.error('[auth.ts:authenticateRequest] user status check error:', err)
   }
 
   return {
@@ -155,7 +182,10 @@ export async function requirePermission(
     }
   }
 
-  if (!payload.permissions.includes(permission)) {
+  const hasWildcard = payload.permissions.includes('*')
+  const isSuperAdmin = payload.roles.includes('SUPER_ADMIN') || payload.roles.includes('ADMIN')
+
+  if (!hasWildcard && !isSuperAdmin && !payload.permissions.includes(permission)) {
     return {
       authorized: false,
       payload,
@@ -187,9 +217,13 @@ export async function requireAnyPermission(
     }
   }
 
-  const hasPermission = permissions.some((permission) =>
-    payload.permissions.includes(permission)
-  )
+  const hasWildcard = payload.permissions.includes('*')
+  const isSuperAdmin = payload.roles.includes('SUPER_ADMIN') || payload.roles.includes('ADMIN')
+
+  const hasPermission =
+    hasWildcard ||
+    isSuperAdmin ||
+    permissions.some((permission) => payload.permissions.includes(permission))
 
   if (!hasPermission) {
     return {

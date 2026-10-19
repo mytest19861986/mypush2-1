@@ -57,9 +57,9 @@ const statusMeta: Record<
   }
 > = {
   APPROVED: {
-    label: 'تایید شده',
-    title: 'پروفایل شما تایید شده است',
-    description: 'اطلاعات مطب و تخصص شما برای کاربران حامی‌کارت قابل مشاهده است.',
+    label: 'عضو فعال شبکه',
+    title: 'پروفایل شما در شبکه سلامت حامی‌کارت تایید شده است',
+    description: 'اطلاعات مطب، تخصص و مزایای عضویت سلامت شما برای اعضای حامی‌کارت فعال و قابل مشاهده است.',
     icon: CheckCircle2,
     iconClassName:
       'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400',
@@ -179,7 +179,7 @@ export default function DoctorProfilePage() {
       try {
         const token = localStorage.getItem('accessToken')
         const res = await fetch('/api/v1/uploads?type=AVATAR', {
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          headers: token ? { 'X-App-Authorization': `Bearer ${token}` } : undefined,
         })
 
         if (!res.ok) throw new Error('Avatar not available')
@@ -311,8 +311,8 @@ export default function DoctorProfilePage() {
   return (
     <div className="space-y-6" dir="rtl">
       <PageHeader
-        title="پروفایل پزشک"
-        description="مدیریت اطلاعات تخصصی، مطب و تنظیمات تخفیف حامی‌کارت"
+        title="پروفایل پزشک عضو شبکه سلامت"
+        description="مدیریت اطلاعات هویتی، تخصصی، مرکز درمانی و مزایای عضویت سلامت حامی‌کارت"
       />
 
       {doctorData && (
@@ -544,15 +544,15 @@ export default function DoctorProfilePage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Percent className="size-4 text-emerald-600" />
-            تنظیمات تخفیف
+            مزایای عضویت سلامت
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-4 rounded-2xl border border-emerald-100/70 bg-emerald-50/50 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/10 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">درصد تخفیف حامی‌کارت</p>
+              <p className="text-sm font-medium text-slate-700">مزایای عضویت سلامت حامی‌کارت</p>
               <p className="text-sm leading-6 text-muted-foreground">
-                درصد تخفیفی که برای کاربران حامی‌کارت نمایش داده می‌شود.
+                میزان مزایای خدمات درمانی که برای اعضای دارای عضویت سلامت حامی‌کارت ارائه می‌شود.
               </p>
             </div>
             <div className="flex min-w-32 items-center justify-center rounded-2xl bg-background px-5 py-4 shadow-sm dark:bg-card">

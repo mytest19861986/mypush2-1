@@ -38,7 +38,7 @@ export default function DashboardPremiumPreviewPage() {
   ]
 
   return (
-    <DashboardAppShell activeMenu="dashboard">
+    <DashboardAppShell activeMenu="dashboard" requireAdmin={false}>
       <div className="space-y-8">
         {/* ─── Greeting Header ─── */}
         <div className="space-y-1">
@@ -55,39 +55,39 @@ export default function DashboardPremiumPreviewPage() {
         {/* ─── Row 1: KPI 4-Card Pastel Grid (Single col on mobile, 2 col on tablet, 4 col on desktop) ─── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 w-full">
           <PremiumMetricCard
-            title="کاربر فعال"
+            title="کاربر فعال (نمونه نمایشی)"
             value="۱۲,۵۴۰"
-            trend="↑ ۱۸٪ نسبت به ماه قبل"
+            trend="داده‌های دمو"
             isUp={true}
             icon={Users}
             variant="green"
-            badge="رشد فعال"
+            badge="نمونه نمایشی"
           />
           <PremiumMetricCard
-            title="مرکز درمانی"
+            title="مرکز درمانی (نمونه نمایشی)"
             value="۲۴۵"
-            trend="+ ۱۲ مرکز جدید"
+            trend="داده‌های دمو"
             isUp={true}
             icon={Building2}
             variant="blue"
-            badge="شبکه همکار"
+            badge="نمونه نمایشی"
           />
           <PremiumMetricCard
-            title="درخواست جدید"
+            title="درخواست جدید (نمونه نمایشی)"
             value="۳۸۶"
-            description="امروز در صف بررسی"
+            description="داده‌های دمو"
             icon={FileCheck2}
             variant="amber"
-            badge="اقدام فوری"
+            badge="نمونه نمایشی"
           />
           <PremiumMetricCard
-            title="درآمد (تومان)"
+            title="درآمد (تومان) (نمونه نمایشی)"
             value="۸۷M"
-            trend="↑ ۲۵٪ نسبت به ماه قبل"
+            trend="داده‌های دمو"
             isUp={true}
             icon={Wallet}
             variant="purple"
-            badge="تسویه شاپرک"
+            badge="نمونه نمایشی"
           />
         </div>
 
@@ -121,9 +121,17 @@ export default function DashboardPremiumPreviewPage() {
             </div>
           </div>
 
-          {/* Quick Actions 2x2 Grid */}
+          {/* Action Required Center (سازماندهی دسترسی‌ها و اقدامات نیازمند رسیدگی مدیر) */}
           <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-4">
-            <h3 className="font-extrabold text-base text-slate-800">دسترسی سریع</h3>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <h3 className="font-extrabold text-base text-slate-800">مرکز اقدامات و وظایف نیازمند رسیدگی</h3>
+                <p className="text-2xs text-muted-foreground">بخش‌های عملیاتی دارای اولویت جهت بررسی و نظارت مستمر</p>
+              </div>
+              <span className="text-2xs font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200/60">
+                اقدامات اولویت‌دار
+              </span>
+            </div>
 
             <div className="grid grid-cols-2 gap-3.5">
               {quickActions.map((action, idx) => {
@@ -132,13 +140,16 @@ export default function DashboardPremiumPreviewPage() {
                   <a
                     key={idx}
                     href={action.href}
-                    className="p-4 rounded-xl border border-slate-100 bg-slate-50/70 hover:bg-[#F0FDF4] hover:border-emerald-200 transition-all duration-200 flex flex-col items-center justify-center gap-2.5 text-center group"
+                    className="p-4 rounded-xl border border-slate-100 bg-slate-50/70 hover:bg-[#F0FDF4] hover:border-emerald-200 transition-all duration-200 flex flex-col items-center justify-center gap-2 text-center group"
                   >
                     <div className={`size-10 rounded-xl ${action.color} flex items-center justify-center group-hover:scale-110 transition-transform shadow-xs`}>
                       <Icon className="size-5" />
                     </div>
                     <span className="text-xs font-bold text-slate-800 group-hover:text-[#0D5C58] transition-colors">
                       {action.title}
+                    </span>
+                    <span className="text-3xs text-muted-foreground group-hover:text-slate-600 transition-colors">
+                      ورود به صف رسیدگی
                     </span>
                   </a>
                 )

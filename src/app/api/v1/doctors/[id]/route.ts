@@ -115,38 +115,78 @@ export async function PATCH(
       }
     }
 
-    if (body.firstName !== undefined || body.lastName !== undefined) {
-      await db.userProfile.upsert({
-        where: { userId: existingDoctor.userId },
-        create: {
-          userId: existingDoctor.userId,
-          firstName: body.firstName ?? '',
-          lastName: body.lastName ?? '',
-        },
-        update: {
-          ...(body.firstName !== undefined && { firstName: body.firstName }),
-          ...(body.lastName !== undefined && { lastName: body.lastName }),
-        },
-      })
-    }
+    const updatedDoctor = await db.$transaction(async (tx) => {
+      if (body.firstName !== undefined || body.lastName !== undefined) {
+        await tx.userProfile.upsert({
+          where: { userId: existingDoctor.userId },
+          create: {
+            userId: existingDoctor.userId,
+            firstName: body.firstName ?? '',
+            lastName: body.lastName ?? '',
+          },
+          update: {
+            ...(body.firstName !== undefined && { firstName: body.firstName }),
+            ...(body.lastName !== undefined && { lastName: body.lastName }),
+          },
+        })
+      }
 
-    const updatedDoctor = await db.doctor.update({
-      where: { id },
-      data: doctorData,
-      include: {
-        user: {
-          select: {
-            id: true,
-            mobile: true,
-            email: true,
-            status: true,
-            profile: {
-              select: { firstName: true, lastName: true, avatar: true, nationalCode: true },
+      const doc = await tx.doctor.update({
+        where: { id },
+        data: doctorData,
+        include: {
+          user: {
+            select: {
+              id: true,
+              mobile: true,
+              email: true,
+              status: true,
+              profile: {
+                select: { firstName: true, lastName: true, avatar: true, nationalCode: true },
+              },
             },
           },
+          _count: { select: { contracts: true } },
         },
-        _count: { select: { contracts: true } },
-      },
+      })
+
+      // Sync DOCTOR role if status was updated
+      if (body.status && doc.user) {
+        const doctorRole = await tx.role.findUnique({ where: { name: 'DOCTOR' } })
+        if (doctorRole) {
+          if (body.status === 'APPROVED') {
+            await tx.userRole.upsert({
+              where: {
+                userId_roleId: {
+                  userId: doc.user.id,
+                  roleId: doctorRole.id,
+                },
+              },
+              create: {
+                userId: doc.user.id,
+                roleId: doctorRole.id,
+              },
+              update: {},
+            })
+          } else if (body.status === 'REJECTED' || body.status === 'SUSPENDED') {
+            const existingRole = await tx.userRole.findUnique({
+              where: {
+                userId_roleId: {
+                  userId: doc.user.id,
+                  roleId: doctorRole.id,
+                },
+              },
+            })
+            if (existingRole) {
+              await tx.userRole.delete({
+                where: { id: existingRole.id },
+              })
+            }
+          }
+        }
+      }
+
+      return doc
     })
 
     return successResponse(updatedDoctor, 'اطلاعات پزشک بروزرسانی شد')

@@ -50,20 +50,33 @@ const itemVariants: Variants = {
 function DoctorStatCard({
   title,
   value,
+  unit,
   icon: Icon,
 }: {
   title: string
-  value: string
+  value: string | number
+  unit?: string
   icon: LucideIcon
 }) {
   return (
-    <Card className="rounded-2xl border border-slate-100/60 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-slate-800/60">
-      <CardContent className="flex min-h-28 flex-col justify-between p-5">
-        <div className="flex items-start justify-between gap-3">
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <Icon className="size-4 shrink-0 text-muted-foreground" />
+    <Card className="rounded-2xl border border-slate-200/90 bg-white shadow-xs dark:border-slate-800/80 dark:bg-card">
+      <CardContent className="min-h-28 p-5 flex flex-col justify-between">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">{title}</p>
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
+            <Icon className="size-4.5" />
+          </div>
         </div>
-        <p className="mt-4 truncate text-3xl font-bold text-card-foreground">{value}</p>
+        <div className="mt-3 flex items-baseline gap-2">
+          <span className="text-3xl font-extrabold text-slate-900 dark:text-white font-mono tracking-tight tabular-nums" dir="ltr">
+            {value}
+          </span>
+          {unit && (
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+              {unit}
+            </span>
+          )}
+        </div>
       </CardContent>
     </Card>
   )
@@ -144,113 +157,97 @@ export default function DoctorDashboardPage() {
   // ---------- Render ----------
 
   return (
-    <motion.div
-      className="space-y-6"
-      variants={containerVariants}
-      initial="hidden"
-      animate="show"
-    >
+    <div className="space-y-6">
       {/* Welcome Card */}
-      <motion.div variants={itemVariants}>
-        <div className="overflow-hidden rounded-2xl border border-emerald-100/70 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-emerald-900/40">
-          <div className="bg-gradient-to-l from-emerald-500/10 via-teal-500/5 to-background p-5 sm:p-6">
-            <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">
-                <Stethoscope className="h-7 w-7" />
-              </div>
-              <div className="min-w-0">
-                <h1 className="text-xl font-bold truncate">
-                  خوش آمدید، دکتر {getDisplayName(user)}
-                </h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {doctorData?.specialty
-                    ? `${doctorData.specialty} · ${doctorData.clinicName || 'مطب'}`
-                    : doctorData?.clinicName || 'پنل مدیریت مطب'}
-                </p>
-              </div>
+      <div className="overflow-hidden rounded-2xl border border-emerald-200/80 bg-white shadow-xs dark:border-emerald-900/60 dark:bg-card">
+        <div className="bg-gradient-to-l from-emerald-500/10 via-teal-500/5 to-white dark:to-card p-5 sm:p-6">
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 shadow-2xs">
+              <Stethoscope className="h-7 w-7" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white truncate">
+                خوش آمدید، دکتر {getDisplayName(user)}
+              </h1>
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
+                {doctorData?.specialty
+                  ? `${doctorData.specialty} · ${doctorData.clinicName || 'مطب'}`
+                  : doctorData?.clinicName || 'پنل مدیریت مطب'}
+              </p>
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <motion.div variants={itemVariants}>
-          <DoctorStatCard
-            title="قراردادهای امروز"
-            value={toPersianNum(stats?.todayContracts || 0)}
-            icon={CalendarDays}
-          />
-        </motion.div>
-
-        <motion.div variants={itemVariants}>
-          <DoctorStatCard
-            title="بیماران فعال"
-            value={toPersianNum(stats?.activePatients || 0)}
-            icon={Users}
-          />
-        </motion.div>
-
-        <motion.div variants={itemVariants}>
-          <DoctorStatCard
-            title="تخفیف اعمال شده (تومان)"
-            value={formatPrice(stats?.totalDiscounts || 0)}
-            icon={Percent}
-          />
-        </motion.div>
+        <DoctorStatCard
+          title="قراردادهای امروز"
+          value={stats?.todayContracts || 0}
+          icon={CalendarDays}
+        />
+        <DoctorStatCard
+          title="بیماران فعال"
+          value={stats?.activePatients || 0}
+          icon={Users}
+        />
+        <DoctorStatCard
+          title="تخفیف اعمال شده"
+          value={(stats?.totalDiscounts || 0).toLocaleString('en-US')}
+          unit="تومان"
+          icon={Percent}
+        />
       </div>
 
       {/* Recent Contracts */}
-      <motion.div variants={itemVariants}>
-        <div className="rounded-2xl border border-slate-100/60 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-slate-800/60">
-          <div className="flex items-center justify-between p-4 pb-3">
-            <h2 className="text-base font-semibold flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-emerald-600" />
-              قراردادهای اخیر
-            </h2>
-            <Link
-              href="/doctor/contracts"
-              className="text-xs text-emerald-600 hover:underline font-medium"
-            >
-              مشاهده همه
-            </Link>
-          </div>
-          <div className="px-4 pb-4">
-            {stats?.recentContracts && stats.recentContracts.length > 0 ? (
-              <div className="space-y-3">
-                {stats.recentContracts.map((contract) => (
-                  <div
-                    key={contract.id}
-                    className="flex items-center justify-between rounded-2xl bg-background/70 p-3 transition-colors hover:bg-muted/60"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 shrink-0">
-                        <FileText className="h-4 w-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          {contract.user?.profile
-                            ? getDisplayName({ profile: contract.user.profile })
-                            : 'بیمار'}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          طرح {contract.userPlan?.plan?.name || '—'} · {formatPrice(contract.totalAmount)} تومان
-                        </p>
-                      </div>
-                    </div>
-                    <StatusBadge status={contract.status} className="text-[10px] shrink-0" />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-sm text-muted-foreground">
-                <FileText className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                <p>هنوز قراردادی ثبت نشده است</p>
-              </div>
-            )}
-          </div>
+      <div className="rounded-2xl border border-slate-200/90 bg-white shadow-xs dark:border-slate-800/80 dark:bg-card">
+        <div className="flex items-center justify-between p-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-emerald-600" />
+            قراردادهای اخیر
+          </h2>
+          <Link
+            href="/doctor/contracts"
+            className="text-xs text-emerald-600 hover:underline font-bold"
+          >
+            مشاهده همه
+          </Link>
         </div>
-      </motion.div>
-    </motion.div>
+        <div className="px-4 pb-4 pt-3">
+          {stats?.recentContracts && stats.recentContracts.length > 0 ? (
+            <div className="space-y-3">
+              {stats.recentContracts.map((contract) => (
+                <div
+                  key={contract.id}
+                  className="flex items-center justify-between rounded-2xl bg-slate-50 border border-slate-100 dark:bg-slate-800/50 dark:border-slate-800 p-3 transition-colors hover:bg-slate-100/80"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 shrink-0">
+                      <FileText className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-slate-800 dark:text-white truncate">
+                        {contract.user?.profile
+                          ? getDisplayName({ profile: contract.user.profile })
+                          : 'بیمار'}
+                      </p>
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                        طرح {contract.userPlan?.plan?.name || '—'} · {formatPrice(contract.totalAmount)} تومان
+                      </p>
+                    </div>
+                  </div>
+                  <StatusBadge status={contract.status} className="text-[10px] shrink-0" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-10 text-sm font-medium text-slate-400 dark:text-slate-500">
+              <FileText className="h-10 w-10 mx-auto mb-2 opacity-30 text-slate-400" />
+              <p>هنوز قراردادی ثبت نشده است</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }

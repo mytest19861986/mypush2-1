@@ -62,7 +62,7 @@ export default function ReportsBiPremiumPreviewPage() {
   ]
 
   return (
-    <DashboardAppShell activeMenu="reports">
+    <DashboardAppShell activeMenu="reports" requireAdmin={false}>
       <div className="space-y-8">
         {/* ─── Header & Executive Action Banner ─── */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">

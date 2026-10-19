@@ -51,6 +51,11 @@ model User {
   walletTransactions WalletTransaction[]
   settlements        Settlement[]
   salesCustomers     SalesCustomer[]     @relation("SalesCustomerSalesPartner")
+  refunds            Refund[]
+  tickets            Ticket[]            @relation("UserTickets")
+  sentTicketMessages TicketMessage[]     @relation("UserSentMessages")
+  referralsSent      UserReferral[]      @relation("UserReferralsSent")
+  referralReceived   UserReferral?       @relation("UserReferralReceived")
 
   @@index([mobile])
   @@index([status])
@@ -231,6 +236,7 @@ model Payment {
   planHolder PlanHolder?   @relation(fields: [planHolderId], references: [id], onDelete: SetNull)
   plan       DiscountPlan? @relation(fields: [planId], references: [id])
   userPlan   UserPlan?
+  refunds    Refund[]
 
   @@index([userId])
   @@index([planHolderId])
@@ -675,3 +681,96 @@ model AuditLog {
   @@index([entity])
   @@index([createdAt])
 }
+
+// ============================================
+// Refunds (بازپرداخت‌ها - Wave 5B Domain Persistence)
+// ============================================
+
+model Refund {
+  id                  String    @id @default(cuid())
+  paymentId           String
+  userId              String
+  amount              Int       @default(0) // مبلغ بازپرداخت (ریال/تومان)
+  status              String    @default("REQUESTED") // REQUESTED, APPROVED, REJECTED, PROCESSING, COMPLETED, FAILED
+  reason              String?
+  rejectionReason     String?
+  failureReason       String?
+  requestedBy         String?   // actor user id
+  approvedBy          String?   // admin user id
+  processedBy         String?   // operator / system actor
+  providerRef         String?   // simulated/bank provider tracking reference
+  idempotencyKey      String?   @unique
+  manualRecoveryNote  String?
+  requestedAt         DateTime  @default(now())
+  processedAt         DateTime?
+  completedAt         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+  @@index([userId])
+  @@index([status])
+  @@index([idempotencyKey])
+  @@index([createdAt])
+}
+
+// ============================================
+// Two-Way Support System (CMD-67: سامانه تیکت و پشتیبانی دوطرفه)
+// ============================================
+
+model Ticket {
+  id           String          @id @default(cuid())
+  ticketNumber String          @unique
+  userId       String
+  subject      String
+  status       String          @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, CLOSED
+  priority     String          @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  user         User            @relation("UserTickets", fields: [userId], references: [id], onDelete: Restrict)
+  messages     TicketMessage[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model TicketMessage {
+  id         String   @id @default(cuid())
+  ticketId   String
+  senderId   String
+  senderRole String   // USER, SUPPORT, ADMIN
+  content    String
+  createdAt  DateTime @default(now())
+
+  ticket     Ticket   @relation(fields: [ticketId], references: [id], onDelete: Restrict)
+  sender     User     @relation("UserSentMessages", fields: [senderId], references: [id], onDelete: Restrict)
+
+  @@index([ticketId])
+  @@index([senderId])
+  @@index([createdAt])
+}
+
+// ============================================
+// Persistent Referral System (CMD-72: سامانه رابطه معرفی کاربران)
+// ============================================
+
+model UserReferral {
+  id             String   @id @default(cuid())
+  referrerId     String
+  referredUserId String   @unique
+  referralCode   String
+  createdAt      DateTime @default(now())
+
+  referrer       User     @relation("UserReferralsSent", fields: [referrerId], references: [id], onDelete: Restrict)
+  referredUser   User     @relation("UserReferralReceived", fields: [referredUserId], references: [id], onDelete: Restrict)
+
+  @@index([referrerId])
+  @@index([referralCode])
+  @@index([createdAt])
+}
+

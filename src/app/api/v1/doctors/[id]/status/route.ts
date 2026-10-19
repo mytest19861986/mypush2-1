@@ -37,57 +37,59 @@ export async function PATCH(
       updateData.verifiedAt = new Date()
     }
 
-    const doctor = await db.doctor.update({
-      where: { id },
-      data: updateData,
-      include: {
-        user: {
-          select: {
-            id: true,
-            mobile: true,
-            profile: { select: { firstName: true, lastName: true } },
+    const doctor = await db.$transaction(async (tx) => {
+      const updatedDoctor = await tx.doctor.update({
+        where: { id },
+        data: updateData,
+        include: {
+          user: {
+            select: {
+              id: true,
+              mobile: true,
+              profile: { select: { firstName: true, lastName: true } },
+            },
           },
         },
-      },
-    })
+      })
 
-    // Assign/remove DOCTOR role based on status
-    if (doctor.user) {
-      const doctorRole = await db.role.findUnique({ where: { name: 'DOCTOR' } })
-      if (doctorRole) {
-        if (status === 'APPROVED') {
-          // Assign DOCTOR role
-          await db.userRole.upsert({
-            where: {
-              userId_roleId: {
-                userId: doctor.user.id,
+      // Assign/remove DOCTOR role based on status atomically
+      if (updatedDoctor.user) {
+        const doctorRole = await tx.role.findUnique({ where: { name: 'DOCTOR' } })
+        if (doctorRole) {
+          if (status === 'APPROVED') {
+            await tx.userRole.upsert({
+              where: {
+                userId_roleId: {
+                  userId: updatedDoctor.user.id,
+                  roleId: doctorRole.id,
+                },
+              },
+              create: {
+                userId: updatedDoctor.user.id,
                 roleId: doctorRole.id,
               },
-            },
-            create: {
-              userId: doctor.user.id,
-              roleId: doctorRole.id,
-            },
-            update: {},
-          })
-        } else if (status === 'REJECTED' || status === 'SUSPENDED') {
-          // Remove DOCTOR role so user returns to normal USER panel
-          const existingRole = await db.userRole.findUnique({
-            where: {
-              userId_roleId: {
-                userId: doctor.user.id,
-                roleId: doctorRole.id,
-              },
-            },
-          })
-          if (existingRole) {
-            await db.userRole.delete({
-              where: { id: existingRole.id },
+              update: {},
             })
+          } else if (status === 'REJECTED' || status === 'SUSPENDED') {
+            const existingRole = await tx.userRole.findUnique({
+              where: {
+                userId_roleId: {
+                  userId: updatedDoctor.user.id,
+                  roleId: doctorRole.id,
+                },
+              },
+            })
+            if (existingRole) {
+              await tx.userRole.delete({
+                where: { id: existingRole.id },
+              })
+            }
           }
         }
       }
-    }
+
+      return updatedDoctor
+    })
 
     return successResponse(doctor, `وضعیت پزشک با موفقیت به ${status === 'APPROVED' ? 'تأیید شده' : status === 'REJECTED' ? 'رد شده' : 'معلق'} تغییر کرد`)
   } catch (err) {

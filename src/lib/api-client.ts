@@ -26,7 +26,9 @@ class ApiClient {
     }
     const token = this.getAccessToken()
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`
+      // NOTE: Using X-App-Authorization exclusively to prevent overwriting or conflicting
+      // with ambient Nginx HTTP Basic Auth credentials on test domain.
+      headers['X-App-Authorization'] = `Bearer ${token}`
     }
     return headers
   }
@@ -42,7 +44,28 @@ class ApiClient {
       body: body ? JSON.stringify(body) : undefined,
     })
 
-    const json = await res.json() as ApiResponse<T>
+    const contentType = res.headers.get('content-type') || ''
+    const isJson = contentType.toLowerCase().includes('application/json')
+
+    if (!isJson) {
+      const text = await res.text().catch(() => '')
+      throw new ApiError(
+        'NON_JSON_RESPONSE',
+        text || `پاسخ نامعتبر از سرور (کد وضعیت: ${res.status})`,
+        res.status
+      )
+    }
+
+    let json: ApiResponse<T>
+    try {
+      json = (await res.json()) as ApiResponse<T>
+    } catch {
+      throw new ApiError(
+        'JSON_PARSE_ERROR',
+        `خطا در پردازش داده‌های سرور (کد وضعیت: ${res.status})`,
+        res.status
+      )
+    }
 
     if (!res.ok || !json.success) {
       throw new ApiError(
@@ -66,7 +89,32 @@ class ApiClient {
       method: 'GET',
       headers: this.getHeaders(),
     })
-    return res.json()
+
+    const contentType = res.headers.get('content-type') || ''
+    const isJson = contentType.toLowerCase().includes('application/json')
+
+    if (!isJson) {
+      const text = await res.text().catch(() => '')
+      return {
+        success: false,
+        error: {
+          code: 'NON_JSON_RESPONSE',
+          message: text || `پاسخ نامعتبر از سرور (کد وضعیت: ${res.status})`,
+        },
+      } as ApiResponse<T>
+    }
+
+    try {
+      return (await res.json()) as ApiResponse<T>
+    } catch {
+      return {
+        success: false,
+        error: {
+          code: 'JSON_PARSE_ERROR',
+          message: `خطا در پردازش پاسخ سرور (کد وضعیت: ${res.status})`,
+        },
+      } as ApiResponse<T>
+    }
   }
 
   /**
@@ -119,7 +167,7 @@ class ApiClient {
     const token = this.getAccessToken()
     const headers: HeadersInit = {}
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`
+      headers['X-App-Authorization'] = `Bearer ${token}`
     }
 
     return new Promise((resolve, reject) => {
@@ -127,7 +175,7 @@ class ApiClient {
       xhr.open('POST', `${this.baseUrl}${path}`)
 
       if (token) {
-        xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+        xhr.setRequestHeader('X-App-Authorization', `Bearer ${token}`)
       }
 
       if (onProgress && xhr.upload) {

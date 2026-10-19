@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { DoctorRoute } from '@/components/guards/DoctorRoute'
 import { ErrorBoundary } from '@/components/shared'
+import { MobileBottomNav } from '@/components/shared/mobile-bottom-nav'
 import { BrandLogo } from '@/components/shared/brand-logo'
 import { ThemeToggle } from '@/components/shared/theme-toggle'
 import { useAuthStore } from '@/stores/auth-store'
@@ -200,9 +201,10 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
             <div className="flex-1 flex flex-col min-w-0">
               <Topbar doctorData={doctorData} onMenuClick={() => setMobileOpen(true)} />
 
-              <main className="flex-1 p-4 lg:p-6">
+              <main className="flex-1 p-4 pb-20 lg:p-6 lg:pb-6">
                 {children}
               </main>
+              <MobileBottomNav items={doctorDashboardNav} />
             </div>
           </div>
         </div>

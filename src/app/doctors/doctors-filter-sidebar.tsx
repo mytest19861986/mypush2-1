@@ -157,7 +157,7 @@ export function DoctorsFilterSidebar({
           <div>
             <span className="mb-2 block text-sm font-bold text-slate-700">مرتب‌سازی بر اساس</span>
             <div className="flex flex-wrap gap-2">
-              <SortButton activeSort={activeSort} value="discount" label="بیشترین تخفیف" onSelect={setActiveSort} />
+              <SortButton activeSort={activeSort} value="discount" label="بالاترین مزایای عضویت" onSelect={setActiveSort} />
               <SortButton activeSort={activeSort} value="newest" label="جدیدترین" onSelect={setActiveSort} />
             </div>
           </div>

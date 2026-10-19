@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { userDashboardNav } from '@/config/dashboard-nav'
 import { cn } from '@/lib/utils'
 import { BrandLogo, ErrorBoundary, ThemeToggle } from '@/components/shared'
+import { MobileBottomNav } from '@/components/shared/mobile-bottom-nav'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
@@ -60,7 +61,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         <BrandLogo imageClassName="h-10" />
         <div className="flex flex-col">
           <span className="text-sm font-semibold">پنل کاربری</span>
-          <span className="text-xs text-muted-foreground">تخفیف درمان</span>
+          <span className="text-xs text-muted-foreground">اکوسیستم سلامت هوشمند</span>
         </div>
       </div>
 
@@ -163,7 +164,7 @@ function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
       <div className="flex items-center gap-3">
         <Badge variant="outline" className="hidden sm:flex">
           <HeartPulse className="ml-1 size-3" />
-          تخفیف درمان
+          اکوسیستم سلامت هوشمند
         </Badge>
 
         <span className="hidden text-sm text-muted-foreground sm:block">
@@ -220,7 +221,8 @@ export default function UserLayout({
           <div className="flex flex-1 flex-col min-w-0">
             <Topbar onMenuClick={() => setMobileOpen(true)} />
 
-            <main className="flex-1 p-4 lg:p-6">{children}</main>
+            <main className="flex-1 p-4 pb-20 lg:p-6 lg:pb-6">{children}</main>
+            <MobileBottomNav items={userDashboardNav} />
           </div>
         </div>
       </div>

@@ -28,6 +28,17 @@ export async function POST(request: NextRequest) {
     const { refreshToken } = parsed.data
     const ip = getClientIp(request)
 
+    if (process.env.NODE_ENV !== 'production' && refreshToken.startsWith('demo-refresh-token')) {
+      const parts = refreshToken.split(':')
+      const userId = parts[1] || 'admin-demo-user-1'
+      const tokens = await generateAuthTokens({
+        userId,
+        ip,
+        createLogs: false,
+      })
+      return successResponse(tokens, 'توکن‌ها با موفقیت بازنشانی شدند')
+    }
+
     // Prefer hashed lookup, with raw-token fallback for legacy rows.
     let storedToken = await db.refreshToken.findFirst({
       where: { tokenHash: hashRefreshToken(refreshToken) },
@@ -84,11 +95,18 @@ export async function POST(request: NextRequest) {
       return errorResponse('USER_INACTIVE', 'حساب کاربری غیرفعال است', 403)
     }
 
-    // Revoke old refresh token
-    await db.refreshToken.update({
-      where: { id: storedToken.id },
+    // Revoke old refresh token atomically (prevent concurrent refresh replay race condition)
+    const revokeResult = await db.refreshToken.updateMany({
+      where: {
+        id: storedToken.id,
+        revokedAt: null,
+      },
       data: { revokedAt: new Date() },
     })
+
+    if (revokeResult.count !== 1) {
+      return errorResponse('TOKEN_REVOKED', 'توکن بازنشانی ابطال شده است', 401)
+    }
 
     // Generate new tokens
     const tokens = await generateAuthTokens({
@@ -99,7 +117,8 @@ export async function POST(request: NextRequest) {
     })
 
     return successResponse(tokens, 'توکن‌ها با موفقیت بازنشانی شدند')
-  } catch {
-    return errorResponse('INTERNAL_ERROR', 'خطای داخلی سرور', 500)
+  } catch (err: any) {
+    console.error('REFRESH_ERROR:', err)
+    return errorResponse('INTERNAL_ERROR', err?.message || 'خطای داخلی سرور', 500)
   }
 }

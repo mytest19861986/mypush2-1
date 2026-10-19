@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Dialog,
   DialogContent,
@@ -31,7 +32,10 @@ import {
   User as UserIcon,
   CreditCard,
   Calendar,
-  Wallet
+  Wallet,
+  AlertCircle,
+  Trash2,
+  UserPlus
 } from 'lucide-react'
 import { toPersianNum } from '@/utils/formatters'
 import { DashboardAppShell } from '@/components/shared/dashboard-app-shell'
@@ -47,7 +51,7 @@ interface UserItem {
   address?: string
   mobile: string
   email?: string | null
-  role: 'USER' | 'DOCTOR' | 'AGENT' | 'ADMIN'
+  role: 'USER'
   roleLabel: string
   status: 'ACTIVE' | 'PENDING' | 'SUSPENDED' | 'BLOCKED' | 'INACTIVE'
   plan: string
@@ -57,76 +61,18 @@ interface UserItem {
   walletBalance?: number
 }
 
-const fallbackUsers: UserItem[] = [
-  {
-    id: 'USR-8910',
-    fullName: 'سارا میرزایی',
-    mobile: '۰۹۱۲۳۴۵۶۷۸۹',
-    role: 'USER',
-    roleLabel: 'کاربر عادی (بیمه شده)',
-    status: 'ACTIVE',
-    plan: 'طرح طلایی سلامت',
-    joinDate: '۱۴۰۳/۰۴/۱۲',
-    lastActivity: '۱۰ دقیقه پیش',
-    avatarInitial: 'س'
-  },
-  {
-    id: 'USR-8911',
-    fullName: 'دکتر علیرضا افشارزاده',
-    mobile: '۰۹۱۹۸۷۶۵۴۳۲',
-    role: 'DOCTOR',
-    roleLabel: 'پزشک همکار متخصص',
-    status: 'ACTIVE',
-    plan: 'طرف قرارداد ونک',
-    joinDate: '۱۴۰۳/۰۳/۰۱',
-    lastActivity: 'امروز ۱۷:۳۰',
-    avatarInitial: 'ع'
-  },
-  {
-    id: 'USR-8912',
-    fullName: 'پیمان حسینی',
-    mobile: '۰۹۳۵۱۱۲۲۳۳۴',
-    role: 'AGENT',
-    roleLabel: 'نماینده رسمی فروش',
-    status: 'PENDING',
-    plan: 'شعبه غرب تهران',
-    joinDate: '۱۴۰۳/۰۵/۱۰',
-    lastActivity: 'دیروز',
-    avatarInitial: 'پ'
-  },
-  {
-    id: 'USR-8913',
-    fullName: 'مهسا کاظمی',
-    mobile: '۰۹۱۸۲۲۲۳۳۴۴',
-    role: 'USER',
-    roleLabel: 'کاربر عادی',
-    status: 'ACTIVE',
-    plan: 'طرح نقره‌ای دندانپزشکی',
-    joinDate: '۱۴۰۳/۰۶/۱۵',
-    lastActivity: '۲ ساعت پیش',
-    avatarInitial: 'م'
-  },
-  {
-    id: 'USR-8914',
-    fullName: 'امید سعادت',
-    mobile: '۰۹۳۰۵۵۵۶۶۷۷',
-    role: 'USER',
-    roleLabel: 'کاربر عادی',
-    status: 'SUSPENDED',
-    plan: 'منقضی شده',
-    joinDate: '۱۴۰۲/۱۱/۲۰',
-    lastActivity: '۳ هفته پیش',
-    avatarInitial: 'ا'
-  },
-]
-
 export default function UsersPremiumPreviewPage() {
   const [searchQuery, setSearchQuery] = useState('')
-  const [roleFilter, setRoleFilter] = useState('ALL')
   const [statusFilter, setStatusFilter] = useState('ALL')
 
   const [users, setUsers] = useState<UserItem[]>([])
+  const [totalCount, setTotalCount] = useState(0)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [pageSize] = useState(20)
+
   const [isLoading, setIsLoading] = useState(true)
+  const [apiError, setApiError] = useState<string | null>(null)
 
   // View Modal state
   const [viewUser, setViewUser] = useState<UserItem | null>(null)
@@ -148,42 +94,111 @@ export default function UsersPremiumPreviewPage() {
   const [statusActionOpen, setStatusActionOpen] = useState(false)
   const [isSubmittingStatus, setIsSubmittingStatus] = useState(false)
 
+  // Delete Action state
+  const [deleteTarget, setDeleteTarget] = useState<UserItem | null>(null)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  // Create User Modal state
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [createMobile, setCreateMobile] = useState('')
+  const [createFirstName, setCreateFirstName] = useState('')
+  const [createLastName, setCreateLastName] = useState('')
+  const [createNationalCode, setCreateNationalCode] = useState('')
+  const [createPassword, setCreatePassword] = useState('')
+  const [createAddress, setCreateAddress] = useState('')
+  const [isSubmittingCreate, setIsSubmittingCreate] = useState(false)
+
+  // Handle Create User
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!createMobile.trim() || !createFirstName.trim() || !createLastName.trim() || !createPassword.trim()) {
+      toast.error('لطفاً شماره موبایل، نام، نام خانوادگی و رمز عبور را وارد کنید')
+      return
+    }
+    setIsSubmittingCreate(true)
+    try {
+      const res = await fetch('/api/v1/admin/users', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          mobile: createMobile.trim(),
+          firstName: createFirstName.trim(),
+          lastName: createLastName.trim(),
+          password: createPassword.trim(),
+          nationalCode: createNationalCode.trim() || undefined,
+          address: createAddress.trim() || undefined,
+        }),
+      })
+      const json = await res.json()
+      if (res.ok && json.success) {
+        toast.success('کاربر جدید با موفقیت ایجاد شد')
+        setCreateModalOpen(false)
+        setCreateMobile('')
+        setCreateFirstName('')
+        setCreateLastName('')
+        setCreateNationalCode('')
+        setCreatePassword('')
+        setCreateAddress('')
+        fetchUsers()
+      } else {
+        toast.error(json.error?.message || json.message || 'خطا در ایجاد کاربر')
+      }
+    } catch {
+      toast.error('ارتباط با سرور برقرار نشد')
+    } finally {
+      setIsSubmittingCreate(false)
+    }
+  }
+
   // Helper to fetch authorization header
   const getAuthHeaders = useCallback((): HeadersInit => {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' }
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('accessToken')
       if (token) {
-        headers['Authorization'] = `Bearer ${token}`
+        headers['X-App-Authorization'] = `Bearer ${token}`
       }
     }
     return headers
   }, [])
 
-  // Fetch real users from API
+  // Fetch real users from backend API
   const fetchUsers = useCallback(async () => {
     setIsLoading(true)
+    setApiError(null)
     try {
-      const res = await fetch('/api/v1/users?limit=50', {
+      const params = new URLSearchParams()
+      params.set('page', String(currentPage))
+      params.set('limit', String(pageSize))
+      if (searchQuery.trim()) {
+        params.set('search', searchQuery.trim())
+      }
+      if (statusFilter !== 'ALL') {
+        params.set('status', statusFilter)
+      }
+
+      const res = await fetch(`/api/v1/users?${params.toString()}`, {
         headers: getAuthHeaders(),
       })
-      if (!res.ok) {
-        throw new Error('Failed to fetch users')
+
+      if (res.status === 401 || res.status === 403) {
+        setApiError('عدم دسترسی: برای مشاهده این صفحه باید با حساب مدیر سیستم (ADMIN/SUPER_ADMIN) وارد شوید.')
+        setUsers([])
+        setTotalCount(0)
+        return
       }
+
+      if (!res.ok) {
+        throw new Error(`خطای دریافت اطلاعات از سرور (${res.status})`)
+      }
+
       const json = await res.json()
-      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+      if (json.success && Array.isArray(json.data)) {
         const mappedUsers: UserItem[] = json.data.map((u: any) => {
           const fn = u.profile?.firstName ?? ''
           const ln = u.profile?.lastName ?? ''
           const name = (fn || ln) ? `${fn} ${ln}`.trim() : (u.mobile || 'کاربر بدون نام')
-          
-          let roleName = 'USER'
-          let roleLbl = 'کاربر عادی'
-          if (u.roles && u.roles.length > 0) {
-            const primaryRole = u.roles[0]?.name || 'USER'
-            roleName = primaryRole
-            roleLbl = u.roles[0]?.title || (primaryRole === 'ADMIN' ? 'مدیر سیستم' : primaryRole === 'DOCTOR' ? 'پزشک همکار' : primaryRole === 'AGENT' ? 'نماینده' : 'کاربر عادی')
-          }
 
           let mappedStatus: UserItem['status'] = 'ACTIVE'
           if (u.status === 'BLOCKED' || u.status === 'SUSPENDED') mappedStatus = 'SUSPENDED'
@@ -199,8 +214,8 @@ export default function UsersPremiumPreviewPage() {
             address: u.profile?.address || '',
             mobile: u.mobile,
             email: u.email,
-            role: roleName as any,
-            roleLabel: roleLbl,
+            role: 'USER',
+            roleLabel: 'کاربر عادی',
             status: mappedStatus,
             plan: u.activePlanName || 'طرح عمومی',
             joinDate: u.createdAt ? new Date(u.createdAt).toLocaleDateString('fa-IR') : '—',
@@ -209,16 +224,23 @@ export default function UsersPremiumPreviewPage() {
           }
         })
         setUsers(mappedUsers)
+        setTotalCount(json.pagination?.total ?? mappedUsers.length)
+        setTotalPages(json.pagination?.totalPages ?? 1)
       } else {
-        setUsers(fallbackUsers)
+        setUsers([])
+        setTotalCount(0)
+        setTotalPages(1)
       }
-    } catch {
-      // Fallback on error
-      setUsers(fallbackUsers)
+    } catch (err: any) {
+      console.error('Fetch users error:', err)
+      setApiError(err.message || 'خطا در برقراری ارتباط با سرور')
+      setUsers([])
+      setTotalCount(0)
+      setTotalPages(1)
     } finally {
       setIsLoading(false)
     }
-  }, [getAuthHeaders])
+  }, [currentPage, pageSize, searchQuery, statusFilter, getAuthHeaders])
 
   useEffect(() => {
     fetchUsers()
@@ -328,19 +350,81 @@ export default function UsersPremiumPreviewPage() {
     }
   }
 
-  const filteredUsers = users.filter((u) => {
-    const matchSearch =
-      u.fullName.includes(searchQuery) ||
-      u.mobile.includes(searchQuery) ||
-      u.id.includes(searchQuery)
-    const matchRole = roleFilter === 'ALL' || u.role === roleFilter
-    const matchStatus =
-      statusFilter === 'ALL' ||
-      (statusFilter === 'ACTIVE' && u.status === 'ACTIVE') ||
-      (statusFilter === 'PENDING' && u.status === 'PENDING') ||
-      (statusFilter === 'SUSPENDED' && u.status === 'SUSPENDED')
-    return matchSearch && matchRole && matchStatus
-  })
+  // Handle Delete Action
+  const handleOpenDelete = (user: UserItem) => {
+    setDeleteTarget(user)
+    setDeleteModalOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return
+    setIsDeleting(true)
+    try {
+      const res = await fetch(`/api/v1/users/${deleteTarget.id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      })
+      const json = await res.json()
+      if (res.ok && json.success) {
+        toast.success('کاربر با موفقیت حذف شد')
+        setDeleteModalOpen(false)
+        setDeleteTarget(null)
+        fetchUsers()
+      } else {
+        toast.error(json.message || 'خطا در حذف کاربر')
+      }
+    } catch {
+      toast.error('ارتباط با سرور برقرار نشد')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  // Compute stats strictly for ordinary users
+  const activeCount = users.filter(u => u.status === 'ACTIVE').length
+  const pendingCount = users.filter(u => u.status === 'PENDING').length
+  const suspendedCount = users.filter(u => u.status === 'SUSPENDED').length
+
+  // Safe Export to Excel / CSV with UTF-8 BOM and formula sanitization
+  const handleExportExcel = () => {
+    if (!users || users.length === 0) {
+      toast.error('هیچ کاربری برای خروجی اکسل در صفحه جاری موجود نیست')
+      return
+    }
+
+    const sanitizeCell = (val: string | number | null | undefined): string => {
+      if (val === null || val === undefined) return '""'
+      let str = String(val).replace(/"/g, '""')
+      if (/^[\=\+\-\@]/.test(str)) {
+        str = "'" + str
+      }
+      return `"${str}"`
+    }
+
+    const headers = ['شناسه', 'نام کامل', 'شماره موبایل', 'کد ملی', 'وضعیت', 'طرح فعال', 'موجودی کیف پول (تومان)', 'تاریخ عضویت']
+    const rows = users.map(u => [
+      sanitizeCell(u.id),
+      sanitizeCell(u.fullName),
+      sanitizeCell(u.mobile),
+      sanitizeCell(u.nationalCode),
+      sanitizeCell(u.status === 'ACTIVE' ? 'فعال' : u.status === 'PENDING' ? 'در انتظار' : 'معلق'),
+      sanitizeCell(u.plan),
+      sanitizeCell(u.walletBalance),
+      sanitizeCell(u.joinDate)
+    ].join(','))
+
+    const csvContent = '\uFEFF' + [headers.map(h => `"${h}"`).join(','), ...rows].join('\r\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `hami_users_export_${new Date().toISOString().slice(0, 10)}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    toast.success('فایل اکسل کاربران با موفقیت صادر شد')
+  }
 
   return (
     <DashboardAppShell activeMenu="users">
@@ -358,11 +442,20 @@ export default function UsersPremiumPreviewPage() {
               </Badge>
             </div>
             <p className="text-sm text-slate-500">
-              فهرست یکپارچه اعضای سامانه با قابلیت مشاهده جزئیات زنده، ویرایش پروفایل و مدیریت دسترسی
+              فهرست اعضای عادی سامانه (به‌استثنای پزشکان، نمایندگان و مدیران) با قابلیت مشاهده زنده، ویرایش پروفایل و مدیریت دسترسی
             </p>
           </div>
 
           <div className="flex items-center gap-3">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => setCreateModalOpen(true)}
+              className="gap-2 rounded-xl text-xs font-bold shadow-xs cursor-pointer"
+            >
+              <UserPlus className="size-4" />
+              <span>افزودن کاربر جدید</span>
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -373,18 +466,23 @@ export default function UsersPremiumPreviewPage() {
               <RefreshCw className={`size-4 ${isLoading ? 'animate-spin' : ''}`} />
               <span>تازه‌سازی</span>
             </Button>
-            <Button variant="outline" size="sm" className="gap-2 rounded-xl text-xs font-bold text-slate-700">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleExportExcel}
+              className="gap-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+            >
               <Download className="size-4" />
-              <span>خروجی اکسل</span>
+              <span>خروجی CSV (اکسل)</span>
             </Button>
           </div>
         </div>
 
-        {/* KPI Stats Section */}
+        {/* KPI Stats Section - Strictly ordinary users only */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 w-full">
           <PremiumMetricCard
-            title="کل کاربران ثبت‌شده"
-            value={toPersianNum(users.length.toString())}
+            title="کل کاربران عادی"
+            value={toPersianNum(totalCount.toString())}
             trend="↑ بر اساس دیتابیس زنده"
             isUp={true}
             icon={Users}
@@ -393,7 +491,7 @@ export default function UsersPremiumPreviewPage() {
           />
           <PremiumMetricCard
             title="کاربران فعال"
-            value={toPersianNum(users.filter(u => u.status === 'ACTIVE').length.toString())}
+            value={toPersianNum(activeCount.toString())}
             trend="احراز هویت شده"
             isUp={true}
             icon={UserCheck}
@@ -401,8 +499,8 @@ export default function UsersPremiumPreviewPage() {
             badge="فعال"
           />
           <PremiumMetricCard
-            title="در انتظار تایید"
-            value={toPersianNum(users.filter(u => u.status === 'PENDING').length.toString())}
+            title="در انتظار بررسی"
+            value={toPersianNum(pendingCount.toString())}
             description="صف بازبینی هویت"
             icon={Clock}
             variant="amber"
@@ -410,7 +508,7 @@ export default function UsersPremiumPreviewPage() {
           />
           <PremiumMetricCard
             title="حساب‌های معلق یا مسدود"
-            value={toPersianNum(users.filter(u => u.status === 'SUSPENDED').length.toString())}
+            value={toPersianNum(suspendedCount.toString())}
             description="محدودیت موقت یا امنیتی"
             icon={UserX}
             variant="purple"
@@ -425,64 +523,51 @@ export default function UsersPremiumPreviewPage() {
               <Input
                 placeholder="جستجو با نام، شماره موبایل یا شناسه..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value)
+                  setCurrentPage(1)
+                }}
                 className="pe-10 bg-background/80 rounded-xl border-border/60"
               />
               <Search className="size-4 text-muted-foreground absolute end-3 top-1/2 -translate-y-1/2" />
             </div>
 
             <div className="flex items-center gap-3 w-full sm:w-auto">
-              {/* Role Filter */}
-              <div className="flex rounded-xl bg-muted/60 p-1 border border-border/40 text-xs font-medium">
-                <button
-                  onClick={() => setRoleFilter('ALL')}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${roleFilter === 'ALL' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'}`}
-                >
-                  همه نقش‌ها
-                </button>
-                <button
-                  onClick={() => setRoleFilter('USER')}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${roleFilter === 'USER' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'}`}
-                >
-                  کاربران
-                </button>
-                <button
-                  onClick={() => setRoleFilter('DOCTOR')}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${roleFilter === 'DOCTOR' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'}`}
-                >
-                  پزشکان
-                </button>
-                <button
-                  onClick={() => setRoleFilter('AGENT')}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${roleFilter === 'AGENT' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'}`}
-                >
-                  نمایندگان
-                </button>
-              </div>
-
               {/* Status Filter */}
               <div className="flex rounded-xl bg-muted/60 p-1 border border-border/40 text-xs font-medium">
                 <button
-                  onClick={() => setStatusFilter('ALL')}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${statusFilter === 'ALL' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'}`}
+                  onClick={() => {
+                    setStatusFilter('ALL')
+                    setCurrentPage(1)
+                  }}
+                  className={`px-3 py-1.5 rounded-lg transition-all ${statusFilter === 'ALL' ? 'bg-card text-foreground shadow-xs font-bold' : 'text-muted-foreground'}`}
                 >
                   همه وضعیت‌ها
                 </button>
                 <button
-                  onClick={() => setStatusFilter('ACTIVE')}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${statusFilter === 'ACTIVE' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'}`}
+                  onClick={() => {
+                    setStatusFilter('ACTIVE')
+                    setCurrentPage(1)
+                  }}
+                  className={`px-3 py-1.5 rounded-lg transition-all ${statusFilter === 'ACTIVE' ? 'bg-card text-foreground shadow-xs font-bold' : 'text-muted-foreground'}`}
                 >
                   فعال
                 </button>
                 <button
-                  onClick={() => setStatusFilter('PENDING')}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${statusFilter === 'PENDING' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'}`}
+                  onClick={() => {
+                    setStatusFilter('PENDING')
+                    setCurrentPage(1)
+                  }}
+                  className={`px-3 py-1.5 rounded-lg transition-all ${statusFilter === 'PENDING' ? 'bg-card text-foreground shadow-xs font-bold' : 'text-muted-foreground'}`}
                 >
                   در انتظار
                 </button>
                 <button
-                  onClick={() => setStatusFilter('SUSPENDED')}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${statusFilter === 'SUSPENDED' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'}`}
+                  onClick={() => {
+                    setStatusFilter('SUSPENDED')
+                    setCurrentPage(1)
+                  }}
+                  className={`px-3 py-1.5 rounded-lg transition-all ${statusFilter === 'SUSPENDED' ? 'bg-card text-foreground shadow-xs font-bold' : 'text-muted-foreground'}`}
                 >
                   معلق
                 </button>
@@ -491,6 +576,20 @@ export default function UsersPremiumPreviewPage() {
           </CardContent>
         </Card>
 
+        {/* API Error Alert if any */}
+        {apiError && (
+          <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="size-5 shrink-0" />
+              <span className="text-sm font-medium">{apiError}</span>
+            </div>
+            <Button size="sm" variant="outline" onClick={fetchUsers} className="gap-1.5">
+              <RefreshCw className="size-3.5" />
+              <span>تلاش مجدد</span>
+            </Button>
+          </div>
+        )}
+
         {/* Users Table */}
         <Card variant="default" className="overflow-hidden border border-border/60">
           <div className="overflow-x-auto">
@@ -498,7 +597,7 @@ export default function UsersPremiumPreviewPage() {
               <thead className="bg-muted/50 text-xs font-bold text-muted-foreground border-b border-border/60">
                 <tr>
                   <th className="py-4 px-6">عضو / هویت</th>
-                  <th className="py-4 px-4">نقش و مسئولیت</th>
+                  <th className="py-4 px-4">نقش</th>
                   <th className="py-4 px-4">طرح و اشتراک فعال</th>
                   <th className="py-4 px-4">وضعیت حساب</th>
                   <th className="py-4 px-4">تاریخ عضویت</th>
@@ -507,16 +606,32 @@ export default function UsersPremiumPreviewPage() {
               </thead>
               <tbody className="divide-y divide-border/40">
                 {isLoading ? (
-                  <tr>
-                    <td colSpan={6} className="py-12 text-center text-muted-foreground text-sm">
-                      <div className="flex items-center justify-center gap-2">
-                        <Loader2 className="size-5 animate-spin text-primary" />
-                        <span>در حال بارگذاری لیست کاربران...</span>
-                      </div>
-                    </td>
-                  </tr>
-                ) : filteredUsers.length > 0 ? (
-                  filteredUsers.map((u) => (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <tr key={`skeleton-${i}`} className="animate-pulse">
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="size-10 rounded-xl" />
+                          <div className="space-y-2">
+                            <Skeleton className="h-4 w-28" />
+                            <Skeleton className="h-3 w-20" />
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4"><Skeleton className="h-5 w-16 rounded-full" /></td>
+                      <td className="py-4 px-4"><Skeleton className="h-4 w-24" /></td>
+                      <td className="py-4 px-4"><Skeleton className="h-5 w-20 rounded-full" /></td>
+                      <td className="py-4 px-4"><Skeleton className="h-4 w-20" /></td>
+                      <td className="py-4 px-6 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <Skeleton className="size-8 rounded-lg" />
+                          <Skeleton className="size-8 rounded-lg" />
+                          <Skeleton className="size-8 rounded-lg" />
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : users.length > 0 ? (
+                  users.map((u) => (
                     <tr key={u.id} className="hover:bg-muted/20 transition-colors">
                       {/* User & Avatar */}
                       <td className="py-4 px-6">
@@ -607,6 +722,15 @@ export default function UsersPremiumPreviewPage() {
                           >
                             {u.status === 'ACTIVE' ? <Ban className="size-4" /> : <CheckCircle className="size-4" />}
                           </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="حذف کاربر"
+                            onClick={() => handleOpenDelete(u)}
+                            className="size-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -614,13 +738,46 @@ export default function UsersPremiumPreviewPage() {
                 ) : (
                   <tr>
                     <td colSpan={6} className="py-12 text-center text-muted-foreground text-sm">
-                      هیچ عضوی با مشخصات واردشده یافت نشد.
+                      هیچ کاربر عادی با مشخصات واردشده یافت نشد.
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-border/60 bg-muted/20 text-xs text-muted-foreground">
+              <div>
+                <span>نمایش صفحه </span>
+                <span className="font-bold text-foreground font-mono">{toPersianNum(currentPage.toString())}</span>
+                <span> از </span>
+                <span className="font-bold text-foreground font-mono">{toPersianNum(totalPages.toString())}</span>
+                <span> (مجموع: {toPersianNum(totalCount.toString())} کاربر)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage <= 1 || isLoading}
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  className="rounded-lg text-xs"
+                >
+                  صفحه قبلی
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage >= totalPages || isLoading}
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  className="rounded-lg text-xs"
+                >
+                  صفحه بعدی
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
       </div>
 
@@ -630,7 +787,7 @@ export default function UsersPremiumPreviewPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg font-bold">
               <UserIcon className="size-5 text-primary" />
-              <span>مشخصات کامل کاربر</span>
+              <span>مشخصات کامل کاربر عادی</span>
             </DialogTitle>
             <DialogDescription>
               اطلاعات پروفایل، وضعیت حساب و اشتراک ثبت‌شده در دیتابیس
@@ -644,14 +801,14 @@ export default function UsersPremiumPreviewPage() {
             </div>
           ) : viewUser ? (
             <div className="space-y-4 py-2 text-sm">
-              <div className="grid grid-cols-2 gap-3 bg-muted/40 p-4 rounded-xl border border-border/50">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-muted/40 p-3 sm:p-4 rounded-xl border border-border/50">
                 <div>
                   <span className="text-xs text-muted-foreground block">نام و نام‌خانوادگی:</span>
-                  <span className="font-bold text-foreground">{viewUser.fullName}</span>
+                  <span className="font-bold text-foreground break-words">{viewUser.fullName}</span>
                 </div>
                 <div>
                   <span className="text-xs text-muted-foreground block">شماره موبایل:</span>
-                  <span className="font-mono text-foreground">{viewUser.mobile}</span>
+                  <span className="font-mono text-foreground break-all">{viewUser.mobile}</span>
                 </div>
                 <div>
                   <span className="text-xs text-muted-foreground block">کد ملی:</span>
@@ -659,35 +816,35 @@ export default function UsersPremiumPreviewPage() {
                 </div>
                 <div>
                   <span className="text-xs text-muted-foreground block">ایمیل:</span>
-                  <span className="font-mono text-foreground text-xs truncate block">{viewUser.email || 'ثبت نشده'}</span>
+                  <span className="font-mono text-foreground text-xs break-all block">{viewUser.email || 'ثبت نشده'}</span>
                 </div>
               </div>
 
               <div className="space-y-2 border-t border-border/40 pt-3">
-                <div className="flex justify-between items-center text-xs">
+                <div className="flex flex-wrap justify-between items-center gap-1 text-xs">
                   <span className="text-muted-foreground flex items-center gap-1.5">
-                    <CreditCard className="size-3.5 text-primary" />
+                    <CreditCard className="size-3.5 text-primary shrink-0" />
                     <span>طرح فعال:</span>
                   </span>
-                  <Badge variant="outline" className="font-semibold">{viewUser.plan}</Badge>
+                  <Badge variant="outline" className="font-semibold break-words">{viewUser.plan}</Badge>
                 </div>
-                <div className="flex justify-between items-center text-xs">
+                <div className="flex flex-wrap justify-between items-center gap-1 text-xs">
                   <span className="text-muted-foreground flex items-center gap-1.5">
-                    <Wallet className="size-3.5 text-emerald-600" />
+                    <Wallet className="size-3.5 text-emerald-600 shrink-0" />
                     <span>موجودی کیف پول:</span>
                   </span>
                   <span className="font-bold text-emerald-600">{toPersianNum(viewUser.walletBalance ?? 0)} تومان</span>
                 </div>
-                <div className="flex justify-between items-center text-xs">
+                <div className="flex flex-wrap justify-between items-center gap-1 text-xs">
                   <span className="text-muted-foreground flex items-center gap-1.5">
-                    <Calendar className="size-3.5 text-muted-foreground" />
+                    <Calendar className="size-3.5 text-muted-foreground shrink-0" />
                     <span>تاریخ ثبت‌نام:</span>
                   </span>
                   <span className="font-mono text-muted-foreground">{viewUser.joinDate}</span>
                 </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-muted-foreground block">آدرس سکونت:</span>
-                  <span className="text-foreground max-w-[240px] truncate">{viewUser.address || 'ثبت نشده'}</span>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 text-xs">
+                  <span className="text-muted-foreground block shrink-0">آدرس سکونت:</span>
+                  <span className="text-foreground break-words text-left sm:text-right">{viewUser.address || 'ثبت نشده'}</span>
                 </div>
               </div>
             </div>
@@ -831,6 +988,129 @@ export default function UsersPremiumPreviewPage() {
               <span>{statusActionUser?.status === 'ACTIVE' ? 'تأیید و تعلیق حساب' : 'تأیید و فعال‌سازی'}</span>
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Modal 4: Delete User Confirm ─── */}
+      <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold text-destructive">
+              <Trash2 className="size-5" />
+              <span>تأیید حذف حساب کاربر</span>
+            </DialogTitle>
+            <DialogDescription>
+              آیا از حذف حساب کاربر «{deleteTarget?.fullName}» با شماره موبایل «{deleteTarget?.mobile}» اطمینان دارید؟ این عمل غیرقابل بازگشت است.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
+              انصراف
+            </Button>
+            <Button
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+              variant="destructive"
+              className="gap-2"
+            >
+              {isDeleting && <Loader2 className="size-4 animate-spin" />}
+              <span>تأیید و حذف کاربر</span>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Modal 5: Create User Modal ─── */}
+      <Dialog open={createModalOpen} onOpenChange={setCreateModalOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold text-slate-900">
+              <UserPlus className="size-5 text-primary" />
+              <span>افزودن کاربر عادی جدید</span>
+            </DialogTitle>
+            <DialogDescription>
+              ثبت مشخصات و ایجاد مستقیم حساب کاربری با نقش USER توسط مدیر سیستم
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateUser} className="space-y-4 py-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">نام *</label>
+                <Input
+                  value={createFirstName}
+                  onChange={(e) => setCreateFirstName(e.target.value)}
+                  placeholder="مثال: رضا"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">نام خانوادگی *</label>
+                <Input
+                  value={createLastName}
+                  onChange={(e) => setCreateLastName(e.target.value)}
+                  placeholder="مثال: محمدی"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">شماره موبایل *</label>
+                <Input
+                  type="tel"
+                  dir="ltr"
+                  value={createMobile}
+                  onChange={(e) => setCreateMobile(e.target.value)}
+                  placeholder="09121234567"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">رمز عبور اولیه *</label>
+                <Input
+                  type="password"
+                  dir="ltr"
+                  value={createPassword}
+                  onChange={(e) => setCreatePassword(e.target.value)}
+                  placeholder="حداقل ۶ کاراکتر"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">کد ملی (اختیاری)</label>
+              <Input
+                dir="ltr"
+                maxLength={10}
+                value={createNationalCode}
+                onChange={(e) => setCreateNationalCode(e.target.value)}
+                placeholder="۱۰ رقم"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">آدرس (اختیاری)</label>
+              <Input
+                value={createAddress}
+                onChange={(e) => setCreateAddress(e.target.value)}
+                placeholder="آدرس محل سکونت"
+              />
+            </div>
+
+            <DialogFooter className="gap-2 sm:gap-0 pt-4">
+              <Button type="button" variant="outline" onClick={() => setCreateModalOpen(false)}>
+                انصراف
+              </Button>
+              <Button type="submit" disabled={isSubmittingCreate} className="gap-2">
+                {isSubmittingCreate && <Loader2 className="size-4 animate-spin" />}
+                <span>ایجاد و فعال‌سازی کاربر</span>
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </DashboardAppShell>

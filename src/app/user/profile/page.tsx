@@ -940,8 +940,8 @@ export default function UserProfilePage() {
         </CardContent>
       </Card>
 
-      {!DEMO_SCOPE_PHASE_1 && <ReferralCodePanel referralCode={referralCode} />}
-      {!DEMO_SCOPE_PHASE_1 && <UserReferralCommissionPanel enabled={Boolean(referralCode)} />}
+      <ReferralCodePanel referralCode={referralCode} />
+      <UserReferralCommissionPanel enabled={Boolean(referralCode)} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>

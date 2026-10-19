@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { AgentRoute } from '@/components/guards/AgentRoute'
 import { ErrorBoundary } from '@/components/shared'
+import { MobileBottomNav } from '@/components/shared/mobile-bottom-nav'
 import { BrandLogo } from '@/components/shared/brand-logo'
 import { ThemeToggle } from '@/components/shared/theme-toggle'
 import { StatusBadge } from '@/components/shared/status-badge'
@@ -212,9 +213,10 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
             </header>
 
             {/* Page content */}
-            <main className="p-4 lg:p-6">
+            <main className="p-4 pb-20 lg:p-6 lg:pb-6">
               {children}
             </main>
+            <MobileBottomNav items={phase1DemoAgentDashboardNav} />
           </div>
         </div>
       </ErrorBoundary>

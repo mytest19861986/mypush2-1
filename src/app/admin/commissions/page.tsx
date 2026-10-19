@@ -850,12 +850,31 @@ export default function AdminCommissionsPage() {
             ))}
           </div>
         ) : commissions.length === 0 ? (
-          <div className="px-4 py-10">
-            <EmptyState
-              icon={Banknote}
-              title="پورسانتی یافت نشد"
-              description="برای این فیلترها پورسانتی ثبت نشده است."
-            />
+          <div className="px-4 py-12 flex flex-col items-center justify-center text-center">
+            <div className="size-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center mb-4">
+              <Banknote className="size-6" />
+            </div>
+            <h3 className="text-base font-bold text-slate-800">هیچ پورسانتی در این بازه یافت نشد</h3>
+            <p className="mt-1.5 max-w-md text-xs leading-6 text-slate-500">
+              در بازه انتخابی ({rangeLabel}) با فیلترهای تعیین‌شده هیچ تراکنش پورسانتی ثبت نشده است. می‌توانید بازه تاریخ را گسترش دهید یا فیلترها را بازنشانی کنید.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-4 gap-2 rounded-xl text-xs font-bold"
+              onClick={() => {
+                setSearchInput('')
+                setOwnerSearch('')
+                setStatusFilter('all')
+                setSourceTypeFilter('all')
+                setDateRange(getRecentJalaliRange(90))
+                setPage(1)
+              }}
+            >
+              <RefreshCw className="size-3.5" />
+              <span>گسترش بازه به ۹۰ روز و بازنشانی فیلتر</span>
+            </Button>
           </div>
         ) : (
           <>

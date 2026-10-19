@@ -57,8 +57,44 @@ export async function GET(request: NextRequest) {
     })
 
     if (!user) {
-      if (DEMO_SCOPE_PHASE_1) {
-        return successResponse(DEMO_SUPER_ADMIN_USER)
+      if (DEMO_SCOPE_PHASE_1 && process.env.NODE_ENV !== 'production') {
+        const DEMO_PERSONAS_LIST: Record<string, any> = {
+          'admin-demo-user-1': DEMO_SUPER_ADMIN_USER,
+          'doctor-demo-user-1': {
+            id: 'doctor-demo-user-1',
+            mobile: '09222222222',
+            email: 'doctor@hamicard.ir',
+            roles: ['DOCTOR'],
+            permissions: ['view_doctor_dashboard', 'manage_patients'],
+            profile: { firstName: 'دکتر رضا', lastName: 'احمدی', nationalCode: '0022334455' },
+          },
+          'agent-demo-user-1': {
+            id: 'agent-demo-user-1',
+            mobile: '09123456789',
+            email: 'agent@hamicard.ir',
+            roles: ['AGENT'],
+            permissions: ['view_agent_dashboard', 'manage_referrals'],
+            profile: { firstName: 'علی', lastName: 'کریمی', nationalCode: '0033445566' },
+          },
+          'user-demo-user-1': {
+            id: 'user-demo-user-1',
+            mobile: '09111111111',
+            email: 'user@hamicard.ir',
+            roles: ['USER'],
+            permissions: [],
+            profile: { firstName: 'مهدی', lastName: 'رضایی', nationalCode: '0044556677' },
+          },
+          'support-demo-user-1': {
+            id: 'support-demo-user-1',
+            mobile: '09333333333',
+            email: 'support@hamicard.ir',
+            roles: ['SUPPORT'],
+            permissions: ['view_users', 'view_reports'],
+            profile: { firstName: 'پشتیبان', lastName: 'سامانه', nationalCode: '0055667788' },
+          },
+        }
+        const matched = DEMO_PERSONAS_LIST[userId] || DEMO_SUPER_ADMIN_USER
+        return successResponse(matched)
       }
       return errorResponse('USER_NOT_FOUND', 'کاربر یافت نشد', 404)
     }
@@ -68,7 +104,7 @@ export async function GET(request: NextRequest) {
 
     return successResponse(userData)
   } catch {
-    if (DEMO_SCOPE_PHASE_1) {
+    if (DEMO_SCOPE_PHASE_1 && process.env.NODE_ENV !== 'production') {
       return successResponse(DEMO_SUPER_ADMIN_USER)
     }
     return errorResponse('INTERNAL_ERROR', 'خطای داخلی سرور', 500)
