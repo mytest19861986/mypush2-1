@@ -14,11 +14,12 @@ const querySchema = z.object({
   specialty: z.string().optional(),
 })
 
-// GET /api/v1/doctors — List doctors (requires manage_doctors permission)
+// GET /api/v1/doctors — List doctors
+// - If manage_doctors permission present: returns doctors with requested filters (or all)
+// - If public / authenticated patient: returns only APPROVED contracted doctors with safe public fields
 export async function GET(request: NextRequest) {
   try {
-    const { authorized, error } = await requirePermission(request, 'manage_doctors')
-    if (!authorized) return errorResponse('UNAUTHORIZED', error!, 401)
+    const { authorized } = await requirePermission(request, 'manage_doctors')
 
     const { searchParams } = request.nextUrl
     const parsed = querySchema.safeParse(Object.fromEntries(searchParams))
@@ -30,9 +31,15 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     const where: Record<string, unknown> = {}
-    if (status) {
-      where.status = status
+    if (authorized) {
+      if (status) {
+        where.status = status
+      }
+    } else {
+      // Public / patient callers: strictly APPROVED doctors only
+      where.status = 'APPROVED'
     }
+
     if (specialty) {
       where.specialty = specialty
     }
@@ -44,7 +51,7 @@ export async function GET(request: NextRequest) {
         { medicalCode: { contains: search } },
         { user: {
           OR: [
-            { mobile: { contains: search } },
+            ...(authorized ? [{ mobile: { contains: search } }] : []),
             { profile: { OR: [
               { firstName: { contains: search } },
               { lastName: { contains: search } },
@@ -64,8 +71,8 @@ export async function GET(request: NextRequest) {
           user: {
             select: {
               id: true,
-              mobile: true,
-              email: true,
+              mobile: authorized,
+              email: authorized,
               status: true,
               profile: { select: { firstName: true, lastName: true, avatar: true } },
             },

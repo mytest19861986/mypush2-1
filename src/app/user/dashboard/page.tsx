@@ -42,9 +42,11 @@ import {
   HeartPulse,
   IdCard,
   Loader2,
+  MapPin,
   MessageSquareText,
   RefreshCw,
   Route,
+  Search,
   ShieldCheck,
   ShoppingCart,
   Sparkles,
@@ -615,6 +617,161 @@ function RecentVisitsCard({
               }
               className="border-dashed py-12 shadow-none sm:py-14"
             />
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function ContractedDoctorsCard() {
+  const [doctors, setDoctors] = useState<{
+    id: string
+    name: string
+    specialty: string
+    clinicName: string
+    location: string
+    discountLabel: string
+  }[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+
+  const fetchDoctors = useCallback(async (query = '') => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const searchParam = query.trim() ? `&search=${encodeURIComponent(query.trim())}` : ''
+      const res = await fetch(`/api/v1/doctors?limit=5${searchParam}`)
+      if (!res.ok) {
+        throw new Error('خطا در دریافت لیست پزشکان')
+      }
+      const json = await res.json()
+      if (json.success && Array.isArray(json.data)) {
+        const mapped = json.data.map((d: any) => {
+          const fn = d.user?.profile?.firstName ?? ''
+          const ln = d.user?.profile?.lastName ?? ''
+          const fullName = (fn || ln) ? `دکتر ${fn} ${ln}`.trim() : (d.clinicName || 'پزشک طرف قرارداد')
+          const loc = [d.province, d.city].filter(Boolean).join('، ') || 'تهران'
+          return {
+            id: d.id,
+            name: fullName,
+            specialty: d.specialty || 'پزشک عمومی / متخصص',
+            clinicName: d.clinicName || 'مرکز درمانی طرف قرارداد',
+            location: loc,
+            discountLabel: `${toPersianNum(d.discountPercent ?? 30)}٪ تخفیف حامی`,
+          }
+        })
+        setDoctors(mapped)
+      } else {
+        setDoctors([])
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'خطای ارتباط با سرور')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void fetchDoctors()
+  }, [fetchDoctors])
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    void fetchDoctors(search)
+  }
+
+  return (
+    <Card className="rounded-2xl border border-slate-100/60 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-slate-800/60">
+      <CardHeader className="pb-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-base font-bold">
+              <Stethoscope className="size-5 text-primary" />
+              پزشکان طرف قرارداد
+            </CardTitle>
+            <p className="mt-1 text-sm text-muted-foreground">
+              مراکز درمانی و پزشکان معتبر فعال حامی‌کارت
+            </p>
+          </div>
+          <Button asChild variant="outline" size="sm" className="gap-1 w-fit">
+            <Link href="/doctors">
+              مشاهده همه
+              <ArrowLeft className="size-4" />
+            </Link>
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <form onSubmit={handleSearchSubmit} className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="جستجو در تخصص، نام پزشک یا کلینیک..."
+              className="pr-9 text-xs sm:text-sm h-9 rounded-xl"
+            />
+          </div>
+          <Button type="submit" size="sm" variant="secondary" className="h-9 px-3 rounded-xl shrink-0" disabled={isLoading}>
+            {isLoading ? <Loader2 className="size-4 animate-spin" /> : 'جستجو'}
+          </Button>
+        </form>
+
+        {isLoading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-16 w-full rounded-xl" />
+            <Skeleton className="h-16 w-full rounded-xl" />
+            <Skeleton className="h-16 w-full rounded-xl" />
+          </div>
+        ) : error ? (
+          <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-center">
+            <p className="text-xs text-destructive mb-2">{error}</p>
+            <Button size="sm" variant="outline" onClick={() => void fetchDoctors(search)} className="h-8 text-xs">
+              <RefreshCw className="ml-1.5 size-3" />
+              تلاش مجدد
+            </Button>
+          </div>
+        ) : doctors.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-200/80 bg-background/50 p-6 text-center text-sm text-muted-foreground dark:border-slate-800/80">
+            پزشک تاییدشده‌ای مطابق با جستجوی شما یافت نشد.
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100 rounded-xl border border-slate-100/70 bg-background dark:divide-slate-800 dark:border-slate-800/70 overflow-hidden">
+            {doctors.map((doctor) => (
+              <div
+                key={doctor.id}
+                className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between hover:bg-muted/30 transition-colors"
+              >
+                <div className="min-w-0 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-sm font-semibold text-card-foreground">
+                      {doctor.name}
+                    </p>
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-0">
+                      {doctor.discountLabel}
+                    </Badge>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                    <span>{doctor.specialty}</span>
+                    <span className="text-muted-foreground/40">•</span>
+                    <span>{doctor.clinicName}</span>
+                    <span className="text-muted-foreground/40">•</span>
+                    <span className="flex items-center gap-1">
+                      <MapPin className="size-3 text-muted-foreground" />
+                      {doctor.location}
+                    </span>
+                  </div>
+                </div>
+                <Button asChild size="sm" variant="ghost" className="h-8 text-xs shrink-0 self-end sm:self-center">
+                  <Link href="/doctors">
+                    جزئیات
+                    <ArrowLeft className="mr-1 size-3.5" />
+                  </Link>
+                </Button>
+              </div>
+            ))}
           </div>
         )}
       </CardContent>
@@ -1317,6 +1474,7 @@ export default function UserDashboardPage() {
             nationalCode={nationalCode}
             activePlan={activePlan}
           />
+          <ContractedDoctorsCard />
           <RecentVisitsCard visits={visits} reviewsByVisit={reviewsByVisit} />
           <PlanSummaryCard plans={plans} />
           <ReferralCommissionReport />
