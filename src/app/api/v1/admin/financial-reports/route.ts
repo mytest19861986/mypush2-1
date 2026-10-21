@@ -11,6 +11,8 @@ const dateParamSchema = z
 const querySchema = z.object({
   from: dateParamSchema.optional(),
   to: dateParamSchema.optional(),
+  channel: z.enum(['all', 'direct', 'sales_partner', 'referral']).optional().default('all'),
+  format: z.enum(['json', 'csv']).optional().default('json'),
 })
 
 type ChannelKey = 'direct' | 'sales_partner' | 'referral' | 'unknown_online'
@@ -199,10 +201,23 @@ export async function GET(request: NextRequest) {
       referral: { key: 'referral', label: 'معرفی/رفرال', amount: 0, count: 0 },
       unknown_online: { key: 'unknown_online', label: 'آنلاین بدون انتساب کافی', amount: 0, count: 0 },
     }
+    const channelFilter = parsed.data.channel ?? 'all'
+    const format = parsed.data.format ?? 'json'
     const dailyBuckets = new Map<string, TimeBucket>()
     const paidUserIds = new Set<string>()
 
-    for (const payment of successfulPayments) {
+    const filteredPayments = successfulPayments.filter((p) => {
+      if (channelFilter === 'all') return true
+      const channel = getOnlineChannel(p.userPlan)
+      return channel === channelFilter
+    })
+
+    const filteredSalesCustomers = confirmedSalesCustomers.filter(() => {
+      if (channelFilter === 'all') return true
+      return channelFilter === 'sales_partner'
+    })
+
+    for (const payment of filteredPayments) {
       const amount = payment.finalAmount
       const channel = getOnlineChannel(payment.userPlan)
 
@@ -211,7 +226,7 @@ export async function GET(request: NextRequest) {
       if (payment.userId) paidUserIds.add(payment.userId)
     }
 
-    for (const salesCustomer of confirmedSalesCustomers) {
+    for (const salesCustomer of filteredSalesCustomers) {
       const amount = salesCustomer.plan.price
 
       addToChannel(channels, 'sales_partner', amount)
@@ -233,12 +248,42 @@ export async function GET(request: NextRequest) {
       a.date.localeCompare(b.date)
     )
 
+    if (format === 'csv') {
+      const rows: string[] = [
+        'گزارش مدیریت مالی و درآمد حامی‌کارت',
+        `بازه زمانی,${fromParam} تا ${toParam}`,
+        `کانال فیلترشده,${channelFilter}`,
+        '',
+        'شاخص,مقدار,واحد',
+        `درآمد ناخالص,${grossRevenue},تومان`,
+        `درآمد مستقیم آنلاین,${directRevenue},تومان`,
+        `درآمد همکار فروش / تلفنی,${salesPartnerRevenue},تومان`,
+        `درآمد ارجاع / رفرال,${referralRevenue},تومان`,
+        `مجموع پورسانت‌ها,${totalCommissions},تومان`,
+        `درآمد خالص شبکه,${netRevenue},تومان`,
+        `تعداد کل پرداخت‌های موفق,${filteredPayments.length + filteredSalesCustomers.length},عدد`,
+        `تعداد کاربران پرداخت‌کننده,${paidUserIds.size},نفر`,
+        '',
+        'تاریخ,مبلغ روزانه (تومان),تعداد تراکنش',
+        ...dailyRevenue.map((d) => `${d.date},${d.amount},${d.count}`),
+      ]
+      const csvContent = '\uFEFF' + rows.join('\r\n')
+      return new Response(csvContent, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/csv; charset=utf-8',
+          'Content-Disposition': `attachment; filename="financial-report-${fromParam}-to-${toParam}.csv"`,
+        },
+      })
+    }
+
     return successResponse({
       range: {
         from: fromParam,
         to: toParam,
       },
-      totalSuccessfulPayments: successfulPayments.length + confirmedSalesCustomers.length,
+      channelFilter,
+      totalSuccessfulPayments: filteredPayments.length + filteredSalesCustomers.length,
       paidUsersCount: paidUserIds.size,
       grossRevenue,
       directRevenue,
