@@ -25,7 +25,16 @@ import {
   ShieldPlus,
   Menu,
   X,
-  LogOut
+  LogOut,
+  CheckCheck,
+  Check,
+  RefreshCw,
+  AlertCircle,
+  RotateCw,
+  Info,
+  AlertTriangle,
+  CheckCircle2,
+  ExternalLink
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -43,6 +52,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { useAuthStore } from '@/stores/auth-store'
+import { useNotificationStore } from '@/stores/notification-store'
 import { phase1DemoVisibleItems } from '@/config/demo-scope'
 import { AdminRoute } from '@/components/guards/AdminRoute'
 
@@ -59,7 +69,36 @@ export function DashboardAppShell({
 }: DashboardAppShellProps) {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [popoverOpen, setPopoverOpen] = useState(false)
   const { user, logout } = useAuthStore()
+  const {
+    notifications,
+    unreadCount,
+    isLoading,
+    isMarkingAll,
+    error: notifError,
+    fetchUnreadCount,
+    fetchNotifications,
+    markAsRead,
+    markAllAsRead,
+    reset: resetNotifications,
+  } = useNotificationStore()
+
+  // Initial unread count fetch when authenticated
+  React.useEffect(() => {
+    if (user?.id) {
+      void fetchUnreadCount()
+    }
+  }, [user?.id, fetchUnreadCount])
+
+  // Fetch full notifications whenever popover opens
+  const handlePopoverChange = (open: boolean) => {
+    setPopoverOpen(open)
+    if (open) {
+      void fetchNotifications(1, 20)
+      void fetchUnreadCount()
+    }
+  }
 
   const displayName = user?.profile?.firstName && user?.profile?.lastName
     ? `${user.profile.firstName} ${user.profile.lastName}`
@@ -72,6 +111,7 @@ export function DashboardAppShell({
     : (user?.mobile || '').slice(-2) || 'م‌س'
 
   const handleLogout = async () => {
+    resetNotifications()
     try {
       await logout({ redirectTo: '/auth/login', callApi: true })
     } catch {
@@ -268,8 +308,8 @@ export function DashboardAppShell({
               <span className="text-[11px] text-slate-400 font-mono">آخرین بروزرسانی: امروز ۱۴:۳۰</span>
             </div>
 
-            {/* Notification Bell with Clean Honest Empty State Popover (CMD-HAMI-111 Wave 2) */}
-            <Popover>
+            {/* Notification Bell with Real Backend Integration (CMD-HAMI-115 Wave 3C) */}
+            <Popover open={popoverOpen} onOpenChange={handlePopoverChange}>
               <PopoverTrigger asChild>
                 <button
                   type="button"
@@ -278,28 +318,111 @@ export function DashboardAppShell({
                   data-testid="header-notification-bell"
                 >
                   <Bell className="size-4 sm:size-4.5" />
+                  {unreadCount > 0 && (
+                    <span
+                      data-testid="header-notification-badge"
+                      className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#0D5C58] text-white text-[10px] font-bold font-mono flex items-center justify-center shadow-xs animate-in zoom-in-75 duration-150"
+                    >
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
                 </button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-80 p-4 rounded-2xl shadow-xl border border-slate-200 bg-white text-right" dir="rtl">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <PopoverContent
+                align="end"
+                className="w-84 sm:w-96 p-0 rounded-2xl shadow-xl border border-slate-200 bg-white text-right overflow-hidden"
+                dir="rtl"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between p-3.5 border-b border-slate-100 bg-slate-50/60">
                   <div className="flex items-center gap-2">
-                    <Bell className="size-4 text-slate-500" />
-                    <span className="font-bold text-xs text-slate-900">اعلان‌ها و پیام‌های سیستم</span>
+                    <Bell className="size-4 text-[#0D5C58]" />
+                    <span className="font-extrabold text-xs text-slate-900">اعلان‌ها و رویدادها</span>
+                    {unreadCount > 0 && (
+                      <Badge className="bg-[#EAF5F2] text-[#0D5C58] border-[#0D5C58]/20 text-[10px] font-bold px-1.5 py-0">
+                        {unreadCount} خوانده نشده
+                      </Badge>
+                    )}
                   </div>
-                  <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground border-slate-200">
-                    نسخه آزمایشی
-                  </Badge>
+                  {unreadCount > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={isMarkingAll}
+                      onClick={() => void markAllAsRead()}
+                      className="text-[11px] h-7 px-2 text-[#0D5C58] hover:text-[#0a4845] hover:bg-[#EAF5F2] font-semibold"
+                    >
+                      <CheckCheck className="size-3.5 me-1" />
+                      خوانده شدن همه
+                    </Button>
+                  )}
                 </div>
-                <div className="py-6 px-2 flex flex-col items-center justify-center text-center space-y-2.5">
-                  <div className="size-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
-                    <Bell className="size-5 opacity-70" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold text-slate-800">سامانه اعلان‌ها هنوز فعال نشده است</p>
-                    <p className="text-[11px] text-slate-500 leading-relaxed max-w-[230px]">
-                      پیام‌ها، هشدارهای بیماران و رخدادهای مالی پس از تکمیل زیرساخت مستقل اعلان‌ها در این بخش نمایش داده خواهند شد.
-                    </p>
-                  </div>
+
+                {/* Body Content */}
+                <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+                  {isLoading ? (
+                    <div className="py-8 flex flex-col items-center justify-center text-center space-y-2 text-slate-400">
+                      <RefreshCw className="size-5 animate-spin text-[#0D5C58]" />
+                      <span className="text-xs font-medium">در حال دریافت اعلان‌ها...</span>
+                    </div>
+                  ) : notifError ? (
+                    <div className="py-6 px-4 flex flex-col items-center justify-center text-center space-y-2">
+                      <AlertCircle className="size-5 text-rose-500" />
+                      <span className="text-xs text-rose-600 font-medium">{notifError}</span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => void fetchNotifications(1, 20)}
+                        className="text-xs h-7 px-2 mt-1"
+                      >
+                        تلاش مجدد
+                      </Button>
+                    </div>
+                  ) : notifications.length === 0 ? (
+                    <div className="py-8 px-4 flex flex-col items-center justify-center text-center space-y-2">
+                      <div className="size-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                        <Bell className="size-5 opacity-70" />
+                      </div>
+                      <div className="space-y-0.5">
+                        <p className="text-xs font-bold text-slate-800">اعلانی وجود ندارد</p>
+                        <p className="text-[11px] text-slate-400">پیام‌ها و رویدادهای جدید اینجا نمایش داده می‌شوند.</p>
+                      </div>
+                    </div>
+                  ) : (
+                    notifications.map((item) => (
+                      <div
+                        key={item.id}
+                        className={`p-3 transition-colors flex items-start justify-between gap-3 ${
+                          !item.read ? 'bg-[#EAF5F2]/25 hover:bg-[#EAF5F2]/40' : 'hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="space-y-1 flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            {!item.read && (
+                              <span className="size-2 rounded-full bg-[#0D5C58] shrink-0" />
+                            )}
+                            <h4 className="text-xs font-bold text-slate-900 truncate">{item.title}</h4>
+                          </div>
+                          <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-2">
+                            {item.message}
+                          </p>
+                          <span className="text-[10px] text-slate-400 font-mono block pt-0.5">
+                            {new Date(item.createdAt).toLocaleDateString('fa-IR')}
+                          </span>
+                        </div>
+                        {!item.read && (
+                          <button
+                            type="button"
+                            onClick={() => void markAsRead(item.id)}
+                            className="size-7 rounded-lg text-slate-400 hover:text-[#0D5C58] hover:bg-slate-100 flex items-center justify-center shrink-0 transition-colors"
+                            title="علامت‌گذاری به عنوان خوانده‌شده"
+                          >
+                            <Check className="size-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))
+                  )}
                 </div>
               </PopoverContent>
             </Popover>
