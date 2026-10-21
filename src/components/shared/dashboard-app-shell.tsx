@@ -37,6 +37,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { useAuthStore } from '@/stores/auth-store'
 import { phase1DemoVisibleItems } from '@/config/demo-scope'
 import { AdminRoute } from '@/components/guards/AdminRoute'
@@ -263,11 +268,41 @@ export function DashboardAppShell({
               <span className="text-[11px] text-slate-400 font-mono">آخرین بروزرسانی: امروز ۱۴:۳۰</span>
             </div>
 
-            {/* Notification Bell */}
-            <button className="size-9 sm:size-10 rounded-full bg-slate-50 border border-slate-200/70 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors relative shrink-0">
-              <Bell className="size-4 sm:size-4.5" />
-              <span className="size-2 rounded-full bg-[#EA580C] absolute top-2 end-2 sm:top-2.5 sm:end-2.5 ring-2 ring-white" />
-            </button>
+            {/* Notification Bell with Clean Honest Empty State Popover (CMD-HAMI-111 Wave 2) */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="size-9 sm:size-10 rounded-full bg-slate-50 border border-slate-200/70 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors relative shrink-0 outline-none cursor-pointer focus:ring-2 focus:ring-[#0D5C58]/20"
+                  aria-label="اعلان‌ها"
+                  data-testid="header-notification-bell"
+                >
+                  <Bell className="size-4 sm:size-4.5" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-80 p-4 rounded-2xl shadow-xl border border-slate-200 bg-white text-right" dir="rtl">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <Bell className="size-4 text-slate-500" />
+                    <span className="font-bold text-xs text-slate-900">اعلان‌ها و پیام‌های سیستم</span>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground border-slate-200">
+                    نسخه آزمایشی
+                  </Badge>
+                </div>
+                <div className="py-6 px-2 flex flex-col items-center justify-center text-center space-y-2.5">
+                  <div className="size-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                    <Bell className="size-5 opacity-70" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-slate-800">سامانه اعلان‌ها هنوز فعال نشده است</p>
+                    <p className="text-[11px] text-slate-500 leading-relaxed max-w-[230px]">
+                      پیام‌ها، هشدارهای بیماران و رخدادهای مالی پس از تکمیل زیرساخت مستقل اعلان‌ها در این بخش نمایش داده خواهند شد.
+                    </p>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
 
             {/* User Profile Capsule Dropdown (Mission 551-Demo-B4-FIX2) */}
             <DropdownMenu>
