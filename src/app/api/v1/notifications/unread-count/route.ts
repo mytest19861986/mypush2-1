@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   try {
     const unreadCount = await db.notification.count({
       where: {
-        userId: payload.userId, // Strict user ownership
+        userId: payload.sub, // Strict user ownership via sub
         read: false,
       },
     })

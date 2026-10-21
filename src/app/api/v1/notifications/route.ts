@@ -40,8 +40,10 @@ export async function GET(request: NextRequest) {
     limit = parsedLimit
   }
 
+  const userId = payload.sub
+
   const where: Prisma.NotificationWhereInput = {
-    userId: payload.userId, // Zero-Trust IDOR Protection
+    userId, // Zero-Trust IDOR Protection via JWT sub
   }
 
   if (unreadOnlyParam === 'true') {

@@ -29,7 +29,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       where: { id: id.trim() },
     })
 
-    if (!existing || existing.userId !== payload.userId) {
+    if (!existing || existing.userId !== payload.sub) {
       // Return 404 to avoid leaking existence of other users' notifications (Zero-Trust IDOR Prevention)
       return errorResponse('NOT_FOUND', 'اعلان مورد نظر یافت نشد.', 404)
     }

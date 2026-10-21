@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
   try {
     const result = await db.notification.updateMany({
       where: {
-        userId: payload.userId, // Strictly bounded to authenticated user
+        userId: payload.sub, // Strictly bounded to authenticated user via sub
         read: false,
       },
       data: {
