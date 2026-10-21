@@ -144,6 +144,9 @@ export default function DoctorsClinicsPremiumPreviewPage() {
   // Edit Modal state
   const [editDoc, setEditDoc] = useState<DoctorClinicItem | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
+  const [editFirstName, setEditFirstName] = useState('')
+  const [editLastName, setEditLastName] = useState('')
+  const [editDiscountPercent, setEditDiscountPercent] = useState<string>('0')
   const [editSpecialty, setEditSpecialty] = useState('')
   const [editClinicName, setEditClinicName] = useState('')
   const [editClinicAddress, setEditClinicAddress] = useState('')
@@ -343,6 +346,9 @@ export default function DoctorsClinicsPremiumPreviewPage() {
   // Handle Edit Doctor
   const handleOpenEdit = (doc: DoctorClinicItem) => {
     setEditDoc(doc)
+    setEditFirstName(doc.firstName || '')
+    setEditLastName(doc.lastName || '')
+    setEditDiscountPercent(String(doc.discountPercent ?? 0))
     setEditSpecialty(doc.specialty || '')
     setEditClinicName(doc.clinicName || '')
     setEditClinicAddress(doc.clinicAddress || '')
@@ -354,12 +360,29 @@ export default function DoctorsClinicsPremiumPreviewPage() {
 
   const handleSaveEdit = async () => {
     if (!editDoc) return
+    const parsedDiscount = Number(editDiscountPercent)
+    if (Number.isNaN(parsedDiscount) || parsedDiscount < 0 || parsedDiscount > 100) {
+      toast.error('درصد تخفیف اختصاصی باید عددی بین ۰ تا ۱۰۰ باشد')
+      return
+    }
+    if (editFirstName.trim().length > 0 && editFirstName.trim().length < 2) {
+      toast.error('نام باید حداقل ۲ حرف باشد')
+      return
+    }
+    if (editLastName.trim().length > 0 && editLastName.trim().length < 2) {
+      toast.error('نام خانوادگی باید حداقل ۲ حرف باشد')
+      return
+    }
+
     setIsSubmittingEdit(true)
     try {
       const res = await fetch(`/api/v1/doctors/${editDoc.id}`, {
         method: 'PATCH',
         headers: getAuthHeaders(),
         body: JSON.stringify({
+          firstName: editFirstName.trim() || undefined,
+          lastName: editLastName.trim() || undefined,
+          discountPercent: parsedDiscount,
           specialty: editSpecialty.trim(),
           clinicName: editClinicName.trim(),
           clinicAddress: editClinicAddress.trim() || undefined,
@@ -374,7 +397,7 @@ export default function DoctorsClinicsPremiumPreviewPage() {
         setEditModalOpen(false)
         fetchDoctors()
       } else {
-        toast.error(json.message || 'خطا در ویرایش اطلاعات پزشک')
+        toast.error(json.message || json.error?.message || 'خطا در ویرایش اطلاعات پزشک')
       }
     } catch {
       toast.error('ارتباط با سرور برقرار نشد')
@@ -902,6 +925,60 @@ export default function DoctorsClinicsPremiumPreviewPage() {
           </DialogHeader>
 
           <div className="space-y-3 py-2 text-sm">
+            {/* Readonly Identity display */}
+            <div className="grid grid-cols-2 gap-3 p-2.5 rounded-lg bg-muted/40 border text-xs">
+              <div>
+                <span className="text-muted-foreground block">شماره موبایل:</span>
+                <span className="font-mono font-medium" dir="ltr">{editDoc?.mobile || 'ثبت‌نشده'}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block">کد نظام پزشکی:</span>
+                <span className="font-mono font-medium" dir="ltr">{editDoc?.medicalCode || 'ثبت‌نشده'}</span>
+              </div>
+            </div>
+
+            {/* Editable Name & Surname */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">نام پزشک</label>
+                <Input
+                  value={editFirstName}
+                  onChange={(e) => setEditFirstName(e.target.value)}
+                  placeholder="مثال: علیرضا"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">نام خانوادگی</label>
+                <Input
+                  value={editLastName}
+                  onChange={(e) => setEditLastName(e.target.value)}
+                  placeholder="مثال: افشارزاده"
+                />
+              </div>
+            </div>
+
+            {/* Editable Doctor Discount Percent */}
+            <div className="p-2.5 rounded-lg border bg-blue-50/50 dark:bg-blue-950/20">
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-semibold text-blue-900 dark:text-blue-300">درصد تخفیف اختصاصی پزشک (۰ تا ۱۰۰)</label>
+                <span className="text-xs font-bold text-blue-600 dark:text-blue-400">{toPersianNum(editDiscountPercent || 0)}٪</span>
+              </div>
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                value={editDiscountPercent}
+                onChange={(e) => setEditDiscountPercent(e.target.value)}
+                placeholder="۰"
+                className="font-mono text-center"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">
+                {Number(editDiscountPercent) === 0
+                  ? '💡 تخفیف اختصاصی روی ۰ تنظیم است؛ تخفیف طرح اشتراک بیمار به‌صورت خودکار اعمال خواهد شد.'
+                  : `🎯 تخفیف ثابت ${toPersianNum(editDiscountPercent)}٪ برای کلیه خدمات این پزشک اعمال می‌شود.`}
+              </p>
+            </div>
+
             <div>
               <label className="text-xs font-semibold text-muted-foreground block mb-1">تخصص پزشکی</label>
               <Input
