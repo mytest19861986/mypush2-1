@@ -4,8 +4,10 @@ import { db } from '@/lib/db'
 import { requirePermission } from '@/lib/auth'
 import { successResponse, errorResponse } from '@/lib/api-response'
 import { createAuditLog, AuditActions } from '@/lib/audit'
+import { assertNoDoctorConflict } from '@/lib/role-integrity'
 
 const statusSchema = z.object({
+
   status: z.enum(['APPROVED', 'REJECTED', 'SUSPENDED']),
   reason: z.string().trim().max(500).optional(),
 })
@@ -47,12 +49,25 @@ export async function PATCH(
   const device = request.headers.get('user-agent') || undefined
   const correlationId = request.headers.get('x-request-id') || request.headers.get('x-correlation-id') || undefined
 
+  if (status === 'APPROVED') {
+    try {
+      await assertNoDoctorConflict({ userId: agent.userId })
+    } catch (conflictErr: any) {
+      return errorResponse('CONFLICT', conflictErr.message, 409)
+    }
+  }
+
   // Execute agent status update, role assignment, and audit log atomically inside a single transaction
   const updatedAgent = await db.$transaction(async (tx) => {
+    if (status === 'APPROVED') {
+      await assertNoDoctorConflict({ userId: agent.userId }, tx)
+    }
+
     const updateData: Record<string, unknown> = { status }
     if (status === 'APPROVED') {
       updateData.verifiedAt = new Date()
     }
+
 
     const updated = await tx.agent.update({
       where: { id },

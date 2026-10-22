@@ -215,6 +215,32 @@ export default function AdminReviewsPage() {
     setErrorMessage(null)
 
     try {
+      const params = new URLSearchParams({ take: '50' })
+
+      if (statusFilter !== 'all') {
+        params.set('status', statusFilter)
+      }
+
+      const queryString = params.toString() ? `?${params.toString()}` : ''
+      const res = await apiClient.get<AdminReview[]>(`/reviews${queryString}`)
+
+      if (res.success && Array.isArray(res.data)) {
+        setReviews(res.data)
+      } else {
+        if (DEMO_SCOPE_PHASE_1) {
+          const allDemoReviews = getStoredReviews()
+          const filtered =
+            statusFilter === 'all'
+              ? allDemoReviews
+              : allDemoReviews.filter((r) => r.status === statusFilter)
+          setReviews(filtered)
+        } else {
+          const message = res.error?.message || res.message || 'خطا در دریافت فهرست نظرات'
+          setErrorMessage(message)
+          setReviews([])
+        }
+      }
+    } catch (error) {
       if (DEMO_SCOPE_PHASE_1) {
         const allDemoReviews = getStoredReviews()
         const filtered =
@@ -222,28 +248,12 @@ export default function AdminReviewsPage() {
             ? allDemoReviews
             : allDemoReviews.filter((r) => r.status === statusFilter)
         setReviews(filtered)
-        setIsLoading(false)
-        return
-      }
-
-      const params = new URLSearchParams({ take: '50' })
-      if (statusFilter !== 'all') {
-        params.set('status', statusFilter)
-      }
-
-      const res = await apiClient.get<AdminReview[]>('/reviews')
-
-      if (res.success && Array.isArray(res.data)) {
-        setReviews(res.data)
       } else {
-        const message = res.error?.message || res.message || 'خطا در دریافت فهرست نظرات'
-        setErrorMessage(message)
+        setErrorMessage(getErrorMessage(error, 'خطا در دریافت فهرست نظرات'))
         setReviews([])
       }
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error, 'خطا در دریافت فهرست نظرات'))
-      setReviews([])
     } finally {
+
       setIsLoading(false)
     }
   }, [statusFilter])

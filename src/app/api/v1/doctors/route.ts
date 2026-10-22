@@ -30,7 +30,18 @@ export async function GET(request: NextRequest) {
     const { page, limit, search, status, specialty } = parsed.data
     const skip = (page - 1) * limit
 
-    const where: Record<string, unknown> = {}
+    const where: Record<string, unknown> = {
+      user: {
+        agent: null,
+        roles: {
+          none: {
+            role: {
+              name: 'AGENT',
+            },
+          },
+        },
+      },
+    }
     if (authorized) {
       if (status) {
         where.status = status
@@ -43,6 +54,7 @@ export async function GET(request: NextRequest) {
     if (specialty) {
       where.specialty = specialty
     }
+
     if (search) {
       where.OR = [
         { specialty: { contains: search } },

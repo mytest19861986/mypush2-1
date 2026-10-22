@@ -32,16 +32,33 @@ export async function GET(request: NextRequest) {
   const { page, limit, search, status } = parsed.data
   const skip = (page - 1) * limit
 
-  const where: Record<string, unknown> = {}
+  const where: Record<string, unknown> = {
+    // Exclude users who have a Doctor profile or DOCTOR role (professional exclusivity)
+    user: {
+      doctor: null,
+      roles: {
+        none: {
+          role: {
+            name: 'DOCTOR',
+          },
+        },
+      },
+    },
+  }
   if (status) {
     where.status = status
   }
   if (search) {
-    where.OR = [
-      { businessName: { contains: search } },
-      { user: { mobile: { contains: search } } },
+    where.AND = [
+      {
+        OR: [
+          { businessName: { contains: search } },
+          { user: { mobile: { contains: search } } },
+        ],
+      },
     ]
   }
+
 
   const [agents, total] = await Promise.all([
     db.agent.findMany({

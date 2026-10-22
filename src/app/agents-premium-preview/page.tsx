@@ -41,8 +41,10 @@ import {
   Eye,
   RefreshCw,
   UserX,
-  AlertTriangle
+  AlertTriangle,
+  BarChart3
 } from 'lucide-react'
+
 import { toPersianNum } from '@/utils/formatters'
 
 import { DashboardAppShell } from '@/components/shared/dashboard-app-shell'
@@ -97,6 +99,67 @@ export default function AgentsPremiumPreviewPage() {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
   const [statusConfirmAction, setStatusConfirmAction] = useState<'APPROVED' | 'REJECTED' | 'SUSPENDED' | null>(null)
   const [statusReason, setStatusReason] = useState('')
+
+  // Financial Performance Modal States
+  const [perfAgent, setPerfAgent] = useState<AgentMock | null>(null)
+  const [perfModalOpen, setPerfModalOpen] = useState(false)
+  const [perfLoading, setPerfLoading] = useState(false)
+  const [perfData, setPerfData] = useState<{
+    metrics: {
+      totalAttributedSales: number
+      totalEarnedCommission: number
+      totalPaidCommission: number
+      unpaidBalance: number
+      totalPendingCommission: number
+      commissionCount: number
+      settlementCount: number
+    }
+    definitions: Record<string, string>
+    monthlyBreakdown: Array<{
+      yearMonth: string
+      earnedCommission: number
+      paidCommission: number
+      referralCount: number
+    }>
+  } | null>(null)
+  const [perfStartDate, setPerfStartDate] = useState('')
+  const [perfEndDate, setPerfEndDate] = useState('')
+
+  const fetchAgentPerformance = async (agentId: string, start?: string, end?: string) => {
+    setPerfLoading(true)
+    try {
+      const headers: Record<string, string> = {}
+      if (typeof window !== 'undefined') {
+        const token = localStorage.getItem('accessToken')
+        if (token) headers['X-App-Authorization'] = `Bearer ${token}`
+      }
+      const params = new URLSearchParams()
+      if (start) params.set('startDate', start)
+      if (end) params.set('endDate', end)
+      const q = params.toString() ? `?${params.toString()}` : ''
+      const res = await fetch(`/api/v1/agents/${agentId}/performance${q}`, { headers })
+      const json = await res.json()
+      if (res.ok && json.success && json.data) {
+        setPerfData(json.data)
+      } else {
+        toast.error(json.message || 'خطا در بارگذاری گزارش مالی همکار فروش')
+      }
+    } catch {
+      toast.error('ارتباط با سرور جهت دریافت گزارش عملکرد برقرار نشد')
+    } finally {
+      setPerfLoading(false)
+    }
+  }
+
+  const handleOpenPerformance = (agent: AgentMock) => {
+    setPerfAgent(agent)
+    setPerfData(null)
+    setPerfStartDate('')
+    setPerfEndDate('')
+    setPerfModalOpen(true)
+    fetchAgentPerformance(agent.id)
+  }
+
 
   const handleUpdateAgentStatus = async (status: 'APPROVED' | 'REJECTED' | 'SUSPENDED') => {
     if (!selectedAgentDetail?.id || isUpdatingStatus) return
@@ -591,11 +654,21 @@ export default function AgentsPremiumPreviewPage() {
                   <Button 
                     variant="outline" 
                     size="sm" 
+                    className="h-8 px-2.5 sm:px-3 text-xs cursor-pointer flex-1 sm:flex-none gap-1.5 text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50"
+                    onClick={() => handleOpenPerformance(agent)}
+                  >
+                    <BarChart3 className="size-3.5" />
+                    <span>عملکرد مالی</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
                     className="h-8 px-2.5 sm:px-3 text-xs cursor-pointer flex-1 sm:flex-none"
                     onClick={() => router.push(`/admin/sales-customers?agent=${encodeURIComponent(agent.name)}`)}
                   >
                     ریز عملکرد
                   </Button>
+
                   <Button 
                     variant="premium" 
                     size="sm" 
@@ -1023,7 +1096,159 @@ export default function AgentsPremiumPreviewPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ─── Modal: Financial Performance Report ─── */}
+      <Dialog open={perfModalOpen} onOpenChange={setPerfModalOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+              <BarChart3 className="size-5 text-emerald-600" />
+              <span>گزارش عملکرد مالی و کمیسیون همکار فروش</span>
+            </DialogTitle>
+            <DialogDescription>
+              {perfAgent?.name} ({perfAgent?.branch}) — آمار ارجاعات، پورسانت‌ها و تسویه‌حساب‌ها
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Date Range Filter */}
+          <div className="bg-muted/40 p-3.5 rounded-xl border border-border/50 space-y-3">
+            <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
+              <span>فیلتر بازه زمانی گزارش:</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setPerfStartDate('')
+                  setPerfEndDate('')
+                  if (perfAgent) fetchAgentPerformance(perfAgent.id)
+                }}
+                className="h-6 text-[11px] text-muted-foreground hover:text-foreground"
+              >
+                حذف فیلتر
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label className="text-[11px] text-muted-foreground block mb-1">از تاریخ (ISO / میلادی):</label>
+                <Input
+                  type="date"
+                  value={perfStartDate}
+                  onChange={(e) => setPerfStartDate(e.target.value)}
+                  className="text-xs font-mono h-8"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-muted-foreground block mb-1">تا تاریخ (ISO / میلادی):</label>
+                <Input
+                  type="date"
+                  value={perfEndDate}
+                  onChange={(e) => setPerfEndDate(e.target.value)}
+                  className="text-xs font-mono h-8"
+                />
+              </div>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => {
+                if (perfAgent) fetchAgentPerformance(perfAgent.id, perfStartDate, perfEndDate)
+              }}
+              disabled={perfLoading}
+              className="w-full text-xs h-8 bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              {perfLoading ? <Loader2 className="size-3.5 animate-spin ml-1" /> : <Filter className="size-3.5 ml-1" />}
+              اعمال بازه تاریخی
+            </Button>
+          </div>
+
+          {perfLoading ? (
+            <div className="py-12 flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="size-6 animate-spin text-emerald-600" />
+              <span>در حال بارگذاری و محاسبه داده‌های مالی...</span>
+            </div>
+          ) : perfData ? (
+            <div className="space-y-4 py-1 text-sm">
+              {/* Primary Financial Metric Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200/60 p-3 rounded-xl text-center">
+                  <span className="text-[11px] text-blue-800 dark:text-blue-300 font-medium block">ارجاع / فروش منتسب</span>
+                  <span className="text-xl font-black text-blue-700 dark:text-blue-400 mt-1 block">
+                    {toPersianNum(perfData.metrics.totalAttributedSales.toString())}
+                  </span>
+                </div>
+                <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/60 p-3 rounded-xl text-center">
+                  <span className="text-[11px] text-emerald-800 dark:text-emerald-300 font-medium block">کمیسیون کسب‌شده</span>
+                  <span className="text-xl font-black text-emerald-700 dark:text-emerald-400 mt-1 block font-mono text-xs sm:text-sm">
+                    {toPersianNum(perfData.metrics.totalEarnedCommission.toLocaleString())} تومان
+                  </span>
+                </div>
+                <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200/60 p-3 rounded-xl text-center">
+                  <span className="text-[11px] text-purple-800 dark:text-purple-300 font-medium block">کمیسیون پرداخت‌شده</span>
+                  <span className="text-xl font-black text-purple-700 dark:text-purple-400 mt-1 block font-mono text-xs sm:text-sm">
+                    {toPersianNum(perfData.metrics.totalPaidCommission.toLocaleString())} تومان
+                  </span>
+                </div>
+                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 p-3 rounded-xl text-center">
+                  <span className="text-[11px] text-amber-800 dark:text-amber-300 font-medium block">مانده پرداخت‌نشده</span>
+                  <span className="text-xl font-black text-amber-700 dark:text-amber-400 mt-1 block font-mono text-xs sm:text-sm">
+                    {toPersianNum(perfData.metrics.unpaidBalance.toLocaleString())} تومان
+                  </span>
+                </div>
+              </div>
+
+              {/* Monthly Earnings Distribution (including zero-earning months) */}
+              <div className="border border-border/50 rounded-xl overflow-hidden">
+                <div className="bg-muted/60 px-3.5 py-2 text-xs font-bold text-foreground flex items-center justify-between">
+                  <span>نمودار و توزیع درآمد ماهانه (تمامی ماه‌ها با درآمد صفر درج شده‌اند)</span>
+                  <span className="text-[11px] text-muted-foreground font-normal">
+                    {toPersianNum(perfData.monthlyBreakdown.length.toString())} ماه در بازه
+                  </span>
+                </div>
+                <div className="p-3 bg-card space-y-2.5 max-h-48 overflow-y-auto">
+                  {perfData.monthlyBreakdown.map((m) => {
+                    const maxEarned = Math.max(...perfData.monthlyBreakdown.map((x) => x.earnedCommission), 1)
+                    const percent = Math.min(100, Math.round((m.earnedCommission / maxEarned) * 100))
+                    return (
+                      <div key={m.yearMonth} className="space-y-1">
+                        <div className="flex justify-between text-xs font-mono">
+                          <span className="font-bold text-slate-700 dark:text-slate-300">{m.yearMonth}</span>
+                          <span className="text-muted-foreground">
+                            کسب‌شده: <strong className="text-emerald-600">{toPersianNum(m.earnedCommission.toLocaleString())}</strong> تومان | 
+                            پرداخت‌شده: <strong className="text-purple-600">{toPersianNum(m.paidCommission.toLocaleString())}</strong> | 
+                            ارجاع: <strong>{toPersianNum(m.referralCount.toString())}</strong>
+                          </span>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                          <div
+                            className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${m.earnedCommission === 0 ? 0 : Math.max(percent, 4)}%` }}
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Metrics Definitions Footer */}
+              <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800 p-2.5 rounded-xl text-[11px] text-muted-foreground space-y-1">
+                <p>• <strong>کمیسیون کسب‌شده:</strong> بر اساس مدل مالی پورسانت‌های تاییدشده (APPROVED) یا واریزشده (PAID) اختصاصی همکار.</p>
+                <p>• <strong>کمیسیون پرداخت‌شده:</strong> مجموع تسویه‌های بانکی واریز شده (PAID) ثبت‌شده در دفترکل مالی سامانه.</p>
+                <p>• <strong>عدم تداخل:</strong> محاسبات تماماً بر پایه سهم همکار فروش انجام شده و مبلغ ناخالص فروش در آن منعکس نشده است.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="py-8 text-center text-xs text-muted-foreground">
+              اطلاعات مالی در دسترس نیست.
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button onClick={() => setPerfModalOpen(false)}>بستن</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       </div>
+
     </DashboardAppShell>
   )
 }

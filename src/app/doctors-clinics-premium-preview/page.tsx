@@ -33,8 +33,11 @@ import {
   Loader2,
   AlertTriangle,
   Download,
-  Plus
+  Plus,
+  Activity,
+  BarChart3
 } from 'lucide-react'
+
 import { toPersianNum } from '@/utils/formatters'
 import { DashboardAppShell } from '@/components/shared/dashboard-app-shell'
 import { PremiumMetricCard } from '@/components/shared/premium-metric-card'
@@ -159,6 +162,53 @@ export default function DoctorsClinicsPremiumPreviewPage() {
   const [statusActionDoc, setStatusActionDoc] = useState<DoctorClinicItem | null>(null)
   const [statusActionOpen, setStatusActionOpen] = useState(false)
   const [isSubmittingStatus, setIsSubmittingStatus] = useState(false)
+
+  // Performance Modal state
+  const [perfDoc, setPerfDoc] = useState<DoctorClinicItem | null>(null)
+  const [perfModalOpen, setPerfModalOpen] = useState(false)
+  const [perfLoading, setPerfLoading] = useState(false)
+  const [perfData, setPerfData] = useState<{
+    totalCompletedVisits: number
+    uniquePatientsCount: number
+    totalVisits: number
+    statusBreakdown: Record<string, number>
+    financial: { totalCompletedDiscountAmount: number; totalCompletedAmount: number }
+  } | null>(null)
+  const [perfStartDate, setPerfStartDate] = useState('')
+  const [perfEndDate, setPerfEndDate] = useState('')
+
+  const fetchDoctorPerformance = async (doctorId: string, start?: string, end?: string) => {
+    setPerfLoading(true)
+    try {
+      const params = new URLSearchParams()
+      if (start) params.set('startDate', start)
+      if (end) params.set('endDate', end)
+      const q = params.toString() ? `?${params.toString()}` : ''
+      const res = await fetch(`/api/v1/doctors/${doctorId}/performance${q}`, {
+        headers: getAuthHeaders(),
+      })
+      const json = await res.json()
+      if (res.ok && json.success && json.data) {
+        setPerfData(json.data.metrics)
+      } else {
+        toast.error(json.message || 'خطا در بارگذاری گزارش عملکرد')
+      }
+    } catch {
+      toast.error('ارتباط با سرور برقرار نشد')
+    } finally {
+      setPerfLoading(false)
+    }
+  }
+
+  const handleOpenPerformance = (doc: DoctorClinicItem) => {
+    setPerfDoc(doc)
+    setPerfData(null)
+    setPerfStartDate('')
+    setPerfEndDate('')
+    setPerfModalOpen(true)
+    fetchDoctorPerformance(doc.id)
+  }
+
 
   // Create Doctor Modal state
   const [createDocModalOpen, setCreateDocModalOpen] = useState(false)
@@ -685,12 +735,22 @@ export default function DoctorsClinicsPremiumPreviewPage() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        title="گزارش عملکرد"
+                        onClick={() => handleOpenPerformance(doc)}
+                        className="size-8 rounded-lg text-muted-foreground hover:text-emerald-600"
+                      >
+                        <Activity className="size-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         title="مشاهده"
                         onClick={() => handleOpenView(doc)}
                         className="size-8 rounded-lg text-muted-foreground hover:text-primary"
                       >
                         <Eye className="size-4" />
                       </Button>
+
                       <Button
                         variant="ghost"
                         size="icon"
@@ -782,6 +842,15 @@ export default function DoctorsClinicsPremiumPreviewPage() {
                             <Button
                               variant="ghost"
                               size="icon"
+                              title="گزارش عملکرد پزشک"
+                              onClick={() => handleOpenPerformance(doc)}
+                              className="size-8 rounded-lg text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+                            >
+                              <Activity className="size-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               title="مشاهده پروفایل"
                               onClick={() => handleOpenView(doc)}
                               className="size-8 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
@@ -797,6 +866,7 @@ export default function DoctorsClinicsPremiumPreviewPage() {
                             >
                               <Edit3 className="size-4" />
                             </Button>
+
                             <Button
                               variant="ghost"
                               size="icon"
@@ -899,6 +969,17 @@ export default function DoctorsClinicsPremiumPreviewPage() {
               variant="outline"
               onClick={() => {
                 setViewModalOpen(false)
+                if (viewDoc) handleOpenPerformance(viewDoc)
+              }}
+              className="gap-1.5 text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50"
+            >
+              <Activity className="size-4" />
+              <span>گزارش عملکرد</span>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setViewModalOpen(false)
                 if (viewDoc) handleOpenEdit(viewDoc)
               }}
               className="gap-1.5"
@@ -910,6 +991,154 @@ export default function DoctorsClinicsPremiumPreviewPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ─── Modal 1.5: Physician Performance Report ─── */}
+      <Dialog open={perfModalOpen} onOpenChange={setPerfModalOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+              <Activity className="size-5 text-emerald-600" />
+              <span>گزارش عملکرد ویزیت پزشک</span>
+            </DialogTitle>
+            <DialogDescription>
+              {perfDoc?.name} ({perfDoc?.clinicName}) — آمار تفکیکی ویزیت‌ها و بیماران یکتا
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Date Range Filter */}
+          <div className="bg-muted/40 p-3.5 rounded-xl border border-border/50 space-y-3">
+            <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
+              <span>فیلتر بازه زمانی:</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setPerfStartDate('')
+                  setPerfEndDate('')
+                  if (perfDoc) fetchDoctorPerformance(perfDoc.id)
+                }}
+                className="h-6 text-[11px] text-muted-foreground hover:text-foreground"
+              >
+                حذف فیلتر
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label className="text-[11px] text-muted-foreground block mb-1">از تاریخ (ISO / میلادی):</label>
+                <Input
+                  type="date"
+                  value={perfStartDate}
+                  onChange={(e) => setPerfStartDate(e.target.value)}
+                  className="text-xs font-mono h-8"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-muted-foreground block mb-1">تا تاریخ (ISO / میلادی):</label>
+                <Input
+                  type="date"
+                  value={perfEndDate}
+                  onChange={(e) => setPerfEndDate(e.target.value)}
+                  className="text-xs font-mono h-8"
+                />
+              </div>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => {
+                if (perfDoc) fetchDoctorPerformance(perfDoc.id, perfStartDate, perfEndDate)
+              }}
+              disabled={perfLoading}
+              className="w-full text-xs h-8 bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              {perfLoading ? <Loader2 className="size-3.5 animate-spin ml-1" /> : <Filter className="size-3.5 ml-1" />}
+              اعمال بازه تاریخی
+            </Button>
+          </div>
+
+          {perfLoading ? (
+            <div className="py-12 flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="size-6 animate-spin text-emerald-600" />
+              <span>در حال محاسبه شاخص‌های عملکرد...</span>
+            </div>
+          ) : perfData ? (
+            <div className="space-y-4 py-1 text-sm">
+              {/* Primary KPI Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="bg-emerald-50 border border-emerald-200/60 p-3.5 rounded-xl text-center">
+                  <span className="text-xs text-emerald-800 font-medium block">ویزیت‌های تکمیل‌شده</span>
+                  <span className="text-2xl font-black text-emerald-700 mt-1 block">
+                    {toPersianNum(perfData.totalCompletedVisits.toString())}
+                  </span>
+                </div>
+                <div className="bg-blue-50 border border-blue-200/60 p-3.5 rounded-xl text-center">
+                  <span className="text-xs text-blue-800 font-medium block">بیماران یکتا</span>
+                  <span className="text-2xl font-black text-blue-700 mt-1 block">
+                    {toPersianNum(perfData.uniquePatientsCount.toString())}
+                  </span>
+                </div>
+                <div className="col-span-2 sm:col-span-1 bg-purple-50 border border-purple-200/60 p-3.5 rounded-xl text-center">
+                  <span className="text-xs text-purple-800 font-medium block">کل درخواست‌ها</span>
+                  <span className="text-2xl font-black text-purple-700 mt-1 block">
+                    {toPersianNum(perfData.totalVisits.toString())}
+                  </span>
+                </div>
+              </div>
+
+              {/* Status Breakdown Table */}
+              <div className="border border-border/50 rounded-xl overflow-hidden">
+                <div className="bg-muted/60 px-3.5 py-2 text-xs font-bold text-foreground">
+                  تفکیک وضعیت ویزیت‌ها در بازه
+                </div>
+                <div className="divide-y divide-border/40 text-xs">
+                  <div className="flex justify-between items-center px-3.5 py-2.5">
+                    <span className="flex items-center gap-1.5 text-emerald-700 font-medium">
+                      <CheckCircle2 className="size-3.5" /> تکمیل‌شده (COMPLETED)
+                    </span>
+                    <span className="font-bold text-foreground">{toPersianNum((perfData.statusBreakdown?.COMPLETED || 0).toString())}</span>
+                  </div>
+                  <div className="flex justify-between items-center px-3.5 py-2.5">
+                    <span className="flex items-center gap-1.5 text-amber-700 font-medium">
+                      <Clock className="size-3.5" /> در انتظار (PENDING)
+                    </span>
+                    <span className="font-bold text-foreground">{toPersianNum((perfData.statusBreakdown?.PENDING || 0).toString())}</span>
+                  </div>
+                  <div className="flex justify-between items-center px-3.5 py-2.5">
+                    <span className="flex items-center gap-1.5 text-blue-700 font-medium">
+                      <Activity className="size-3.5" /> تأییدشده / در حال انجام (CONFIRMED)
+                    </span>
+                    <span className="font-bold text-foreground">{toPersianNum((perfData.statusBreakdown?.CONFIRMED || 0).toString())}</span>
+                  </div>
+                  <div className="flex justify-between items-center px-3.5 py-2.5">
+                    <span className="flex items-center gap-1.5 text-rose-700 font-medium">
+                      <Ban className="size-3.5" /> لغوشده (CANCELLED)
+                    </span>
+                    <span className="font-bold text-foreground">{toPersianNum((perfData.statusBreakdown?.CANCELLED || 0).toString())}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Financial Summary */}
+              {perfData.financial && (
+                <div className="bg-slate-50 border border-slate-200/70 p-3 rounded-xl flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">مجموع تخفیف ارائه‌شده حامی:</span>
+                  <span className="font-bold text-emerald-600 font-mono">
+                    {toPersianNum(perfData.financial.totalCompletedDiscountAmount.toLocaleString())} تومان
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="py-8 text-center text-xs text-muted-foreground">
+              داده‌ای جهت نمایش وجود ندارد.
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button onClick={() => setPerfModalOpen(false)}>بستن</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       {/* ─── Modal 2: Edit Doctor ─── */}
       <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>

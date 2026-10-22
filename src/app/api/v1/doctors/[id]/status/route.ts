@@ -3,6 +3,8 @@ import { z } from 'zod'
 import { db } from '@/lib/db'
 import { requirePermission } from '@/lib/auth'
 import { successResponse, errorResponse } from '@/lib/api-response'
+import { assertNoAgentConflict } from '@/lib/role-integrity'
+
 
 const statusSchema = z.object({
   status: z.enum(['APPROVED', 'REJECTED', 'SUSPENDED']),
@@ -32,13 +34,26 @@ export async function PATCH(
 
     const { status } = parsed.data
 
+    if (status === 'APPROVED' && existingDoctor.userId) {
+      try {
+        await assertNoAgentConflict({ userId: existingDoctor.userId })
+      } catch (conflictErr: any) {
+        return errorResponse('CONFLICT', conflictErr.message, 409)
+      }
+    }
+
     const updateData: Record<string, unknown> = { status }
     if (status === 'APPROVED') {
       updateData.verifiedAt = new Date()
     }
 
     const doctor = await db.$transaction(async (tx) => {
+      if (status === 'APPROVED' && existingDoctor.userId) {
+        await assertNoAgentConflict({ userId: existingDoctor.userId }, tx)
+      }
+
       const updatedDoctor = await tx.doctor.update({
+
         where: { id },
         data: updateData,
         include: {

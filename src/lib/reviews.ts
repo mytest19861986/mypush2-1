@@ -27,6 +27,31 @@ export function toSafeReviewResponse(review: {
   comment: string | null
   status: string
   createdAt: Date
+  user?: {
+    mobile?: string | null
+    profile?: {
+      firstName?: string | null
+      lastName?: string | null
+    } | null
+  } | null
+  doctor?: {
+    specialty?: string | null
+    clinicName?: string | null
+    user?: {
+      profile?: {
+        firstName?: string | null
+        lastName?: string | null
+      } | null
+    } | null
+  } | null
+  visit?: {
+    status?: string | null
+    userPlan?: {
+      plan?: {
+        name?: string | null
+      } | null
+    } | null
+  } | null
 }) {
   return {
     reviewId: review.id,
@@ -36,5 +61,46 @@ export function toSafeReviewResponse(review: {
     comment: review.comment,
     status: review.status,
     createdAt: review.createdAt.toISOString(),
+    ...(review.user && {
+      user: {
+        profile: review.user.profile
+          ? {
+              firstName: review.user.profile.firstName,
+              lastName: review.user.profile.lastName,
+            }
+          : null,
+      },
+    }),
+    ...(review.doctor && {
+      doctor: {
+        specialty: review.doctor.specialty,
+        clinicName: review.doctor.clinicName,
+        user: {
+          profile: review.doctor.user?.profile
+            ? {
+                firstName: review.doctor.user.profile.firstName,
+                lastName: review.doctor.user.profile.lastName,
+              }
+            : null,
+        },
+      },
+    }),
+    ...(review.visit && {
+      visit: {
+        status: review.visit.status,
+        plan: {
+          name: review.visit.userPlan?.plan?.name || null,
+        },
+        userPlan: {
+          plan: {
+            name: review.visit.userPlan?.plan?.name || null,
+          },
+        },
+      },
+      plan: {
+        name: review.visit.userPlan?.plan?.name || null,
+      },
+    }),
   }
 }
+

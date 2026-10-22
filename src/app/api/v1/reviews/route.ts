@@ -186,6 +186,47 @@ export async function GET(request: NextRequest) {
         comment: true,
         status: true,
         createdAt: true,
+        user: {
+          select: {
+            mobile: true,
+            profile: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+        doctor: {
+          select: {
+            specialty: true,
+            clinicName: true,
+            user: {
+              select: {
+                profile: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        visit: {
+          select: {
+            status: true,
+            userPlan: {
+              select: {
+                plan: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
       take,
@@ -193,6 +234,7 @@ export async function GET(request: NextRequest) {
     })
 
     return successResponse(reviews.map(toSafeReviewResponse))
+
   } catch (err) {
     console.error('[GET /api/v1/reviews]', err)
     return errorResponse('INTERNAL_ERROR', 'خطای داخلی سرور رخ داد.', 500)
