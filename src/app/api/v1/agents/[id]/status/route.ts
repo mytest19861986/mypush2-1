@@ -7,6 +7,7 @@ import { createAuditLog, AuditActions } from '@/lib/audit'
 
 const statusSchema = z.object({
   status: z.enum(['APPROVED', 'REJECTED', 'SUSPENDED']),
+  reason: z.string().trim().max(500).optional(),
 })
 
 // PATCH /api/v1/agents/[id]/status — Update agent status
@@ -28,7 +29,7 @@ export async function PATCH(
     return errorResponse('VALIDATION_ERROR', 'Invalid status. Must be APPROVED, REJECTED, or SUSPENDED', 400)
   }
 
-  const { status } = parsed.data
+  const { status, reason } = parsed.data
 
   // Check agent exists
   const agent = await db.agent.findUnique({ where: { id } })
@@ -36,7 +37,17 @@ export async function PATCH(
     return errorResponse('NOT_FOUND', 'Agent not found', 404)
   }
 
-  // Execute agent status update and role assignment atomically inside a transaction
+  // Idempotency: If status is identical, return success immediately without generating duplicate audit log
+  if (agent.status === status) {
+    return successResponse(agent, `Agent status is already ${status}`)
+  }
+
+  const previousStatus = agent.status
+  const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined
+  const device = request.headers.get('user-agent') || undefined
+  const correlationId = request.headers.get('x-request-id') || request.headers.get('x-correlation-id') || undefined
+
+  // Execute agent status update, role assignment, and audit log atomically inside a single transaction
   const updatedAgent = await db.$transaction(async (tx) => {
     const updateData: Record<string, unknown> = { status }
     if (status === 'APPROVED') {
@@ -77,20 +88,28 @@ export async function PATCH(
       }
     }
 
-    return updated
-  })
+    // Atomic Audit Log creation inside transaction (prevents partial status or decoupled audit)
+    const auditDetails = {
+      agentId: id,
+      previousStatus,
+      newStatus: status,
+      ...(reason ? { reason } : {}),
+      ...(correlationId ? { correlationId } : {}),
+    }
 
-  // Create audit log
-  const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined
-  const device = request.headers.get('user-agent') || undefined
-  createAuditLog({
-    userId: payload!.sub,
-    action: AuditActions.AGENT_STATUS_CHANGED,
-    entity: 'Agent',
-    entityId: id,
-    details: { agentId: id, previousStatus: agent.status, newStatus: status },
-    ip,
-    device,
+    await tx.auditLog.create({
+      data: {
+        userId: payload!.sub,
+        action: AuditActions.AGENT_STATUS_CHANGED,
+        entity: 'Agent',
+        entityId: id,
+        details: JSON.stringify(auditDetails),
+        ip,
+        device,
+      },
+    })
+
+    return updated
   })
 
   return successResponse(updatedAgent, `Agent status updated to ${status}`)

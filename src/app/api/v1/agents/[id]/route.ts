@@ -88,6 +88,54 @@ export async function GET(
       }
     : null
 
+  // Fetch lifecycle audit logs for this agent
+  const auditLogs = await db.auditLog.findMany({
+    where: {
+      entity: 'Agent',
+      entityId: id,
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          mobile: true,
+          profile: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 50,
+  })
+
+  const safeAuditLogs = auditLogs.map((log) => {
+    let parsedDetails: Record<string, unknown> | null = null
+    try {
+      if (log.details) parsedDetails = JSON.parse(log.details)
+    } catch {
+      parsedDetails = null
+    }
+
+    const operatorName = log.user
+      ? `${log.user.profile?.firstName ?? ''} ${log.user.profile?.lastName ?? ''}`.trim() || log.user.mobile
+      : 'سیستم / نامشخص'
+
+    return {
+      id: log.id,
+      action: log.action,
+      createdAt: log.createdAt.toISOString(),
+      operatorName,
+      previousStatus: parsedDetails?.previousStatus ?? null,
+      newStatus: parsedDetails?.newStatus ?? null,
+      reason: parsedDetails?.reason ?? null,
+      correlationId: parsedDetails?.correlationId ?? null,
+    }
+  })
+
   return successResponse(
     {
       id: agent.id,
@@ -105,6 +153,7 @@ export async function GET(
           profile?.payoutCardNumber && profile?.payoutSheba && profile?.payoutAccountOwnerName
         ),
       },
+      auditLogs: safeAuditLogs,
       user: {
         mobile: user.mobile,
         email: user.email,

@@ -96,6 +96,7 @@ export default function AgentsPremiumPreviewPage() {
   // Status Action States
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
   const [statusConfirmAction, setStatusConfirmAction] = useState<'APPROVED' | 'REJECTED' | 'SUSPENDED' | null>(null)
+  const [statusReason, setStatusReason] = useState('')
 
   const handleUpdateAgentStatus = async (status: 'APPROVED' | 'REJECTED' | 'SUSPENDED') => {
     if (!selectedAgentDetail?.id || isUpdatingStatus) return
@@ -112,7 +113,10 @@ export default function AgentsPremiumPreviewPage() {
       const res = await fetch(`/api/v1/agents/${selectedAgentDetail.id}/status`, {
         method: 'PATCH',
         headers,
-        body: JSON.stringify({ status })
+        body: JSON.stringify({
+          status,
+          reason: statusReason.trim() || undefined,
+        })
       })
       const json = await res.json()
 
@@ -125,6 +129,7 @@ export default function AgentsPremiumPreviewPage() {
             : 'وضعیت نماینده با موفقیت به حالت تعلیق تغییر یافت'
         )
         setStatusConfirmAction(null)
+        setStatusReason('')
         // Refresh agent detail and list
         await openAgentDetails(selectedAgentDetail.id)
         await fetchAgents()
@@ -846,9 +851,53 @@ export default function AgentsPremiumPreviewPage() {
                 <p>تعداد اسناد و قراردادهای ثبت‌شده: {selectedAgentDetail._count?.documents || 0} مورد</p>
               </div>
 
+              {/* Lifecycle Audit Trail History */}
+              <div className="space-y-2 pt-2 border-t border-border/40">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Clock className="size-3.5 text-primary" />
+                    <span>تاریخچه تغییرات و ممیزی پرونده (Audit Trail):</span>
+                  </p>
+                  <span className="text-[10px] text-muted-foreground">
+                    {selectedAgentDetail.auditLogs?.length ? `${selectedAgentDetail.auditLogs.length} رویداد` : 'بدون رویداد'}
+                  </span>
+                </div>
+
+                {selectedAgentDetail.auditLogs && selectedAgentDetail.auditLogs.length > 0 ? (
+                  <div className="max-h-40 overflow-y-auto space-y-2 pr-1 rounded-lg border border-border/40 p-2 bg-muted/20">
+                    {selectedAgentDetail.auditLogs.map((log: any) => (
+                      <div key={log.id} className="text-xs p-2 rounded bg-background border border-border/50 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 font-semibold text-[11px]">
+                            <span className="text-muted-foreground">{log.operatorName}</span>
+                            <span className="text-muted-foreground">←</span>
+                            <Badge variant={log.newStatus === 'APPROVED' ? 'success' : log.newStatus === 'REJECTED' ? 'destructive' : 'secondary'} className="text-[10px] px-1.5 py-0 h-4">
+                              {log.newStatus === 'APPROVED' ? 'تایید' : log.newStatus === 'REJECTED' ? 'رد' : 'تعلیق'}
+                            </Badge>
+                          </div>
+                          <span className="text-[10px] text-muted-foreground" dir="ltr">
+                            {new Date(log.createdAt).toLocaleString('fa-IR')}
+                          </span>
+                        </div>
+                        {log.reason && (
+                          <p className="text-[11px] text-muted-foreground bg-muted/40 p-1 rounded">
+                            <span className="font-semibold text-foreground">علت: </span>
+                            {log.reason}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground italic bg-muted/20 p-2 rounded text-center">
+                    تاکنون هیچ رویداد تغییری برای این پرونده ثبت نشده است.
+                  </p>
+                )}
+              </div>
+
               {/* Confirmation Alert Box */}
               {statusConfirmAction && (
-                <div className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 dark:bg-amber-500/5 space-y-2 animate-in fade-in zoom-in-95 duration-150">
+                <div className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 dark:bg-amber-500/5 space-y-2.5 animate-in fade-in zoom-in-95 duration-150">
                   <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-bold text-xs">
                     <AlertTriangle className="size-4 shrink-0" />
                     <span>
@@ -857,13 +906,25 @@ export default function AgentsPremiumPreviewPage() {
                       {statusConfirmAction === 'SUSPENDED' && 'آیا از تعلیق حساب و غیرفعال‌سازی موقت این نماینده اطمینان دارید؟'}
                     </span>
                   </div>
+                  <div>
+                    <Input
+                      placeholder="دلیل یا توضیحات این تصمیم (اختیاری جهت ثبت در تاریخچه ممیزی)..."
+                      value={statusReason}
+                      onChange={(e) => setStatusReason(e.target.value)}
+                      className="text-xs h-8 bg-background border-border/60"
+                      maxLength={500}
+                    />
+                  </div>
                   <div className="flex items-center justify-end gap-2 pt-1">
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
                       disabled={isUpdatingStatus}
-                      onClick={() => setStatusConfirmAction(null)}
+                      onClick={() => {
+                        setStatusConfirmAction(null)
+                        setStatusReason('')
+                      }}
                       className="h-7 text-xs"
                     >
                       انصراف
