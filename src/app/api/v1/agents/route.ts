@@ -4,6 +4,8 @@ import { db } from '@/lib/db'
 import { requirePermission, authenticateRequest } from '@/lib/auth'
 import { successResponse, errorResponse, paginatedResponse } from '@/lib/api-response'
 
+import { maskNationalCode } from '@/lib/sales-customers'
+
 const validStatuses = ['PENDING', 'UNDER_REVIEW', 'APPROVED', 'REJECTED', 'SUSPENDED'] as const
 
 const querySchema = z.object({
@@ -16,7 +18,10 @@ const querySchema = z.object({
 // GET /api/v1/agents — List all agents (paginated, with filters)
 export async function GET(request: NextRequest) {
   const { authorized, payload, error } = await requirePermission(request, 'manage_agents')
-  if (!authorized) return errorResponse('UNAUTHORIZED', error!, 401)
+  if (!authorized) {
+    if (!payload) return errorResponse('UNAUTHORIZED', error!, 401)
+    return errorResponse('FORBIDDEN', error!, 403)
+  }
 
   const { searchParams } = request.nextUrl
   const parsed = querySchema.safeParse(Object.fromEntries(searchParams))
@@ -51,7 +56,7 @@ export async function GET(request: NextRequest) {
             mobile: true,
             email: true,
             status: true,
-            profile: { select: { firstName: true, lastName: true, avatar: true } },
+            profile: { select: { firstName: true, lastName: true, avatar: true, nationalCode: true } },
           },
         },
         _count: {
@@ -62,7 +67,22 @@ export async function GET(request: NextRequest) {
     db.agent.count({ where }),
   ])
 
-  return paginatedResponse(agents, {
+  const sanitizedAgents = agents.map((agent) => ({
+    ...agent,
+    user: agent.user
+      ? {
+          ...agent.user,
+          profile: agent.user.profile
+            ? {
+                ...agent.user.profile,
+                nationalCode: maskNationalCode(agent.user.profile.nationalCode),
+              }
+            : null,
+        }
+      : null,
+  }))
+
+  return paginatedResponse(sanitizedAgents, {
     page,
     limit,
     total,

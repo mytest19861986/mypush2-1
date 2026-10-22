@@ -60,6 +60,13 @@ export async function buildUserResponse(user: {
             : {}),
         }
       : null,
+    agent: user.agent
+      ? {
+          id: user.agent.id,
+          businessName: user.agent.businessName,
+          status: user.agent.status,
+        }
+      : null,
   }
 }
 

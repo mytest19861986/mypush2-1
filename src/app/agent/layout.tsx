@@ -157,6 +157,10 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
     fetchAgent()
   }, [pathname])
 
+  if (pathname === '/agent/pending') {
+    return <ErrorBoundary>{children}</ErrorBoundary>
+  }
+
   return (
     <AgentRoute>
       <ErrorBoundary>

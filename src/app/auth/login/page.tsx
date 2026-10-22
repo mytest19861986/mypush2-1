@@ -53,6 +53,7 @@ function getRedirectPathForUser(user: AuthUser) {
   if (roles.includes('SUPER_ADMIN') || roles.includes('ADMIN')) return '/admin/dashboard'
   if (roles.includes('DOCTOR')) return '/doctor/dashboard'
   if (roles.includes('AGENT')) return '/agent/dashboard'
+  if (user.agent?.status === 'PENDING') return '/agent/pending'
   return '/user/dashboard'
 }
 

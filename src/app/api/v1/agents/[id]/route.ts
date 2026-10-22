@@ -9,8 +9,11 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { authorized, error } = await requirePermission(request, 'manage_agents')
-  if (!authorized) return errorResponse('UNAUTHORIZED', error!, 401)
+  const { authorized, payload, error } = await requirePermission(request, 'manage_agents')
+  if (!authorized) {
+    if (!payload) return errorResponse('UNAUTHORIZED', error!, 401)
+    return errorResponse('FORBIDDEN', error!, 403)
+  }
 
   const { id } = await params
 
@@ -77,7 +80,7 @@ export async function GET(
     ? {
         firstName: profile.firstName,
         lastName: profile.lastName,
-        nationalCode: maskNationalCode(profile.nationalCode),
+        nationalCode: profile.nationalCode, // Full unmasked national code for authorized managers in detail view
         avatar: profile.avatar,
         birthDate: profile.birthDate,
         gender: profile.gender,

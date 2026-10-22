@@ -15,7 +15,10 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { authorized, payload, error } = await requirePermission(request, 'approve_agents')
-  if (!authorized) return errorResponse('UNAUTHORIZED', error!, 401)
+  if (!authorized) {
+    if (!payload) return errorResponse('UNAUTHORIZED', error!, 401)
+    return errorResponse('FORBIDDEN', error!, 403)
+  }
 
   const { id } = await params
 
@@ -33,51 +36,49 @@ export async function PATCH(
     return errorResponse('NOT_FOUND', 'Agent not found', 404)
   }
 
-  const updateData: Record<string, unknown> = { status }
-  if (status === 'APPROVED') {
-    updateData.verifiedAt = new Date()
-  }
-
-  const updatedAgent = await db.agent.update({
-    where: { id },
-    data: updateData,
-  })
-
-  // Assign/remove AGENT role based on status
-  const agentRole = await db.role.findUnique({ where: { name: 'AGENT' } })
-  if (agentRole) {
+  // Execute agent status update and role assignment atomically inside a transaction
+  const updatedAgent = await db.$transaction(async (tx) => {
+    const updateData: Record<string, unknown> = { status }
     if (status === 'APPROVED') {
-      // Assign AGENT role
-      await db.userRole.upsert({
-        where: {
-          userId_roleId: {
+      updateData.verifiedAt = new Date()
+    }
+
+    const updated = await tx.agent.update({
+      where: { id },
+      data: updateData,
+    })
+
+    // Assign/remove AGENT role based on status
+    const agentRole = await tx.role.findUnique({ where: { name: 'AGENT' } })
+    if (agentRole) {
+      if (status === 'APPROVED') {
+        // Assign AGENT role idempotently
+        await tx.userRole.upsert({
+          where: {
+            userId_roleId: {
+              userId: agent.userId,
+              roleId: agentRole.id,
+            },
+          },
+          create: {
             userId: agent.userId,
             roleId: agentRole.id,
           },
-        },
-        create: {
-          userId: agent.userId,
-          roleId: agentRole.id,
-        },
-        update: {},
-      })
-    } else if (status === 'REJECTED' || status === 'SUSPENDED') {
-      // Remove AGENT role so user returns to normal USER panel
-      const existingRole = await db.userRole.findUnique({
-        where: {
-          userId_roleId: {
+          update: {},
+        })
+      } else if (status === 'REJECTED' || status === 'SUSPENDED') {
+        // Remove AGENT role so user safely returns to base USER panel
+        await tx.userRole.deleteMany({
+          where: {
             userId: agent.userId,
             roleId: agentRole.id,
           },
-        },
-      })
-      if (existingRole) {
-        await db.userRole.delete({
-          where: { id: existingRole.id },
         })
       }
     }
-  }
+
+    return updated
+  })
 
   // Create audit log
   const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined

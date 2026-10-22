@@ -21,6 +21,7 @@ export interface AuthUser {
   roles: string[]
   permissions: string[]
   profile: UserProfile | null
+  agent?: { id: string; businessName: string | null; status: string } | null
 }
 
 // ─── API Types ───

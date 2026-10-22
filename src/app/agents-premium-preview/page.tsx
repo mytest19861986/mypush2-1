@@ -35,7 +35,13 @@ import {
   Building,
   UserCheck,
   Plus,
-  Loader2
+  Loader2,
+  Phone,
+  IdCard,
+  Eye,
+  RefreshCw,
+  UserX,
+  AlertTriangle
 } from 'lucide-react'
 import { toPersianNum } from '@/utils/formatters'
 
@@ -47,6 +53,9 @@ interface AgentMock {
   name: string
   branch: string
   location: string
+  mobile?: string
+  nationalCode?: string
+  email?: string
   activeClientsCount: number
   totalSalesVolume: string
   totalCommissionPaid: string
@@ -75,12 +84,145 @@ export default function AgentsPremiumPreviewPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
 
-  const agents: AgentMock[] = [
+  const [liveAgents, setLiveAgents] = useState<AgentMock[]>([])
+  const [isLoadingAgents, setIsLoadingAgents] = useState(true)
+  const [apiError, setApiError] = useState<string | null>(null)
+
+  // Selected agent for details modal
+  const [selectedAgentDetail, setSelectedAgentDetail] = useState<any | null>(null)
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false)
+  const [detailModalOpen, setDetailModalOpen] = useState(false)
+
+  // Status Action States
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  const [statusConfirmAction, setStatusConfirmAction] = useState<'APPROVED' | 'REJECTED' | 'SUSPENDED' | null>(null)
+
+  const handleUpdateAgentStatus = async (status: 'APPROVED' | 'REJECTED' | 'SUSPENDED') => {
+    if (!selectedAgentDetail?.id || isUpdatingStatus) return
+    setIsUpdatingStatus(true)
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      }
+      if (typeof window !== 'undefined') {
+        const token = localStorage.getItem('accessToken')
+        if (token) headers['X-App-Authorization'] = `Bearer ${token}`
+      }
+
+      const res = await fetch(`/api/v1/agents/${selectedAgentDetail.id}/status`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ status })
+      })
+      const json = await res.json()
+
+      if (res.ok && json.success) {
+        toast.success(
+          status === 'APPROVED'
+            ? 'پرونده همکار فروش با موفقیت تایید شد و دسترسی همکار فعال گردید'
+            : status === 'REJECTED'
+            ? 'درخواست همکاری با موفقیت رد شد'
+            : 'وضعیت نماینده با موفقیت به حالت تعلیق تغییر یافت'
+        )
+        setStatusConfirmAction(null)
+        // Refresh agent detail and list
+        await openAgentDetails(selectedAgentDetail.id)
+        await fetchAgents()
+      } else {
+        toast.error(json.error?.message || 'خطا در تغییر وضعیت همکار فروش')
+      }
+    } catch (err) {
+      toast.error('ارتباط با سرور جهت تغییر وضعیت نماینده برقرار نشد')
+    } finally {
+      setIsUpdatingStatus(false)
+    }
+  }
+
+  const fetchAgents = React.useCallback(async () => {
+    setIsLoadingAgents(true)
+    setApiError(null)
+    try {
+      const headers: Record<string, string> = {}
+      if (typeof window !== 'undefined') {
+        const token = localStorage.getItem('accessToken')
+        if (token) headers['X-App-Authorization'] = `Bearer ${token}`
+      }
+      const res = await fetch('/api/v1/agents?limit=50', { headers })
+      const json = await res.json()
+      if (res.ok && json.success && Array.isArray(json.data)) {
+        const mapped: AgentMock[] = json.data.map((item: any, idx: number) => {
+          const profile = item.user?.profile
+          const name = profile?.firstName || profile?.lastName
+            ? `${profile?.firstName || ''} ${profile?.lastName || ''}`.trim()
+            : item.businessName || `همکار شماره ${idx + 1}`
+          const mobile = item.user?.mobile || 'ثبت نشده'
+          const nationalCode = profile?.nationalCode || 'نامشخص'
+          const status = item.status === 'APPROVED' ? 'ACTIVE' : item.status === 'PENDING' ? 'PENDING' : 'SUSPENDED'
+          const initial = name ? name.charAt(0) : 'ن'
+          return {
+            id: item.id,
+            name,
+            branch: item.businessName || 'نمایندگی حامی',
+            location: item.description || 'ثبت‌شده در سامانه',
+            mobile,
+            nationalCode,
+            email: item.user?.email || null,
+            activeClientsCount: item._count?.documents || 0,
+            totalSalesVolume: 'به‌روزرسانی خودکار',
+            totalCommissionPaid: 'محاسبه در دوره تسویه',
+            rank: status === 'ACTIVE' ? 'همکار تاییدشده' : 'در صف بررسی مدارک',
+            status,
+            statusLabel: status === 'ACTIVE' ? 'فعال و تاییدشده' : 'در صف احراز هویت',
+            lastSale: item.createdAt ? new Date(item.createdAt).toLocaleDateString('fa-IR') : 'به‌تازگی',
+            avatarInitial: initial,
+          }
+        })
+        setLiveAgents(mapped)
+      } else {
+        setApiError(json.error?.message || 'خطا در واکشی فهرست نمایندگان')
+      }
+    } catch (err) {
+      setApiError('ارتباط با سرور جهت دریافت فهرست نمایندگان برقرار نشد')
+    } finally {
+      setIsLoadingAgents(false)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    fetchAgents()
+  }, [fetchAgents])
+
+  const openAgentDetails = async (agentId: string) => {
+    setIsLoadingDetail(true)
+    setDetailModalOpen(true)
+    try {
+      const headers: Record<string, string> = {}
+      if (typeof window !== 'undefined') {
+        const token = localStorage.getItem('accessToken')
+        if (token) headers['X-App-Authorization'] = `Bearer ${token}`
+      }
+      const res = await fetch(`/api/v1/agents/${agentId}`, { headers })
+      const json = await res.json()
+      if (res.ok && json.success && json.data) {
+        setSelectedAgentDetail(json.data)
+      } else {
+        toast.error(json.error?.message || 'خطا در دریافت جزئیات پرونده نماینده')
+      }
+    } catch {
+      toast.error('ارتباط با سرور برای دریافت جزئیات برقرار نشد')
+    } finally {
+      setIsLoadingDetail(false)
+    }
+  }
+
+  const agents: AgentMock[] = liveAgents.length > 0 ? liveAgents : [
     {
       id: 'AG-201',
       name: 'پیمان حسینی',
       branch: 'شعبه مرکزی غرب تهران',
       location: 'تهران، صادقیه',
+      mobile: '۰۹۱۲***۸۸۱۱',
+      nationalCode: '۰۰۱****۴۵۶',
       activeClientsCount: 342,
       totalSalesVolume: '۳۸۰,۰۰۰,۰۰۰ تومان',
       totalCommissionPaid: '۵۷,۰۰۰,۰۰۰ تومان',
@@ -95,6 +237,8 @@ export default function AgentsPremiumPreviewPage() {
       name: 'الهام سلیمی',
       branch: 'نمایندگی منطقه سعادت‌آباد',
       location: 'تهران، سعادت‌آباد',
+      mobile: '۰۹۱۹***۴۴۲۲',
+      nationalCode: '۰۴۵****۷۸۹',
       activeClientsCount: 285,
       totalSalesVolume: '۳۱۰,۰۰۰,۰۰۰ تومان',
       totalCommissionPaid: '۴۶,۵۰۰,۰۰۰ تومان',
@@ -109,6 +253,8 @@ export default function AgentsPremiumPreviewPage() {
       name: 'شرکت خدمات نوین مهر',
       branch: 'نمایندگی حقوقی و سازمانی',
       location: 'تهران، مطهری',
+      mobile: '۰۹۱۲***۳۳۲۲',
+      nationalCode: '۱۰۱۰****۹۹۰',
       activeClientsCount: 520,
       totalSalesVolume: '۵۴۰,۰۰۰,۰۰۰ تومان',
       totalCommissionPaid: '۸۱,۰۰۰,۰۰۰ تومان',
@@ -123,6 +269,8 @@ export default function AgentsPremiumPreviewPage() {
       name: 'فرهاد بهرامی',
       branch: 'دفتر نمایندگی شرق',
       location: 'تهران، تهرانپارس',
+      mobile: '۰۹۳۵***۵۵۴۴',
+      nationalCode: '۰۰۷****۱۲۳',
       activeClientsCount: 64,
       totalSalesVolume: '۵۸,۰۰۰,۰۰۰ تومان',
       totalCommissionPaid: '۸,۷۰۰,۰۰۰ تومان',
@@ -391,6 +539,19 @@ export default function AgentsPremiumPreviewPage() {
                 </div>
               </div>
 
+              {/* Contact & Identity Info Badge Row */}
+              <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/60 px-2.5 py-1 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
+                  <Phone className="size-3.5 text-primary" />
+                  <span className="font-mono text-slate-700 dark:text-slate-300 font-semibold" dir="ltr">{agent.mobile || 'ثبت نشده'}</span>
+                </div>
+                <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/60 px-2.5 py-1 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
+                  <IdCard className="size-3.5 text-teal-600 dark:text-teal-400" />
+                  <span>کد ملی:</span>
+                  <span className="font-mono text-slate-700 dark:text-slate-300 font-semibold" dir="ltr">{agent.nationalCode || 'ثبت نشده'}</span>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-muted/40 border border-border/40 text-xs">
                 <div>
                   <p className="text-muted-foreground">مشتریان جذب‌شده:</p>
@@ -413,6 +574,15 @@ export default function AgentsPremiumPreviewPage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-2 border-t border-border/40 gap-2">
                 <span className="text-xs font-mono text-muted-foreground">{agent.id}</span>
                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                  <Button 
+                    variant="secondary" 
+                    size="sm" 
+                    className="h-8 px-2.5 sm:px-3 text-xs cursor-pointer flex-1 sm:flex-none gap-1.5"
+                    onClick={() => openAgentDetails(agent.id)}
+                  >
+                    <Eye className="size-3.5 text-primary" />
+                    <span>مشاهده پرونده</span>
+                  </Button>
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -594,6 +764,202 @@ export default function AgentsPremiumPreviewPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+      {/* ─── Agent Detail Modal Dialog ─── */}
+      <Dialog open={detailModalOpen} onOpenChange={setDetailModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <IdCard className="size-5 text-primary" />
+              <span>مشخصات و پرونده کامل همکار فروش</span>
+            </DialogTitle>
+            <DialogDescription>
+              اطلاعات هویتی، تماس و وضعیت سیستمی نماینده در سامانه مرکزی
+            </DialogDescription>
+          </DialogHeader>
+
+          {isLoadingDetail ? (
+            <div className="flex flex-col items-center justify-center p-8 space-y-3">
+              <Loader2 className="size-8 text-primary animate-spin" />
+              <p className="text-xs text-muted-foreground">در حال بارگذاری اطلاعات پرونده نماینده...</p>
+            </div>
+          ) : selectedAgentDetail ? (
+            <div className="space-y-4 py-2 text-sm">
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800">
+                <div className="size-12 rounded-xl bg-primary/10 text-primary font-bold text-lg flex items-center justify-center border border-primary/20">
+                  {selectedAgentDetail.businessName?.charAt(0) || 'ن'}
+                </div>
+                <div>
+                  <h4 className="font-bold text-base text-foreground">{selectedAgentDetail.businessName}</h4>
+                  <p className="text-xs text-muted-foreground mt-0.5">شناسه سیستمی: <span className="font-mono">{selectedAgentDetail.id}</span></p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="p-3 rounded-lg bg-muted/40 border border-border/50">
+                  <p className="text-muted-foreground">نام و نام خانوادگی:</p>
+                  <p className="font-bold text-foreground mt-1 text-sm">
+                    {selectedAgentDetail.user?.profile?.firstName || ''} {selectedAgentDetail.user?.profile?.lastName || 'ثبت‌نشده'}
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-lg bg-muted/40 border border-border/50">
+                  <p className="text-muted-foreground">شماره تماس همراه:</p>
+                  <p className="font-bold font-mono text-foreground mt-1 text-sm text-primary" dir="ltr">
+                    {selectedAgentDetail.user?.mobile || 'ثبت‌نشده'}
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-lg bg-muted/40 border border-border/50">
+                  <p className="text-muted-foreground">کد ملی نماینده:</p>
+                  <p className="font-bold font-mono text-foreground mt-1 text-sm text-teal-600 dark:text-teal-400" dir="ltr">
+                    {selectedAgentDetail.user?.profile?.nationalCode || 'ثبت‌نشده'}
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-lg bg-muted/40 border border-border/50">
+                  <p className="text-muted-foreground">وضعیت پرونده:</p>
+                  <p className="font-bold mt-1 text-sm">
+                    {selectedAgentDetail.status === 'APPROVED' ? (
+                      <Badge variant="success">همکار تاییدشده</Badge>
+                    ) : selectedAgentDetail.status === 'PENDING' ? (
+                      <Badge variant="warning">در صف احراز هویت (در انتظار تایید)</Badge>
+                    ) : selectedAgentDetail.status === 'REJECTED' ? (
+                      <Badge variant="destructive">رد شده</Badge>
+                    ) : (
+                      <Badge variant="secondary">معلق‌شده</Badge>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {selectedAgentDetail.description && (
+                <div className="p-3 rounded-lg bg-muted/30 border border-border/40 text-xs">
+                  <p className="text-muted-foreground">توضیحات و زمینه فعالیت:</p>
+                  <p className="text-foreground mt-1 leading-relaxed">{selectedAgentDetail.description}</p>
+                </div>
+              )}
+
+              <div className="text-[11px] text-muted-foreground space-y-1 pt-2 border-t border-border/40">
+                <p>تاریخ عضویت: {new Date(selectedAgentDetail.createdAt).toLocaleDateString('fa-IR')}</p>
+                <p>تعداد اسناد و قراردادهای ثبت‌شده: {selectedAgentDetail._count?.documents || 0} مورد</p>
+              </div>
+
+              {/* Confirmation Alert Box */}
+              {statusConfirmAction && (
+                <div className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 dark:bg-amber-500/5 space-y-2 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-bold text-xs">
+                    <AlertTriangle className="size-4 shrink-0" />
+                    <span>
+                      {statusConfirmAction === 'APPROVED' && 'آیا از تایید این همکار فروش و اعطای دسترسی‌های سازمانی اطمینان دارید؟'}
+                      {statusConfirmAction === 'REJECTED' && 'آیا از رد درخواست همکاری و سلب دسترسی همکار اطمینان دارید؟'}
+                      {statusConfirmAction === 'SUSPENDED' && 'آیا از تعلیق حساب و غیرفعال‌سازی موقت این نماینده اطمینان دارید؟'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-end gap-2 pt-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={isUpdatingStatus}
+                      onClick={() => setStatusConfirmAction(null)}
+                      className="h-7 text-xs"
+                    >
+                      انصراف
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={isUpdatingStatus}
+                      className={`h-7 text-xs gap-1.5 ${
+                        statusConfirmAction === 'APPROVED'
+                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                          : statusConfirmAction === 'REJECTED'
+                          ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                          : 'bg-amber-600 hover:bg-amber-700 text-white'
+                      }`}
+                      onClick={() => handleUpdateAgentStatus(statusConfirmAction)}
+                    >
+                      {isUpdatingStatus && <Loader2 className="size-3 animate-spin" />}
+                      <span>تایید و اعمال نهایی</span>
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-center py-6 text-muted-foreground">اطلاعاتی برای نمایش یافت نشد</p>
+          )}
+
+          <DialogFooter className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              {selectedAgentDetail && selectedAgentDetail.status === 'PENDING' && !statusConfirmAction && (
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={isUpdatingStatus}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 text-xs shadow-xs"
+                    onClick={() => setStatusConfirmAction('APPROVED')}
+                  >
+                    <CheckCircle2 className="size-3.5" />
+                    <span>تایید همکار فروش</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={isUpdatingStatus}
+                    className="border-rose-300 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 gap-1.5 text-xs"
+                    onClick={() => setStatusConfirmAction('REJECTED')}
+                  >
+                    <UserX className="size-3.5" />
+                    <span>رد درخواست</span>
+                  </Button>
+                </>
+              )}
+
+              {selectedAgentDetail && selectedAgentDetail.status === 'APPROVED' && !statusConfirmAction && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={isUpdatingStatus}
+                  className="border-amber-300 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/20 gap-1.5 text-xs"
+                  onClick={() => setStatusConfirmAction('SUSPENDED')}
+                >
+                  <AlertTriangle className="size-3.5" />
+                  <span>تعلیق همکار</span>
+                </Button>
+              )}
+
+              {selectedAgentDetail && (selectedAgentDetail.status === 'REJECTED' || selectedAgentDetail.status === 'SUSPENDED') && !statusConfirmAction && (
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={isUpdatingStatus}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 text-xs shadow-xs"
+                  onClick={() => setStatusConfirmAction('APPROVED')}
+                >
+                  <CheckCircle2 className="size-3.5" />
+                  <span>تایید مجدد همکار</span>
+                </Button>
+              )}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isUpdatingStatus}
+              onClick={() => {
+                setStatusConfirmAction(null)
+                setDetailModalOpen(false)
+              }}
+            >
+              بستن
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
       </div>
