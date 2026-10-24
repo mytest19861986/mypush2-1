@@ -84,35 +84,33 @@ export default function AgentDashboardPage() {
   const [stats, setStats] = useState<CommissionStats | null>(null)
   const [recentCommissions, setRecentCommissions] = useState<CommissionItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
+  const [recentError, setRecentError] = useState(false)
+  const [loadAttempt, setLoadAttempt] = useState(0)
 
   useEffect(() => {
+    let cancelled = false
     const fetchData = async () => {
-      try {
-        const [agentRes, commRes] = await Promise.all([
+        setLoading(true)
+        const [agentResult, commResult, statsResult] = await Promise.allSettled([
           agentsService.getMyProfile(),
           commissionsService.getAgentRecentCommissions(),
+          commissionsService.getAgentCommissionStats(),
         ])
-
-        if (agentRes.success && agentRes.data) {
-          setAgentData(agentRes.data as unknown as AgentItem)
-        }
-
-        if (commRes.success && commRes.data) {
-          setRecentCommissions(commRes.data)
-        }
-
-        const statsRes = await commissionsService.getAgentCommissionStats();
-        if (statsRes.success && statsRes.data) {
-          setStats(statsRes.data)
-        }
-      } catch {
-        // Silent fail - data will stay null
-      } finally {
+        if (cancelled) return
+        const agentRes = agentResult.status === 'fulfilled' ? agentResult.value : null
+        const commRes = commResult.status === 'fulfilled' ? commResult.value : null
+        const statsRes = statsResult.status === 'fulfilled' ? statsResult.value : null
+        setAgentData(agentRes?.success && agentRes.data ? agentRes.data : null)
+        setStats(statsRes?.success && statsRes.data ? statsRes.data : null)
+        setRecentCommissions(commRes?.success && commRes.data ? commRes.data : [])
+        setRecentError(!commRes?.success || !commRes.data)
+        setLoadError(!agentRes?.success || !agentRes.data || !statsRes?.success || !statsRes.data || !commRes?.success || !commRes.data)
         setLoading(false)
-      }
     }
     fetchData()
-  }, [])
+    return () => { cancelled = true }
+  }, [loadAttempt])
 
   // ---------- Loading ----------
 
@@ -148,6 +146,12 @@ export default function AgentDashboardPage() {
 
   return (
     <div className="space-y-6">
+      {loadError && (
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900 dark:bg-amber-950 dark:text-amber-100">
+          <p>بخشی از اطلاعات دریافت نشد. دوباره تلاش کنید.</p>
+          <Button variant="outline" onClick={() => setLoadAttempt((attempt) => attempt + 1)}>تلاش مجدد</Button>
+        </div>
+      )}
       {/* Welcome Card */}
       <div className="rounded-xl border border-emerald-200 bg-gradient-to-bl from-emerald-50 to-white dark:border-emerald-900 dark:from-emerald-950/30 dark:to-card p-6">
         <div className="flex items-center justify-between">
@@ -172,14 +176,14 @@ export default function AgentDashboardPage() {
               </p>
             </div>
           </div>
-          {!isApproved && (
+          {agentData && !isApproved && (
             <div className="hidden sm:flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
               <AlertTriangle className="size-4" />
               <span>حساب هنوز تایید نشده</span>
             </div>
           )}
         </div>
-        {!isApproved && (
+        {agentData && !isApproved && (
           <div className="sm:hidden mt-3 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
             <AlertTriangle className="size-4 shrink-0" />
             <span>حساب هنوز تایید نشده</span>
@@ -223,7 +227,9 @@ export default function AgentDashboardPage() {
           </Link>
         </div>
         <div className="px-4 pb-4">
-          {recentCommissions.length === 0 ? (
+          {recentError ? (
+            <p role="alert" className="py-8 text-center text-sm text-destructive">دریافت آخرین پورسانت‌ها ناموفق بود.</p>
+          ) : recentCommissions.length === 0 ? (
             <div className="py-8 text-center">
               <Clock className="size-10 text-muted-foreground/40 mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">پورسانتی ثبت نشده است</p>

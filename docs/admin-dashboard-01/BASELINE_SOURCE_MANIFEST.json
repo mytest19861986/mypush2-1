@@ -1,0 +1,3643 @@
+{
+  "baseCommit": "9377de42f3d9671820a59469873877d37a4a4d51",
+  "files": [
+    {
+      "file": "bun.lock",
+      "size": 342912,
+      "sha256": "5d47f012358145e5716f0bffc78f232078b476f692e73037bc1eaca1425fea11",
+      "origin": {
+        "kind": "approved-candidate-lock",
+        "decision": "Commander06/07",
+        "sha256": "5d47f012358145e5716f0bffc78f232078b476f692e73037bc1eaca1425fea11"
+      }
+    },
+    {
+      "file": "components.json",
+      "size": 450,
+      "sha256": "e1e0cb281eebddbf782feae282750c704aa07f269f3193a2976b71664b4d15d7",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "ffe928f5b6dfe484f57a5fd47d0487f21e164fa3",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "eslint.config.mjs",
+      "size": 1682,
+      "sha256": "7444606a167d450e103930d3817bfdc9715b5cfa82c61aba9e96f3d2a18aaa1e",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "84578b30a5400c49ff17f1a8872824427ed5ff71",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "next.config.ts",
+      "size": 246,
+      "sha256": "bde5dc2f8c8e168538e41a8a78b56e84cb95f0315a200fd09d3f8e24a32dd151",
+      "origin": {
+        "kind": "reviewed-local-modification",
+        "baseBlob": "0bd2f1124a09380d96f5128412059e51f4af8106",
+        "decision": "Commander07 or prior bounded baseline; see MODEL_B_COMPATIBILITY_07 and reports",
+        "source": "G:\\project\\mehdi rezaee\\mypush2 - Copy\\worktree-agent-financial-04\\next.config.ts"
+      }
+    },
+    {
+      "file": "package.json",
+      "size": 3462,
+      "sha256": "a2a05bf72775cf1bdf86eed0c3e307c3c98d6465a042a941df2ee1ea08b8521f",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "68ce6e50302d359047d9de1f396a57cb6f4acf42",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "postcss.config.mjs",
+      "size": 86,
+      "sha256": "c0b4a123ae7b1f40069fd2183841248c4af91f3153c4a2334b19e3bbc2017802",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "c7bcb4b1ee14cd5e25078c2c934529afdd2a7df9",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "size": 27204,
+      "sha256": "ed74ca6a1a94cdf715f8346df69ad546d6b647e70f05dde0dfeee081bad474d4",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "6b53c8791f8845594410d8a3ead5a378dd3b8672",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "public/brand/logo.png",
+      "size": 108375,
+      "sha256": "280beb4434c8a17c4f4027ecf935b874071fe2c10a0f2cbd84e52875747a4a4e",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "6ae07de726b42de23d33fd412f494e92d66933f2",
+        "lineEndings": "exact"
+      }
+    },
+    {
+      "file": "public/icon-152.png",
+      "size": 29092,
+      "sha256": "ecf0b2c256fae3ded08e641687b4a76e2555a6f2e2bdfd165b9a2a2002cf263c",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "7384c586f806eb4664d2a26e8c62b078ef749fc9",
+        "lineEndings": "exact"
+      }
+    },
+    {
+      "file": "public/icon-180.png",
+      "size": 36738,
+      "sha256": "9801a1e45e7227e474b120ffe18cde8f7430a272ea14e18100ee4947a3d7f56b",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "720a3e6ee9f2b84c49193fa9ca68fb024a4a8f70",
+        "lineEndings": "exact"
+      }
+    },
+    {
+      "file": "public/icon-192.png",
+      "size": 36333,
+      "sha256": "54bede2bd4b8e5ac5d34c50ee9a11e22e0a3faef8eb2148ebceb019973d35e8f",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "9e1e0ee7b4b0810d50af16927850e5a1618ae3ad",
+        "lineEndings": "exact"
+      }
+    },
+    {
+      "file": "public/icon-32.png",
+      "size": 2430,
+      "sha256": "78806678728cd6b3225cca2307efc6eba62aaf248107293687bf1d92d2c68cd0",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "a026bf0966f6015068ee92fe570089f216a6d95a",
+        "lineEndings": "exact"
+      }
+    },
+    {
+      "file": "public/icon-512.png",
+      "size": 220565,
+      "sha256": "df796217ad85c5786e79dd345d220b2e1b75966de781da6197045ec56ce3f887",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "098391a9a193676758431aee2ca4c2e8d33bd657",
+        "lineEndings": "exact"
+      }
+    },
+    {
+      "file": "public/logo.svg",
+      "size": 1094,
+      "sha256": "49809bf01271a8b04a0734a568de34264621a0e58d11e52f687e860c790e3375",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "d93ac8f66e41897acac0185396d5b91c32856c9a",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "public/manifest.json",
+      "size": 1218,
+      "sha256": "6b6714e1cbce2b1ba05b8fe77b38df380033dc6962915eae7e62fd681c60ee03",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "8cce1f72f62c09444e369b88b1b2e11480408e8c",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "public/robots.txt",
+      "size": 174,
+      "sha256": "52710c261d851bc1ad35604017862f2a8444e7a0f02cd7b8b49e3ba92e6d4cea",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "6018e701fc7dd0317cda9eceea390524322e8a05",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "public/sw.js",
+      "size": 1913,
+      "sha256": "40ab206d5fc045f7642aa6d5400244d3ee508eeb401a3cafd6cc8b8cab78a979",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "b3d95173b28f20335e10bba8230fbb241939056e",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "scripts/copy-standalone-assets.mjs",
+      "size": 530,
+      "sha256": "072d133b27e32f2d44824a1e5b17c6960a25fc9390cb06fe6d775a23514478c0",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "6dde7fcf7e2498caad586f36e79b95bd4485c855",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/admin-profile-premium-preview/page.tsx",
+      "size": 23458,
+      "sha256": "b35b75a4005b730e00f6b23a0db9ac7e19c6aedbc6398f0f9727e1fdc2dd2413",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "4a7e47bdee52604a1912b4d5265975a15f394835",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/admin/agents/page.tsx",
+      "size": 213,
+      "sha256": "2fe82b8969467befdfd1a343e1600177edbb45df05c492113603bfa4f0bfc870",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "90bb18275cc3a4c7796bd2fcab4909071ca22300",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/admin/audit-logs/page.tsx",
+      "size": 14027,
+      "sha256": "943787bbefdff5c0cee44707ec5f7f7dd9ebbc8e9b12e608261cd392255b686c",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "b7e4846a24a5794f70ad9878cf212d44e43fa062",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/admin/commissions/page.tsx",
+      "size": 41461,
+      "sha256": "951e87726a0e4262c6808e01e10f629606466fae79bf3f561c5b23ba0e816b83",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "61cc8685d0f865173bb0e4a9623ad35325b49f2f",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/admin/dashboard/page.tsx",
+      "size": 225,
+      "sha256": "eb42b073b1570e3401a554bde48a9d4ce8166f01dffe342aa24180a982a398a9",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "075b642a83d5563835c09392c3103b0b7e1a6c07",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/admin/doctors/page.tsx",
+      "size": 239,
+      "sha256": "280d2818e49b98e09828d724f51594b75c2c049560638f3cbdf8327eaa42a1a2",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "09386951300ac9a8a6bd7964a7f78c293d4140ef",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/admin/financial-management/page.tsx",
+      "size": 236,
+      "sha256": "fcaca20e762f9de09e47604fc836b3d1d41aac5cc33ead892cd730f93bf0ef03",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "7ef202c92e4f3271b941d2f9376f0d63931b1c47",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/admin/layout.tsx",
+      "size": 12236,
+      "sha256": "c26a494ca6c518e941d353c043165f33c6457831dc4853c6b28ae4bd155c4453",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "59335deed87437b8f45ef1cd6fa7bf83b2ff460b",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/admin/page.tsx",
+      "size": 2542,
+      "sha256": "ebb4262dcfa6da5368fe0b391d94c102f651fcc12fecf8ebed916e61c2251b12",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "1a658c61b22c64766a253d7aa6536b27ab239c62",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/admin/permissions/page.tsx",
+      "size": 5421,
+      "sha256": "76f5c9800ebbe5055d84bb9d3405f50310775f14153a2e6ab0ea4234db3eaae5",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "b7d33421ac7c170b1963754cf398dc9cd26e063b",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/admin/plans/layout.tsx",
+      "size": 328,
+      "sha256": "8fa0ca055b200244262d76dc93f175143e121e51d33d09db1bc8cf21f05df8df",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "0eea81c365f16679aaefa6b29e08b426c82e3203",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/admin/plans/new/page.tsx",
+      "size": 135,
+      "sha256": "c6bc0723a485387670cb1d2beb4977557348fabb813e99a07d61916f7d4bf0e7",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "b2d03982aacdfde60b627557a1f07d494c2a0265",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/admin/plans/page.tsx",
+      "size": 30703,
+      "sha256": "34189a2879f85ec13f8e85427ae2ad844380dd7297ee072169f719d491e1593e",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "eace7ed1b4faa515bb0d5635b6aff8c06073dd3a",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/admin/reviews/layout.tsx",
+      "size": 332,
+      "sha256": "065dfd300e373d25d3965de19d154450583a1c18faca018651b5e23b55698031",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "c0eaef6477ac588d40bf7f7b8efb18461d961af1",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/admin/reviews/page.tsx",
+      "size": 22835,
+      "sha256": "22b925a1f0bd840ec28c8f6885160ede897095062db1564a8fd9c5dcff0efde9",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "c2911f6c1f3b14c156d81c10df2d1c450f745526",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/admin/roles/page.tsx",
+      "size": 26434,
+      "sha256": "3dcb7ae51b0d8519824570aa3f401d4fb8b92ae4932194bc822289ba5d84927e",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "4a930f8efd9c7a7234c99714508f88c0ddd1efa2",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/admin/sales-customers/page.tsx",
+      "size": 35417,
+      "sha256": "ef4fe89f4131d1a529028cb7771b603d486cb3731726bf5cc7edd6e5004b8691",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "2ca5cdc39950f04f0486eaf2eb4281d7da216b18",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/admin/users/const provinces = [.ini",
+      "size": 800,
+      "sha256": "2db1665d3a8d1ca4849be311739de55853d66ef179893dc4ecf2b9ff6288bc76",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "6cdc4970edca2175d37d53f8f633e4fb2db2cd72",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/admin/users/page.tsx",
+      "size": 209,
+      "sha256": "3b9279f8d1bbe043053d338dd0f5f8d3ee6adc148ca7dddfd5f487c62233d01f",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "bb630ced390a348f19ffeaa8234d0eb2d170eaa9",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/admin/users/Untitled-1.txt",
+      "size": 244,
+      "sha256": "580ad40bba51b62a41c90c2cbe4d16aab2dff830d5784d80fcd2a0b98c499359",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "61b6832e3d06d0c4b97eb3cc7a9104546be76f16",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/agent/commissions/page.tsx",
+      "size": 39041,
+      "sha256": "436a09f14dc2ffc31eb3c373707dee64392f321882a3460611f534b8056d052b",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "3edda1b4630e61a8812885bc38f14762273b1873",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/agent/dashboard/page.tsx",
+      "size": 12062,
+      "sha256": "813062069a85f45608c1ec729ae8f43a1f114421582d153fb538dcb747cdd8c4",
+      "origin": {
+        "kind": "reviewed-local-modification",
+        "baseBlob": "8afaadaae0f9a4acc3a27b319be77181114873ab",
+        "decision": "Commander07 or prior bounded baseline; see MODEL_B_COMPATIBILITY_07 and reports",
+        "source": "G:\\project\\mehdi rezaee\\mypush2 - Copy\\worktree-agent-financial-04\\src\\app\\agent\\dashboard\\page.tsx"
+      }
+    },
+    {
+      "file": "src/app/agent/documents/page.tsx",
+      "size": 15320,
+      "sha256": "4fe86e6c1c6cfbbcd8835b6484732f0b0b6c96dafccac78e9819fb262ab0f9fb",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "b6faf245ce79c0b62fe61f4cbae14685f59f3945",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/agent/layout.tsx",
+      "size": 8308,
+      "sha256": "46b28c7ed0ae5fa93c432d8767dd57530c6170ed820114f42f16e3479b246068",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "9a8a30ce1a7d907f0d9fc1aa96f89acc205e5f69",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/agent/page.tsx",
+      "size": 120,
+      "sha256": "e7c4c5f71ef9941e7ac43107fc3b6294fb42167d30995e399e986b5045aea401",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "fc1d9d2972cee40fb3818d6d42899073bb865c8f",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/agent/profile/page.tsx",
+      "size": 16721,
+      "sha256": "22428213ee7e118a67f4cf6f83cab1b77d43efe592d990510af500cca394d6a0",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "6e443222dce51980e1942719c34a5ae7ee4b6bac",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/agent/sales-customers/page.tsx",
+      "size": 31883,
+      "sha256": "b0b03a08f4966dd00418f63bdb9313f8c6c12f183e40d75267f82db17b2ac386",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "c14ab4936dde88b66490f671450b2c2e3efd9a09",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/agents-premium-preview/page.tsx",
+      "size": 60485,
+      "sha256": "f5b105d6660eaf0c89a8f836f1e6007b4d89f4f533f04f61720c713686ef08c9",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "3585e1fbbd2013ccd761bdc3aa0ca6247478bbe1",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/agents/page.tsx",
+      "size": 206,
+      "sha256": "2a9fe20e63a0e53057758bf4dd54b09876a86242d7a2bedcbe4530c8377f8bd0",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "d641214d1ad37fb48aed6b28e2ad490981a38677",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/route.ts",
+      "size": 138,
+      "sha256": "4de96e4be70844353c34dbb3e349e27b86b1d7d7737a4ca2598d8003c786f0c7",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "0277710b3e8ce8861be944e9d69f62481dc57471",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/admin/agents/[id]/performance/route.ts",
+      "size": 8267,
+      "sha256": "07c223f85a2ef556c064eb8ba3db17ef58a96bcf6dfea5649c75745c0eaa1e28",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "00173af17981f6bcfb578cc2ceda2ce1e6f04035",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/admin/agents/route.ts",
+      "size": 5721,
+      "sha256": "284addd32d1aced6660b05bcda26647e5fdc4bd8ab75bb12f8b92350546ddef2",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "cc1acf92a6dfacefdae48926860782b5b37eb58d",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/admin/commissions/summary/route.ts",
+      "size": 11735,
+      "sha256": "ff6e5534b89248207261cabde717698acce2e088611c45c84e9d16289e2b4ab8",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "06db870e25da12f93bbfe6af6ef39434668722c4",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/admin/doctors/[id]/visit-stats/route.ts",
+      "size": 4894,
+      "sha256": "2b424144d208d9ce0a9a640234076b0f3d8073cdc125f700da9e11d51bfc4704",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "06c79e91be88876938fd536116de32a1bf0c406b",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/admin/doctors/route.ts",
+      "size": 6657,
+      "sha256": "472dba074b79ceb764e045654cffa8c16ed638136bd6382fa3cd2ab4cca89028",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "49765f3fe5cdfc915dbdd1e3bf9b3257691ca531",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/admin/financial-reports/route.ts",
+      "size": 10578,
+      "sha256": "84859dea35768c3de233eccae3d7117bbe9de0863cbd8dce3387e0467a62df02",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "c8606a63bd8379701efb652f7773cdebb2beba69",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/admin/financial/settlements/route.ts",
+      "size": 339,
+      "sha256": "f58d0e0ac9556910028eb7c8840c90b0606bb29b99e7db321178cb82d72dea47",
+      "origin": {
+        "kind": "local-added-file",
+        "baseBlob": null,
+        "decision": "Commander07 or prior bounded baseline; see MODEL_B_COMPATIBILITY_07 and reports",
+        "source": "G:\\project\\mehdi rezaee\\mypush2 - Copy\\worktree-agent-financial-04\\src\\app\\api\\v1\\admin\\financial\\settlements\\route.ts"
+      }
+    },
+    {
+      "file": "src/app/api/v1/admin/plan-grants/route.ts",
+      "size": 7258,
+      "sha256": "ba3e1337ed78776bc3022499b99b5ca93f7b57a7e471bdf6590523e7bfb7a91b",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "a48e645dccf11b1de78f374e89923f3180180279",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/admin/sales-partner-commission-summary/route.ts",
+      "size": 10244,
+      "sha256": "4c10434d6f7ba825f178e42760a1c19d6f2f723d02ca84af8193cae84c348444",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "363384027fd16c01f58919a251d3291bd26c202c",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/admin/settings/settlement/route.ts",
+      "size": 3296,
+      "sha256": "9caf362b14e4ba637aae5b0bf6280bfc4e3f78a75173833966a0a3860b2e0763",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "f17c1d6293984f6064cf233c49ffbf0c2ce511fa",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/admin/settlements/[id]/status/route.ts",
+      "size": 874,
+      "sha256": "406ffe9fc182217446154014d6e9938544cff2dd96839ed35ad69570fb01f730",
+      "origin": {
+        "kind": "reviewed-local-modification",
+        "baseBlob": "4e5d8607b9169c93907040b5f77859a5a10e647b",
+        "decision": "Commander07 or prior bounded baseline; see MODEL_B_COMPATIBILITY_07 and reports",
+        "source": "G:\\project\\mehdi rezaee\\mypush2 - Copy\\worktree-agent-financial-04\\src\\app\\api\\v1\\admin\\settlements\\[id]\\status\\route.ts"
+      }
+    },
+    {
+      "file": "src/app/api/v1/admin/users/[id]/profile-summary/route.ts",
+      "size": 14434,
+      "sha256": "77cc1847b67018faf4f3e35abe0bd19927685664029b0f7f2c95fe435ae99180",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "4df39ea162a2570767ed91a7e538ddf792936f64",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/admin/users/[id]/roles/route.ts",
+      "size": 4909,
+      "sha256": "7469edd7e4982b3e8d8037741496418d24f28d6e367ffe85d7d03f6826052488",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "1bc30425c77cf4f356b4c515a3c857c15035a4d2",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/agents/[id]/performance/route.ts",
+      "size": 9176,
+      "sha256": "21fbc0784bf66a7affbe04b75a942065adc596b28c486c25b70d5d5c4399ead9",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "28688aa844c2a674e95bd786c2c9cb441b068695",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/agents/[id]/route.ts",
+      "size": 4757,
+      "sha256": "132d3388d203e8e4bbbca037622a7b3e7dcfc6b2992225f4d3b24851071b9ef7",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "453ea5f7c320d38dab46c10863f75f676407b869",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/agents/[id]/status/route.ts",
+      "size": 4227,
+      "sha256": "329092ff1fbdc8c63da0d696a15f99ec909f3e55bdaa7c67315c50c861b698c0",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "dbc6e8941ee28c9beba3a4f2ffa3c3f82be43b61",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/agents/commissions/route.ts",
+      "size": 4282,
+      "sha256": "2ad3d95e8b0643880920d07d7c5579b98da9958d1d274c35374cf5a76daf9b22",
+      "origin": {
+        "kind": "reviewed-local-modification",
+        "baseBlob": "19da70051b8e9a614f79e952487cac5800c43762",
+        "decision": "Commander07 or prior bounded baseline; see MODEL_B_COMPATIBILITY_07 and reports",
+        "source": "G:\\project\\mehdi rezaee\\mypush2 - Copy\\worktree-agent-financial-04\\src\\app\\api\\v1\\agents\\commissions\\route.ts"
+      }
+    },
+    {
+      "file": "src/app/api/v1/agents/documents/[id]/download/route.ts",
+      "size": 2533,
+      "sha256": "5f0d0ea39b05bc2c4430b962221d9074a93f073ae0dd2d1c358a5a9c1e6808c3",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "6bf3f8f6ce1880dd053767dcfb9f639897f08de1",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/agents/documents/[id]/review/route.ts",
+      "size": 2311,
+      "sha256": "c3e28d9f92a0bc7ea58e4a90dbdeb06fb99e834e2af794415bedc9232f05fd6d",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "7207129b0660846dba7023e34804d68a2826b7b4",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/agents/documents/route.ts",
+      "size": 4436,
+      "sha256": "02a49ac5c49b000381e9305fb3da89430368dcc355b044e30ffe8b0984d222d2",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "2bbd7455e040e9933eb743e7f80a2c4a46f1e214",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/agents/my/route.ts",
+      "size": 4194,
+      "sha256": "b7189717d138f01e237a64645044ccd8204c97036879e62827bdf9edcb23d5a0",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "8a23c26c0a8e766db449af174e57ed21eaf5b4d6",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/agents/register/route.ts",
+      "size": 3112,
+      "sha256": "a541edf6b8384853802725e003a586288220e86214bf7c70d553b10ea79ebd9f",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "98e9c4cd5c1933e9d002c0c83fbecd9657cf5877",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/agents/route.ts",
+      "size": 2999,
+      "sha256": "8a543511541b8d3b3bcb3ad25ee5858fcff14df03a0941020e459dba6a333803",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "e9a2e78711cbc225701943c43a1e0a6a19ae53ff",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/audit-logs/route.ts",
+      "size": 2996,
+      "sha256": "562331013ebf73a9821bd4a7455e2ac69dd179f053bb1a31de682c30ce9e1b27",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "df7e3a801f424269b8a0670bacf07508750bddd4",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/audit-logs/stats/route.ts",
+      "size": 4636,
+      "sha256": "ba4e164f38b8aad6bc1320ec5bb3dd8c4f11abf6def9dfb5e84b46cbab937977",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "f81625601d608c2ae8116ccf93414141f00587cb",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/auth/_helpers.ts",
+      "size": 5204,
+      "sha256": "375e142b56e6a9766ec24f0355abd3de4d3dfc0cfb59ad8c420c0b6a0b084cd5",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "f14bdac83fbcfe9e6a4e20adf700ca7d4b9a590f",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/auth/change-password/route.ts",
+      "size": 3267,
+      "sha256": "088ef445b3ad501361460051e4fc00b30b3db9a7f44a7dc9b03090c736590570",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "d51a7184b96c028bfd98c5d727fe06470d5bb249",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/auth/login-password/route.ts",
+      "size": 5270,
+      "sha256": "e9d164572cfff20fc229d7dfa4b9fa308fb49127bedfd2bad717c4917817167d",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "86b1ba5ebc8f5990fb3bf01aa87e7c0c2431d7af",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/auth/login/route.ts",
+      "size": 8142,
+      "sha256": "caf5f83053043d9fb6dcad9d6fae1eadb7ffe3eac4649e0e2c47c8cd81c9a76b",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "41df14bd2f57710f1de1d2e79e62d8271ff5a1db",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/auth/logout/route.ts",
+      "size": 1211,
+      "sha256": "cec462d73b5608943d6a1a15f3e705ae4f3ad936addbc116d82b77c12bf771c8",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "94d1ca10f3f2f87142f1afc3a8c7892e61b64818",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/auth/me/route.ts",
+      "size": 3842,
+      "sha256": "d140c11fc389105b4cc0dd6e2cd7da8f326440c3850f529b8523f0f8e2a1aac3",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "7f7965890663f25ed5047ca64e8f7a19dc186e7c",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/auth/refresh/route.ts",
+      "size": 4050,
+      "sha256": "aecdb7f0cc44e94303cdcafdc1a2fb9a58ba6fd7b66f0a65b059c7e5f134da18",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "717845c59cee64ede7cd06813e48e945004cf761",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/auth/register/route.ts",
+      "size": 12193,
+      "sha256": "bdc83498d6a4fd43749daab4be280c7a142700633ff4c1335aa451fb5f52895c",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "1546c73088d32a799c0b4a98f94a8d2e6ae4f53a",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/auth/send-otp/route.ts",
+      "size": 7627,
+      "sha256": "9a2534e3b1a3800ba1a533b5a7b2cc40bc58eda244d389691352434fa84f7b4a",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "8c8f8be644492ab0123f73e68142b047fe17abe6",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/auth/verify-otp/route.ts",
+      "size": 7533,
+      "sha256": "6ac8068feeb2af107cc43b8d0cce9df33de67caab0e6b308e0d940dc6267f62d",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "411675252ac58ec36d3e2531751d34e6e6a0b3dc",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/commissions/[id]/approve/route.ts",
+      "size": 2208,
+      "sha256": "d4cf09bb57d45e05d9e3e2a768c85d270189db5f4e6689da1a7ba77570d12a74",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "b50c8d91cb7920c7b3e87695a43e9923e4b3d388",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/commissions/[id]/cancel/route.ts",
+      "size": 3053,
+      "sha256": "9d9743936cc9273794717a2269425daafa3b404238b38cb2c7bb676cb8d4d6dc",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "8125022516e0b20cc59a572b6abd108df9298f48",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/commissions/[id]/pay/route.ts",
+      "size": 6042,
+      "sha256": "85136f233044f6cdc5114df1456083cf5fc64698c138339da9f156c62d33a7ab",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "9dfe1405d5bc09e8ebe5bcffc7be173aa4ac6cf0",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/commissions/[id]/route.ts",
+      "size": 1655,
+      "sha256": "cec7b404ca64b0041751e617d2eda8e1caf82b510276d349f94c0e0697f0ae9f",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "058a51b426bd50b85d2d609fe8e1e427adf85a9e",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/commissions/my/route.ts",
+      "size": 7433,
+      "sha256": "c04b9b1d28558bb9d0f00e182ad2332e07f78cf37719e6391c18714c9079c0d9",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "da19e27b92ea4f6e9e5ffe1a1cb926e7a07f4986",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/commissions/route.ts",
+      "size": 7876,
+      "sha256": "021676afd24d19b1ee1df2e01a0449f069649fb66789832f5eaeb5072c9ddab8",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "9125be1c905acede1734095d72c0790218070a1c",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/contracts/[id]/route.ts",
+      "size": 4762,
+      "sha256": "8e3ffa1e1a9dd09127bbe09ddc3b3e2a87f5346074b344f3b48d934ec37453bf",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "3aeb4d53a7d06b14e5f571e13b64186a807192cc",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/contracts/doctor/route.ts",
+      "size": 2227,
+      "sha256": "3b0f03113e00e6fb14117102e60b7d3a94ca56dbf2e9acac599ad139df1ad15a",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "5af421601185ce170949a5596ebddfaa304ed0b2",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/contracts/my/route.ts",
+      "size": 1246,
+      "sha256": "a6983e03976fde18fca327b3fe38a321a94e00657a7e5d0bb87f606f7a89a125",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "34712aaefd1794d839ebdbbe2ed44aa48b208004",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/contracts/route.ts",
+      "size": 6302,
+      "sha256": "da8151d490b8c09cba271e1ba43608186a1c64918886302a7ba3aed31404f280",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "688aba10b2c36fa4fed0ac7674f98b06a3ccc3a1",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/dashboard/stats/route.ts",
+      "size": 9250,
+      "sha256": "dc815d1f5a8c528c9447c8bc6094e9d7d8bc3ae0e3d68acc7f861a8c6155389d",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "691e0d790946ba5b5ba43d744126e7ebaa46cd8b",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/doctor/financial/ledger/route.ts",
+      "size": 340,
+      "sha256": "81c373d220fd11a97fe61ef9264e6c15c856e32974fd890c553091bdb135c256",
+      "origin": {
+        "kind": "local-added-file",
+        "baseBlob": null,
+        "decision": "Commander07 or prior bounded baseline; see MODEL_B_COMPATIBILITY_07 and reports",
+        "source": "G:\\project\\mehdi rezaee\\mypush2 - Copy\\worktree-agent-financial-04\\src\\app\\api\\v1\\doctor\\financial\\ledger\\route.ts"
+      }
+    },
+    {
+      "file": "src/app/api/v1/doctor/financial/settlements/route.ts",
+      "size": 340,
+      "sha256": "81c373d220fd11a97fe61ef9264e6c15c856e32974fd890c553091bdb135c256",
+      "origin": {
+        "kind": "local-added-file",
+        "baseBlob": null,
+        "decision": "Commander07 or prior bounded baseline; see MODEL_B_COMPATIBILITY_07 and reports",
+        "source": "G:\\project\\mehdi rezaee\\mypush2 - Copy\\worktree-agent-financial-04\\src\\app\\api\\v1\\doctor\\financial\\settlements\\route.ts"
+      }
+    },
+    {
+      "file": "src/app/api/v1/doctor/financial/summary/route.ts",
+      "size": 340,
+      "sha256": "81c373d220fd11a97fe61ef9264e6c15c856e32974fd890c553091bdb135c256",
+      "origin": {
+        "kind": "local-added-file",
+        "baseBlob": null,
+        "decision": "Commander07 or prior bounded baseline; see MODEL_B_COMPATIBILITY_07 and reports",
+        "source": "G:\\project\\mehdi rezaee\\mypush2 - Copy\\worktree-agent-financial-04\\src\\app\\api\\v1\\doctor\\financial\\summary\\route.ts"
+      }
+    },
+    {
+      "file": "src/app/api/v1/doctor/my/route.ts",
+      "size": 4165,
+      "sha256": "7d7f412efd984b70d5f288f45a7f6a26db0af2c9948084264dee296055d6cf32",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "3c91a1a4ab63f7d42952ef36a41cbd4972be8dbb",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/doctor/register/route.ts",
+      "size": 2938,
+      "sha256": "4422de5c669fc6644b8350aa3f18115436cdf07aa867a62d97a5b5d85dbc2cef",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "2d3725418aa015932cb3f063c6f63637bd04ac52",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/doctors/[id]/performance/route.ts",
+      "size": 5173,
+      "sha256": "6aad00748680007c75f8db6e45ab035860b5f83facbb7e3df31eb0fef154eba7",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "5e05a74b1408a312984b6a3af0625457cd3e5a32",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/doctors/[id]/route.ts",
+      "size": 10322,
+      "sha256": "c53cf3329d97f69fd2e313eabc92adee9ff7b4cbf72f61a1e7192de7849a7e6d",
+      "origin": {
+        "kind": "reviewed-local-modification",
+        "baseBlob": "53c6b376060894018541c6102de2511db164c913",
+        "decision": "Commander07 or prior bounded baseline; see MODEL_B_COMPATIBILITY_07 and reports",
+        "source": "G:\\project\\mehdi rezaee\\mypush2 - Copy\\worktree-agent-financial-04\\src\\app\\api\\v1\\doctors\\[id]\\route.ts"
+      }
+    },
+    {
+      "file": "src/app/api/v1/doctors/[id]/status/route.ts",
+      "size": 3851,
+      "sha256": "1aac7cc5eb4b21d57aa623b3293befac36deb4b80090bdfe91c071719ae243b0",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "838099eeae87dffb250c206a5bdf9db7bbb55dd4",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/doctors/lookup/route.ts",
+      "size": 2407,
+      "sha256": "8ac687a896dc99c7dfdce116dc608d0ce8cbd5e28f0d8f74e598c435dc71bd9a",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "4ba9beb98cae658b95c852bd479e1ad59f54db76",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/doctors/my/route.ts",
+      "size": 3600,
+      "sha256": "fddcbb37ad606449d10f7ad6cf566f46c7222c258f9d88a12c3c394cf28b03d0",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "9f976cb16451d57db3e646e3fafdbbad7101cf33",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/doctors/route.ts",
+      "size": 3283,
+      "sha256": "10df05feecd23cf93ac84bbd476aa9a5c573c39401c696bfaf7077b7957cb958",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "dbc41c68dcadbc2054c2374d3d105098df27a88f",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/notifications/[id]/read/route.ts",
+      "size": 2048,
+      "sha256": "0dab63466a695bbe8d422f6534c91127b9cb95186faad1e1ffe1fa5f01852d1c",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "56935f74ab625afb45347433bea7d914ff3db97c",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/notifications/read-all/route.ts",
+      "size": 1216,
+      "sha256": "6359a2fe2a5c1f3309f5fa3c17dc0a27a56df6f6c33c3c11eaeebe7fe1fc9982",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "ae7bbebae4a98d6fbe6ba72e177aa6e5b5f8f7a8",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/notifications/route.ts",
+      "size": 2394,
+      "sha256": "47c9f75ef0e9b5448408049b1bbb8c6423fb061ed103c951ce72b01278ac0d48",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "33f050bd9f2678decd36b8e83df2e2687c1c564f",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/notifications/unread-count/route.ts",
+      "size": 1038,
+      "sha256": "449a3c9feee287b95c52d683132a006fa2b61c5c5678ec402d474e3fc5fbc0ad",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "2f7545496ea2fdc3c30b2d9e90b5925bf489b21d",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/page-content/route.ts",
+      "size": 1115,
+      "sha256": "67a91db751dbad4262eaec936dbdefde5799fd1685874642922a705b86993af7",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "f7b8f9e92ea6b90f494c940ca060819c2099ddfe",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/patients/lookup/route.ts",
+      "size": 7228,
+      "sha256": "f68ba82f0bc2b05e76afef1f0568fd2becd9c24aed29b6b4ed173a0e375d1779",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "749562b01e682ececc52edb33adf6631ad90ba8d",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/payments/[id]/failed/route.ts",
+      "size": 3876,
+      "sha256": "a5ceec7336c758fcc1d5458f962348baac357298029a9dad15983a8e7bbe8912",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "6a8f290557f15aa898429c891a27f30b02bb8f2d",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/payments/[id]/success/route.ts",
+      "size": 14813,
+      "sha256": "192a71f27a57dfee0c53ffdb69bbac400fa7fdf9e3029456ed0cdd93a9a00cbb",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "6c978f0819fc3d4afb656d7caaff3017bcbdf970",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/permissions/route.ts",
+      "size": 3010,
+      "sha256": "8418c334cf12b2804c7552efd711521f33c079c72484c4baea1e05f186b8df8d",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "f5b3f1ee821c9b7f0308499c2602248f4fedb2a7",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/plan-holders/lookup/route.ts",
+      "size": 4271,
+      "sha256": "e2cd048a2e62c984787b319428acef8307d7ae7d8a8885af7c416447f33f828b",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "2edc6d844a13c34ece6b65d0763b7a54d0423c8e",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/plans/[id]/route.ts",
+      "size": 4013,
+      "sha256": "45b9fc50febee5b7c651b0ec6fac837ff87ac55e840ad3bc5b26250645229d9e",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "d31b160bfe92c630e02f5389d89139254335cb7a",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/plans/route.ts",
+      "size": 3302,
+      "sha256": "0c7c5aeaf1aaac9d669032dc0061471caefa82245301d9129a95ca04f97259df",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "1ceb35640f1fe418acd472a2f8b3fe60f4d2ba38",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/reviews/[id]/approve/route.ts",
+      "size": 2904,
+      "sha256": "47b8395cbe7230d6907b2f2e966cc07856a2989e4c9505421d3b37506743e6cd",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "d19e96aac53ca2660b5e7734e4bdf12a059a131e",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/reviews/[id]/reject/route.ts",
+      "size": 3624,
+      "sha256": "1fb3514d0eaa5afd8f8f1b5324526e0221506755cfe3396c574cffb3a5461e81",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "31040c1a74418278d66d97d19b0f561fc4bf18fe",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/reviews/my/route.ts",
+      "size": 1453,
+      "sha256": "a5cc91e5fb29b7de18097d4e8ddf1c95f17ff65a24bd796464f7e32eec3a837f",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "bceade6763bc02b12d00ac3e4a9da494791012ec",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/reviews/route.ts",
+      "size": 8065,
+      "sha256": "4d10d932f4cfa3cbf0065ee63bd56ec171562a47d4224ef846b54dfe86047e20",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "0c54f1d1a625869e1f803dc3cb0a7a1135f770c1",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/roles/[id]/permissions/route.ts",
+      "size": 2800,
+      "sha256": "b3cefe7c2492a675be266a95a85132ffbbafa34dc6a3b64ee67563ebea454b51",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "bb77f9717b58934d2635b9e0e4e39037c636ec26",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/roles/[id]/route.ts",
+      "size": 1520,
+      "sha256": "03433436b2d2fe1e9ae8171446223962e7d71a4c9ad9c42b6d4223c25c5ba81e",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "7b0513787c7d0bb88060b34419202e90b9853585",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/roles/route.ts",
+      "size": 2929,
+      "sha256": "bee2c032968cef215ecb1e9971a83de2f029f57944255ce9331320140caa5c7c",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "cbeb85231ffc15a2a95c71006bd7530c4fbf4f00",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/sales-customers/[id]/confirm/route.ts",
+      "size": 11148,
+      "sha256": "059a02a1398e360589efd443e4085673e240eb8b7685938ae8bde01a5a271f84",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "76a240cef84873def7ead5f57912bc3074656499",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/sales-customers/[id]/mark-paid/route.ts",
+      "size": 3843,
+      "sha256": "08686b8e620c43b6d16fd8fe3651d0fb2cf9f3e659e015dde84a79dd77040eb6",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "f4cc557a405bc43c6ffd34a0423d1b2a4ea3148d",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/sales-customers/[id]/return/route.ts",
+      "size": 3713,
+      "sha256": "1b633aae273204c783d20b7343c9df638ff0f243f50e45fd7c8f74d28545087e",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "1fd97ee88c0a49af84bf04ffe494055bdeebf0cb",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/sales-customers/route.ts",
+      "size": 7321,
+      "sha256": "65bdeaea2631362cdd0b7cff89d38f6a8be167e59eed5537977f4a9124b5b391",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "13b6bc0c6b884d115de343aab7be019c121660c9",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/settlements/[id]/approve/route.ts",
+      "size": 2669,
+      "sha256": "c18b17f60475dd24770053579e24c791be4d49935279e5fafc8cb9c897852104",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "89a90fc6088fa521912939db79ad03976b68eac0",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/settlements/[id]/paid/route.ts",
+      "size": 5037,
+      "sha256": "8f7ca2aa731781c4a8d1280c75d036d6861163b1f4a4e6d7cc98e21ce2aca89c",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "4590452e1035329f072232e5d9f56dceaefb33b3",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/settlements/[id]/reject/route.ts",
+      "size": 3330,
+      "sha256": "e0220e9ad26965df7286a4921bd0b79522e414842e79e3c444a50263761d68c2",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "0e94c6ade4efd7465c1e0b71cfc44e9719acb929",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/settlements/my/route.ts",
+      "size": 1282,
+      "sha256": "48d66e38a5447f702a75aeb1f27e4cf39579060b480ffa6c4f877ca508348ad1",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "e76ae13ad7fac62071fdfdab2f54ed5945f6517c",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/settlements/request/route.ts",
+      "size": 768,
+      "sha256": "209e8e0674b434ccc08576e1c72ea80740b0c2e25ccfd414e9dd90f3456ea03a",
+      "origin": {
+        "kind": "local-added-file",
+        "baseBlob": null,
+        "decision": "Commander07 or prior bounded baseline; see MODEL_B_COMPATIBILITY_07 and reports",
+        "source": "G:\\project\\mehdi rezaee\\mypush2 - Copy\\worktree-agent-financial-04\\src\\app\\api\\v1\\settlements\\request\\route.ts"
+      }
+    },
+    {
+      "file": "src/app/api/v1/settlements/route.ts",
+      "size": 7629,
+      "sha256": "722272c845cb46e047d0e3e86680e3378d3287d577baee60ba964e745fcd5f0c",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "b14136fc9cd0b833c7d797fc20cc8a0d3805a72b",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/settlements/status/route.ts",
+      "size": 340,
+      "sha256": "81c373d220fd11a97fe61ef9264e6c15c856e32974fd890c553091bdb135c256",
+      "origin": {
+        "kind": "local-added-file",
+        "baseBlob": null,
+        "decision": "Commander07 or prior bounded baseline; see MODEL_B_COMPATIBILITY_07 and reports",
+        "source": "G:\\project\\mehdi rezaee\\mypush2 - Copy\\worktree-agent-financial-04\\src\\app\\api\\v1\\settlements\\status\\route.ts"
+      }
+    },
+    {
+      "file": "src/app/api/v1/uploads/[id]/route.ts",
+      "size": 1771,
+      "sha256": "1e3c35a91ede7a830281c853127504a556f6f571f37bd1d37feb7b90e577cd2a",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "319c5d86c87586cf85cec77ba204786479da00c0",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/uploads/route.ts",
+      "size": 4910,
+      "sha256": "1e1766eb625801d44c9708ddc987441ec3c0a2146e792ba1d140726b147575e3",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "3995fb7a3bd840ed825d07bc0af75da0c039d11e",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/user-plans/my/route.ts",
+      "size": 1613,
+      "sha256": "4eb1671d802b2c1397a85c57298936676a2de43b060267c71a09380b7a6e28eb",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "f0d4a7bc62158d9ae29968e36f22868b08c1d1fb",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/user-plans/route.ts",
+      "size": 5374,
+      "sha256": "a3bfec8d0f1bdf8540189646bd76c2b970edf3880c23fc4cccb44a805d54d939",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "f37c00719809d775885b6295f59014062a612b84",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/users/[id]/password-login/route.ts",
+      "size": 2492,
+      "sha256": "060c290757da29efa47af8c9f6c58501ec26afa7b290da3757e62ad636aa02ff",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "0bd3d8482285c46ed535e8f3de3c43ae70bd7ae5",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/users/[id]/reset-password/route.ts",
+      "size": 2446,
+      "sha256": "f19ca850d6777fbd0580e83ec7afa60618eeed32209ccad364d19449bb30f9d6",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "b09129aef73d25a20fbdb247632839fa6b11eef8",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/users/[id]/route.ts",
+      "size": 7128,
+      "sha256": "972174eebc3f85b20fcf0cbd424af0e2dbbaf0085de45d8e3fbad1b64d80f035",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "ea4686f1de6752a29b41ecdccf290b3022f734d3",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/users/[id]/status/route.ts",
+      "size": 1956,
+      "sha256": "6bebcf3359dbaa7faf5826beedf0d2740438161e3efd09dba49feb4a83d264c7",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "36d794d0ec41cbebb12f55a7c4913ced889a338b",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/users/profile/route.ts",
+      "size": 6672,
+      "sha256": "5d3573524eb1471ed014863411156fefffed63a02f67a950789e0c857fe0affe",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "08a7f287e6fd023e0cc9ae7773d055a46b683f16",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/users/route.ts",
+      "size": 4101,
+      "sha256": "b5d8c1394592b4fba1cdddb685d1184ce4d1632d3ce4e0b18d691e30028ab21a",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "ed7093270c17d161f07a515f2e118782771f31b8",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/visits/doctor/route.ts",
+      "size": 3868,
+      "sha256": "98e926a66889fe9f3d43231e823d1e11916cca1617fdf182b83f5da6e4470749",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "50f742ac8329e15b733a59c1de47de9ac4971ea6",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/visits/my/route.ts",
+      "size": 3581,
+      "sha256": "aa3c65f39392178470bb6e60ea79db4fd05070e0d14a3f41bd8edd1b703350d0",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "219f682d30cf0dc3bf3b9396eff60ac92e84dc75",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/visits/route.ts",
+      "size": 4161,
+      "sha256": "aacbfc6f9f76a4ec22e561dbda4f3e4dd66e63367585fc10166a3adc56003c17",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "e65d953b47eb05709927b98750e349e1a05c8751",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/wallets/[id]/route.ts",
+      "size": 1969,
+      "sha256": "7f60ab07c374311f3c7a6e0ac8384f5c47f553ef00d7a5418df274cb525c6fe8",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "b8159bf643e321b64bdb61423b6bad17521a1c27",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/wallets/my/route.ts",
+      "size": 1655,
+      "sha256": "10e724e11c04991739640615f5df54ad4f902bd09c6b6d27dea7f75b0a153622",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "a644ad7f8e815a731aeb28feb52933b8402f02a4",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/api/v1/wallets/route.ts",
+      "size": 2231,
+      "sha256": "3b666fa79cc245ecf68fda7037ffe518dad4addf90e8f9b0875460fef121db5b",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "531c5869eb143f9720847df5da2aad942a2e3da8",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/auth/layout.tsx",
+      "size": 673,
+      "sha256": "837ce24f7d8d17fb3bb8588aca8e365ff152552c88c3219dc301404f6ecfef23",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "2181683d37798c1471af7cdb3c2809b28e9b49c4",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/auth/login/page.tsx",
+      "size": 33125,
+      "sha256": "7a4d3320e2364fa76fe2a635f08b3bbacaca2020d24b41f2f0f740b085214450",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "47b8f9696ead8fa2ee4aad54d5ec4574bad7c314",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/dashboard-premium-preview/page.tsx",
+      "size": 8027,
+      "sha256": "f2a8e37026ba0c2cf3f15d56e2d9a607c795dcc23fd36a4c3dfaeca431539ad2",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "2b2f3b26b898a8e0e8316ab4e17ad01bedf8b400",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/dashboard/page.tsx",
+      "size": 218,
+      "sha256": "57d6d3a35ab4c4bd866104497b832d16d20854ae60740e6e45d736f213e96365",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "ae61297cdee466998b2887b5393fb8f1601af480",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/doctor/contracts/page.tsx",
+      "size": 20593,
+      "sha256": "955639d8e804b312dce18b532752ff77ef2c1c528933662c8776bc089344a3e0",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "4584f600744a3337e393d536bbc007c762008344",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/doctor/dashboard/page.tsx",
+      "size": 9576,
+      "sha256": "584fa08cf5159625ba7463e1bca9cc7560ef48113f362cfa5b58dea28f8eb9a1",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "9c3537f02891c401aec4b50981b1e3c4835fb79b",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/doctor/financial/page.tsx",
+      "size": 894,
+      "sha256": "e44e0e8008889bb8ffbb5b020305c4972bc308ab27cb58d58c1b2d4b095c82ab",
+      "origin": {
+        "kind": "local-added-file",
+        "baseBlob": null,
+        "decision": "Commander07 or prior bounded baseline; see MODEL_B_COMPATIBILITY_07 and reports",
+        "source": "G:\\project\\mehdi rezaee\\mypush2 - Copy\\worktree-agent-financial-04\\src\\app\\doctor\\financial\\page.tsx"
+      }
+    },
+    {
+      "file": "src/app/doctor/layout.tsx",
+      "size": 6613,
+      "sha256": "5e8936dcd8421d92de8f1c1fda8a00553cde2c9040594d7b170f82e3733804af",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "b127d279cb05b949980f4c1d31feb77dd598f33c",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/doctor/page.tsx",
+      "size": 122,
+      "sha256": "83f8e6fac06db1b71976aadfad0be5471ff827dfa9b87b234ffa80425c3738cb",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "4652db88dfc6f943cd396b2122aeca9e77ecb775",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/doctor/patients/page.tsx",
+      "size": 20842,
+      "sha256": "b9e7d0d4c9429fa0c3273cf99839c88919dc34bb5f22314d9c1d5df027c00a0e",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "07ce4479de99a42502ab92028916172e150a8683",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/doctor/profile/page.tsx",
+      "size": 23608,
+      "sha256": "150eb0f20a5d38e3c6318f7a8a9718950bb3fcb32e57c671664b6b4a108f4f77",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "b6e88c3689a5c64c4326d0055c412dfa1e638f69",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/doctors-clinics-premium-preview/page.tsx",
+      "size": 67246,
+      "sha256": "dbb30709b35cc53b5d0d0a448ce72efcd744e9a045f3bddf142b15e28a42f128",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "dc842840b682a49435b5e6d73f9abb50a149cdbc",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/doctors/doctors-filter-sidebar.tsx",
+      "size": 6883,
+      "sha256": "cd874bc2c44b200fadc84530ef22622d67ea7389e6c86551ef3b3621af8ef6f6",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "e244fd8a78b9404816cf6afaab888db50e98b0d4",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/doctors/page.tsx",
+      "size": 232,
+      "sha256": "175c8ec6bb14ce0cd78e69ae8926b7cbec6abb3b4a0dfbae7d0ae3eefaa0cbaa",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "c44559491de809305605ad8d167412433e6bb52a",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/globals.css",
+      "size": 7338,
+      "sha256": "f7af47112c482ffab00c9e9c5f5372ee9e0ce06676c195175603ce9bf27123ae",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "7cf875c11038243337514e178917b99841cc7f38",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/layout.tsx",
+      "size": 2688,
+      "sha256": "f807200e46ff00450a213f2c57799148688a87e6d1286bd50d60c2ab4fbfc1e4",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "5a3be5cf03c7e88748d4a6cd4c06ea53fb3a92ee",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/no-access/page.tsx",
+      "size": 1889,
+      "sha256": "94dc1054ba7c1f613ac52c0423efc1755cbbe2a61da240a33f8ee0db732efc65",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "2557650125b40e3f878f7817b9f0c5c0b25c9df6",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/page.tsx",
+      "size": 26934,
+      "sha256": "17427b9bbae319ec58c76e8cb42826465ab1ca2ac6a2acd39e1760ff74a6976c",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "b78aa513dc13c4447b80fb0f525875b6ffad9f2d",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/page.tsx.bak",
+      "size": 43775,
+      "sha256": "bc3bebec9e5f8770e3124743d352932b0b38621f3b123481b36bf987ea46e0e2",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "8e1d3eba720be91f08f293103da1be6b3c95b1a2",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/premium-preview/page.tsx",
+      "size": 6282,
+      "sha256": "aeaf5daf6d5cfb16566d2a479723b21ca6611d58d083f8c481fd6a8ff197313d",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "cae77d1bc10aaf009d9bab36723a75d87539ffa1",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/profile/page.tsx",
+      "size": 226,
+      "sha256": "01c69eb6994cc2bc2990b4a53220000f17968ecf9ae1bc87fa9d49a814ee0188",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "a652dedb1147f91dd8bdeef3516dce611b3bf042",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/register/agent/page.tsx",
+      "size": 28618,
+      "sha256": "bb15e4b4117a97966b6adfc74f0742615acba89265f19802d19e20ca76182d0b",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "aa3db864d9c3e935d19eeb31c47f553c745771ec",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/register/doctor/page.tsx",
+      "size": 29785,
+      "sha256": "35a757e1cd40cf52919994f27573404bc86145b52e2d65326eaa1ff67b1dbbb1",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "8c11c3349228acca4f04180a9c9fca17d549865a",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/register/layout.tsx",
+      "size": 1380,
+      "sha256": "bf064394f81e87ef27e81e236a0a23f87df3deaceda5bcf7f293d67cf3f1053e",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "40665333381fcc11dd8255a81e96d113fb7434c7",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/register/user/page.tsx",
+      "size": 23739,
+      "sha256": "dc790f68a46b13e3d31a659bb2d6b2a2f7fcc66f65f9b6cbb23b8e2ab2bbe0d2",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "a04079be1310f9d875c8d53ec350e9d4c4c86209",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/reports-bi-premium-preview/page.tsx",
+      "size": 35836,
+      "sha256": "7744c7187a29586f1dcca80b302a548601fd9019e489183f0fa73cc0066ff7de",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "fe1799406115f6671ecba092030a1ce6ed592b2a",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/reports/page.tsx",
+      "size": 217,
+      "sha256": "cfbe14e8b902af8d7cfead0cc909a6ea8eed23b42acdae33f738c0dfd9a05dc7",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "28d893b10d944a965764bf8265dc936de0c1b82f",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/settings-premium-preview/page.tsx",
+      "size": 26236,
+      "sha256": "94ed1db5e240c44736ad6802c699766a945c6ca290be141bd9a17b587a1af256",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "9a84b16b027b19b6c0c7f2f31841838478f1eaaf",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/settings/page.tsx",
+      "size": 214,
+      "sha256": "261ca98aac90dcdfdb75638e0d36fe1d9e71985192cdfd4c763028e8ebf17489",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "332f764df09b7cd8e9463e47c096de74ca3e2f49",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/test-button/page.tsx",
+      "size": 540,
+      "sha256": "f94decfa8bfcb5e6350e0cd5c339e6e807e4b99049fbc4d88e9b77aae7e13e69",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "104696dfb53521af2e1c9f0564c2ff43fe3c721c",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/user/contracts/page.tsx",
+      "size": 18911,
+      "sha256": "a61e42e10e870dc77e61b69e586704179d91dd2cb26068903bb2e8b0297e629e",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "58f1318dbe4f9018b46a90c1a14fa75ce58aad25",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/user/dashboard/page.tsx",
+      "size": 58662,
+      "sha256": "4d17fe25b4d1c02b455c4eea67bb72446eabc2e86f95672d6941585315c9d90c",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "0b276cc3008ba209a475e67cd1cba69877d83588",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/user/layout.tsx",
+      "size": 7651,
+      "sha256": "60ae548c9f25479931480bf40c195be36a12833c0b85d499ac70a323d91131ee",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "9be7e8bd33dbd9b3b6e05d11ffb41447f084163b",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/user/page.tsx",
+      "size": 118,
+      "sha256": "c754cf69aa528849bd34a78b93eb265a70f93daa652692be470ed3167a347809",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "07be2d8a4e8e91243d290eefdad08a00cb47f5c5",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/user/panel/page.tsx",
+      "size": 832,
+      "sha256": "aa60b17bb29c4d1504275a4cb929b1709e9dccf5b379b26d69165545ba704198",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "5d3d23f777f15ca9f4525e0636efc4baca2434bc",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/user/panel/verify.tsx",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+        "lineEndings": "exact"
+      }
+    },
+    {
+      "file": "src/app/user/plans/page.tsx",
+      "size": 14327,
+      "sha256": "1bf70d8601fb175d83d5e3fd50d00c1530d70e656dbdf77b42f22d08270ee170",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "0d16402d30a57e77ad177e6b752ba9ff2e89102a",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/user/profile/page.tsx",
+      "size": 40695,
+      "sha256": "6f0639dcbf405de1e1bf1ab2a89097fec40111ce89156b3c84159976c50978f4",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "ad0bdce24ff2c46377b37b2a1fa7251d2c85eb0e",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/users-premium-preview/page.tsx",
+      "size": 48371,
+      "sha256": "3911cacffc4fbc2522f4cfa1327bbc55cda9fa99bd074dd960aebddd5745c4f2",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "d9b8f5a5385747b7a561bf88bf6b64f52ad41d67",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/app/users/page.tsx",
+      "size": 202,
+      "sha256": "d3c147401df45a56eafab2e8e2f235a9e0baa4f64997332b1a4c21b48df18d5a",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "3fdbc42110d8fcae809f2b0640a1208ad2b3b6b9",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/guards/AdminRoute.tsx",
+      "size": 1855,
+      "sha256": "07be65c0259be096503db2d2c2c52fd2469a51a712501530ba031cb73665fce0",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "5bf289dd1f26e0482709982f6afa7b73786779c1",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/guards/AgentRoute.tsx",
+      "size": 1885,
+      "sha256": "b64cea1e9b5d5f77426c15468f1bb01649ec076d3d75fbe7b42ec1e25e7793ca",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "5fa7e36cffed7af8868d1dc479cb20fb031d44b2",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/guards/DoctorRoute.tsx",
+      "size": 1893,
+      "sha256": "1a4d2e71cb64879150a8558aa0a29960ab68cd3bf6c881e81009c96c0987c805",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "c38f594f66df1ddff683fe499af7c835a41f3cd2",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/guards/PermissionGuard.tsx",
+      "size": 527,
+      "sha256": "bf20b0ee14767534eaf041d8a93f19acc2cc5b0b6e5242085663d58588b3b0ff",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "fa2a25034e6a14116f922b7f7bf315113995af8b",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/guards/ProtectedRoute.tsx",
+      "size": 4690,
+      "sha256": "a30793b32dd15e926ad3c88dd3e7d9c38555fa47a2937446cdcb2f9dbbd456c7",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "2df9507002dba948e54533fedb1b0b4441c3ca51",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/guards/UserRoute.tsx",
+      "size": 2188,
+      "sha256": "e9c31fe21221c9f96e9350ebfa5b374023c73b57bdd1b5a9623739db0b85155d",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "c71ca3b244ecee3ca5b7452b52007c068c880624",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/layout/app-shell.tsx",
+      "size": 9779,
+      "sha256": "664c8207195453d5bc31b4e269544e3d90f3668ce4da3c12e65d23d8d81e50e6",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "bd8e0d355803bb24b9ffb40a336efe281a29cc5f",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/providers/theme-provider.tsx",
+      "size": 502,
+      "sha256": "61b44c93606b9cb981091ea8cecf2549b369126a3b06dd39bbc5606bbb77bf31",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "9bda2695a72f17650877bc9f58bdb976f3cfb494",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/pwa/smart-pwa-install-button.tsx",
+      "size": 8699,
+      "sha256": "b88a2253fe023edf5e78d1393edd6595e44a7c7e85d1107b4250f0093f909e4f",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "038ec525b7dc5299d41bbdc8c5c6b6c43a3d559b",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/shared/analytics-charts-block.tsx",
+      "size": 9031,
+      "sha256": "340204863a2ed1ebb850c0e033971c340f04ad2efa8485192d076c1b6822a381",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "063f4dc33f042eb2af65cda5c8799979e4a52a96",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/shared/brand-logo.tsx",
+      "size": 1071,
+      "sha256": "9c8d2c7b644aa3ad1e8eed8437c0817bbc89a096198df5695d5f1f283524ce92",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "431215ed6361d42245bbec5783e7c0c135ed2edf",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/shared/dashboard-app-shell.tsx",
+      "size": 23744,
+      "sha256": "3d241ff8e12b4c5c392ac9819c50e1945ee3ff3fa97002f40f138ce492be5c10",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "e830ffb1dcf713647cbbe9b8c54a9e1efcc0ece2",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/shared/data-table/index.tsx",
+      "size": 5137,
+      "sha256": "483dcacbb869c773d602d4f25879a3dd34fb94b690d144cf90354b40f7d3acb5",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "dbb2ba488e90ba3e5f7b8fd6f6008f64d9f5f22e",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/shared/empty-state.tsx",
+      "size": 2695,
+      "sha256": "3e762f0a051b4a356ef725687bd5059eb47a650582c0f4332f004b3c46f7587a",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "1eff243f53d402ca79d283e39d32d231c11bf2bd",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/shared/error-boundary.tsx",
+      "size": 2293,
+      "sha256": "9463f044d81ec502ff84136484802e728633b54675b20d6b9bdf3014a84c683a",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "487f778f2e5f6070b7ee9e40de221c082e184af6",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/shared/index.ts",
+      "size": 422,
+      "sha256": "4241b7b7b913341d420daebb047b7dd11b351fec08f51de5045c56577f946bc2",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "24868991bd1dd95aec43464e49017e4ce57c499a",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/shared/jalali-date-range-filter.tsx",
+      "size": 4132,
+      "sha256": "c9cd754b8b04728421a9cfd9d625cc2f1d8aec2386b552b47c76677d986a5f8a",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "1d4664e7db71abec68192f2f6a9732808dbfefe4",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/shared/mobile-bottom-nav.tsx",
+      "size": 1775,
+      "sha256": "9289c192dfe8996b70ff9cb2b1ff4d5c9bf91e87f58c0c3f118e1473f899d35d",
+      "origin": {
+        "kind": "archive-byte-exact",
+        "sha256": "9289c192dfe8996b70ff9cb2b1ff4d5c9bf91e87f58c0c3f118e1473f899d35d",
+        "decision": "bounded baseline repair"
+      }
+    },
+    {
+      "file": "src/components/shared/page-header.tsx",
+      "size": 685,
+      "sha256": "d6f42f1d00a47e469b4331269ce9924dfcf43d68ff37ffef45e3fbde91273738",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "31f11ac91a7b3e096bed0999e7dee13cff0ac8dd",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/shared/premium-metric-card.tsx",
+      "size": 3271,
+      "sha256": "218b423e57c2cd58a888ad11ee1ef8257ccd0323bb6fa78dc2b3cc85da69ec63",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "b5d667a38776e361853fa335ef54247db477bbda",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/shared/province-city-selector.tsx",
+      "size": 1534,
+      "sha256": "4d348f06a29b79eac0008da76483893b82dfda51d40fa4f59dd359ef5bc609a2",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "098117fc6b2e0a37923cd563cb91c974f16807bd",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/shared/search-filter-bar.tsx",
+      "size": 2704,
+      "sha256": "41da9aadb25faf8c7e9c5ad610f63bd85458c9b13f889e3525df66a3a3626f40",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "58bb472a051307993822f9a148d3375ef4702b92",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/shared/stat-card.tsx",
+      "size": 1890,
+      "sha256": "6a9f69daebfcf52183552ac2e6558b3e65736ba135386f27a3fa4aad1e61724a",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "c5b30fb72e36b0e0a249203b86dc9af6d102f926",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/shared/status-badge.tsx",
+      "size": 2280,
+      "sha256": "b8bf3c2b4d86c737b0fe7bfc9bedec6e7e61e182a3a1cd59d8a5cf53614df964",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "0b1b0c00a6195079de36d305c9358efa4fc67fcd",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/shared/theme-toggle.tsx",
+      "size": 1016,
+      "sha256": "4c8d7b9e7d641cd2855d39b89abc5daef9387a056974d9b8a9c3dd366e3199e7",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "f1ff4f27f4a9770649192ecb25f2da2ad32c61f9",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/shared/twin-recent-tables.tsx",
+      "size": 7441,
+      "sha256": "53c4a4207d1fc329e55b71d49ed7b229fd4c2b5f268b8df8a16a10e1cd864bbc",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "d29eeb29643bb5a268e54bd8acf34792d451976d",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/accordion.tsx",
+      "size": 2119,
+      "sha256": "c1ccb5f84c26e197da324cf23f640e01a0ea364cfe67c1752db938ae240d7057",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "4a8cca46b9c10394f5710a35892b36407ee70fc4",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/alert-dialog.tsx",
+      "size": 4021,
+      "sha256": "d8e19c4f7465c1a214bbb1b07c2ffde7501ad2c9a2d282d6c622a103f8cb14de",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "0863e40d92fe36ed1dd34d3a555f4947eff03af4",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/alert.tsx",
+      "size": 1680,
+      "sha256": "dc78e1d0b66138fc625777697f9c8da4a75722bb851f35e605336a86924048cf",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "14213546e5ac051dd33c8359f261f9f76051d66f",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/aspect-ratio.tsx",
+      "size": 291,
+      "sha256": "796290f6f5c722129974e971f774e238747097d8c5d0ad2edbd11a26d52cd17f",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "3df3fd02a6a30b60b6e1474664065b0d3437bf48",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/avatar.tsx",
+      "size": 1150,
+      "sha256": "ef912ab3f1826542b8e9d42d99e7df6fd90d96770f4fb0e4a3ae77c3101e4bdc",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "71e428b4ca6154811e8f569d5fdd971ead095996",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/badge.tsx",
+      "size": 1913,
+      "sha256": "3756d865785be7076cac8ce6ed37fb9ea0c852f83d2068fdc7b4ab632c6ab3db",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "00a59e745222a913c1933c425d3847a4aa25653a",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/breadcrumb.tsx",
+      "size": 2466,
+      "sha256": "b0a848d8d3e43670d0149d56c9eaf6a5a76f1f7212a36f2724a53dbb5ce8058c",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "eb88f32122082ae2dac61dd033939459215347f4",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/button.tsx",
+      "size": 2625,
+      "sha256": "7974947fd424e47f17798d7e76d726a540eabf06e38375552a8089dc78b6db20",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "57daffcbd7ca23fb4896ada6799f8b1b28c19152",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/calendar.tsx",
+      "size": 7873,
+      "sha256": "d796a54ef41849b91a53bfe6bf911e6943c9e1aa4e0b8feacc729adbfbbc975c",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "4d7c46afb52b047267c94d60b1a16ed5d3d2400b",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/card.tsx",
+      "size": 2678,
+      "sha256": "3f630d399e7c99e0f4cafdbd6308b6b371b00be3ce8d318dd381ec8cbac34b9c",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "22b75771bd1944de351a1ad8b16a9f1f50c3da3d",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/carousel.tsx",
+      "size": 5797,
+      "sha256": "45c8d7786dcbc4e08ed3506fb8946f1c8abf1fa720b228792fe8430a56f3da6a",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "0e05a77ea155fde6af5d9a4848b1d3953df6ea5a",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/chart.tsx",
+      "size": 10134,
+      "sha256": "e38c59c3e88959a7399a5121d7b888c7560bf9577b469dce6a9ec687b0fa4fe6",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "97cc2807f6d74ca79a5dc61f76c7796d9de19930",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/checkbox.tsx",
+      "size": 1258,
+      "sha256": "5a354bf8658f0180c8476669c51ee392b83de134b484d4dce8502a61bb68250f",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "fa0e4b59fa859bf5bdf1f3f4d24f1e71926f481f",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/collapsible.tsx",
+      "size": 833,
+      "sha256": "18a136f3271b1945554b183b1eb778bebb8a11a8f758e17a6881f5542dfe19a1",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "ae9fad04a3716b5d6f6c957b75841737eb8ed7a8",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/command.tsx",
+      "size": 5002,
+      "sha256": "9dd966da9e3d9acb74014bb80df8e72257e973be822c22276c1371d804c43dd2",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "8cb4ca7a583da481866f41692bb50ba7cfba709d",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/context-menu.tsx",
+      "size": 8474,
+      "sha256": "715846e271be400fc9fe8ea0b240b12dc5c277848c367fa1f2f76c70ca583204",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "e29ad05f96a328c7c6eca4641e550ff748805fa0",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/dialog.tsx",
+      "size": 4125,
+      "sha256": "9694e54f22b55c5046cb605c5212b88f963d2a0493dd3262d169d74f1bb861ab",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "d9ccec91d22fab844bd04340c2b07e8677955350",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/drawer.tsx",
+      "size": 4390,
+      "sha256": "75c2405bff7abc2361e933b2901f67c989def3f1aa2d2fc644555461c1784603",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "8aa69230a087be1fb8efe2067d1cf793de87acd4",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/dropdown-menu.tsx",
+      "size": 8541,
+      "sha256": "6a33e5f113e1552196c05c111b05256088fca9b5260b9bb714dc5a1346e42d8b",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "ec51e9cc9f824a0b067d4a66a37caa63bbdce5f5",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/form.tsx",
+      "size": 3926,
+      "sha256": "03454ce53044c3e8546136c285f18c8949e52b91ece7f2e60d26e1d5a2d5a4df",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "524b986b3ceea3e50204597e5ad38d04f93ffb5d",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/hover-card.tsx",
+      "size": 1576,
+      "sha256": "2b477679cf820cd3ce451bb4edb5ee559f10ae6738d267975f86466920140607",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "e7541864c7dee7bf024ad96e7b6d0234e0b49f8b",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/input-otp.tsx",
+      "size": 2331,
+      "sha256": "86188df3392898fd8701b9eacc8b3db3909b2346f18da4e9b4fd0a0af8209fb2",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "614f70e383bf47886ddb3d71581ccd27c8b5739d",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/input.tsx",
+      "size": 988,
+      "sha256": "7c28e8f0b77a3448f936b086145abbb8ec77fda11c887110f530113b97271eec",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "03295ca6ac617de95b78b09e5e3a6de897a204f0",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/label.tsx",
+      "size": 635,
+      "sha256": "35eec7c90f982be9e8f12de58f4aa9f00b29f9baf8c41e4363a35d90ac39f9dd",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "fb5fbc3eee891a5c118bb00fd153273c16959c9e",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/menubar.tsx",
+      "size": 8670,
+      "sha256": "64c253706ecd4c2b3c27caa416b48910a3786cc0769b1553834dd81dd1a3f649",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "8480f0aac115338b73311343a80062c77476bf2f",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/navigation-menu.tsx",
+      "size": 6832,
+      "sha256": "382e26fb9d9182c58058eb26b3cdeb2de6bc402b92449990b7aff4b8e2da20da",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "1199945c49485cc3fb9f86c0372ac550fe01cce5",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/pagination.tsx",
+      "size": 2839,
+      "sha256": "ce2f6679702d9b537429b670ba8a423c478435d23ca95b249000bf6201819be1",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "0d185410e7bbf2a1326d7af4b55f1b4b8e14d16a",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/popover.tsx",
+      "size": 1683,
+      "sha256": "15a63f0a7e1cb1a86b41c33d89f064df6efebe02d8c95337a6cc5dfbb21e0c69",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "01e468b6783992d04775aa52376221b8fa4b0f95",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/progress.tsx",
+      "size": 771,
+      "sha256": "71cc65b6bdd624ed41289e462042007591325b9523407cda5746c7cc42515db0",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "e7a416c375109c29e844f0ecee7e0645a03ec301",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/radio-group.tsx",
+      "size": 1511,
+      "sha256": "1857ce846875ebad71ac81979cb06c256566bb5e1c18125f21ca108774804562",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "5e6778cb48d88b52f09ef333e1dd5df7c30f72d2",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/resizable.tsx",
+      "size": 2084,
+      "sha256": "50c25298162e60affae4c638db061ae31e17023b80bccaf529a90a2d65a16c03",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "12bbd0b8b04e6ec83bde5b9fa8a3e29a166581da",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/scroll-area.tsx",
+      "size": 1703,
+      "sha256": "97a2861be72ba5f707d8502d968388e78e203524ac71f6f0f110d3c4583fc3fc",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "8e4fa13f668a62de3a4b8eaebf23eba1b0421e7d",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/select.tsx",
+      "size": 6438,
+      "sha256": "180457fbc01f426db663367da30188717e4d2599ef2b6340b6bd6e91fdacb2ff",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "dcbbc0ca0c781dfa6d2fe4ee6f1c9c2cad905a9b",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/separator.tsx",
+      "size": 727,
+      "sha256": "88dbe346a713917624545cfcff1db18a1d6e6f5718aa43ddd9169907ea568f4f",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "275381cab0adbc778ea634e7c46fbf80db821bf3",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/sheet.tsx",
+      "size": 4229,
+      "sha256": "dd270f5ad2a887963b965eafb13b3989a1674e6fe73c3b7f6cc5348ba77b4692",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "84649ad0ffd80bdd74dac8bcced074cf63e43233",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/sidebar.tsx",
+      "size": 22359,
+      "sha256": "40c609840bbed0dc9fbb96c431c13d20a3fdd7b5bfa3e93b6f37ed73bb47594d",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "1ee5a457ea2b67b750e93d6be8311c7645a5cc6f",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/skeleton.tsx",
+      "size": 289,
+      "sha256": "5e045dc0265a2a7ea183bb689b440068b9b18b59affc7039efd85ad1bd083ad8",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "32ea0ef7fb4d4f7cb0affa7a3b329533b5f2af23",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/slider.tsx",
+      "size": 2064,
+      "sha256": "a62ec27d243a23e3126665e360ec4c500d6fe853efb6a7eb4182033bf1baf86e",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "09391e86b31eb47649e419a28b6ccf20e80aa4ef",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/sonner.tsx",
+      "size": 589,
+      "sha256": "29b9b6311ade1a1c5d6ceb87e6e7b79a19ec7e0bc3c0d684bfe570aadeec41e2",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "957524edbd237ae3dce705e8f916f4d6ee2dbdd0",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/switch.tsx",
+      "size": 1208,
+      "sha256": "5b179fae43c0834239fef5bc4f6f7a65d42ae83e5b3b0ee5e60459c85929cf36",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "6a2b5241d8c0b3df98dec769e9999df4978975bf",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/table.tsx",
+      "size": 2564,
+      "sha256": "3499c3195b236768875a5b06ea2a6f8bc91d69c6f11c8c832517289ca2841b25",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "51b74dd52570a0268d78870be270dd460cef41db",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/tabs.tsx",
+      "size": 2035,
+      "sha256": "cb2ec47961e59b0d990a6a93ea8074802ef3d1094276bf263d7178e8bc27da15",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "497ba5ea34247f6843e0c58ccd7da61b7c8edb46",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/textarea.tsx",
+      "size": 777,
+      "sha256": "2944aed195e62d24b13b8e26e1a5534ff97c4027ce0e8331c62c84695ac083bd",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "7f21b5e78a4c1c23bf41b6be206f3f81dc84fe99",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/toast.tsx",
+      "size": 4957,
+      "sha256": "031855e5ca68b9fee2796bc7c81f114f19e7cbc604316b2b75d7cd0efc09f4f4",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "2d96b40eb11bd1eb26b659404f69e73a02fcfe78",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/toaster.tsx",
+      "size": 819,
+      "sha256": "7f25bc031134e4fbeee8ea908dab0162c0cc3cf87d746c8f2961ccf675553a74",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "3f3c878962026b2912d1e3df67c3859fccaa6ad7",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/toggle-group.tsx",
+      "size": 1998,
+      "sha256": "e1dd7e3579c32e66526d6fa77ac235ba8a6bde28db3a3cab5c22902483fa1736",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "5eed401b6c9c19f7b6f88e90d3cbe38783ef198b",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/toggle.tsx",
+      "size": 1617,
+      "sha256": "07344aacfbb0d84b0cf2172d0f35c3a1f59ac83e93022017c893598339930b3e",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "94ec8f589b345a8c33b165463dfda393c7255967",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/components/ui/tooltip.tsx",
+      "size": 1952,
+      "sha256": "64f2a6a2d5d06e299cf409cb4f937690cccf0691247c481ca3d3e0ba87b39d26",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "4ee26b38a595862a5a082013d564d1ccf8452a7c",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/config/dashboard-nav.ts",
+      "size": 6734,
+      "sha256": "3108afce6d9bbcdea1bfe2968ffaf7a316b6e1bcc6a7d3c3e5c57bffba4ae050",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "764d11495d3ebbfd9e357f05c237b0096d0abd8e",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/config/demo-scope.ts",
+      "size": 419,
+      "sha256": "1d032480050b082a2fcd3d2f6add7aff60affabb5e4aabac3363e9d03bd3476d",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "cd53d6caaaa430b892ad8baa74f9b4f75fe05c14",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/constants/index.ts",
+      "size": 6162,
+      "sha256": "7755890e8236849c3f96c3a894f0afb8ef80d70e8e094bd154fd11f149961635",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "bf82ccbe28134f5a29fb538ffb60ab081f97ebc5",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/constants/iran-locations.ts",
+      "size": 2691,
+      "sha256": "5d0aefaa0b64fc5bfbe5482b089dc6a44ae372cd39a7b4ec47c0333787e4a7b6",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "6b32c729bc414200add36db9c6aab9f664900a58",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/data/demo-plans.ts",
+      "size": 2849,
+      "sha256": "f37853cca062a29975971ddb3fae38bed51ebde08c34c9dff9dfe13df2dcb866",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "fb9ad44991588d49fd88bfd1512c3654c9ea5921",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/data/demo-reviews.ts",
+      "size": 6033,
+      "sha256": "7e0e89762854795e9760e31df3330ad1fc5fd7bd3a7ab1414b0bca5ad68fbc31",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "27bcdc78bb50327ae85a787f0fccc83716228465",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/hooks/shared/index.ts",
+      "size": 144,
+      "sha256": "f70ed0e0e285da3330c96b127529aa7ca346300325e29c3139f0286adb01d0d4",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "bcc3005b86929ddee3975c9db1832aacc9fcd65e",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/hooks/shared/use-countdown.ts",
+      "size": 1476,
+      "sha256": "e76ca3edef59476cb07635796eb1fef0af4cd155f5a38ee5c738f67cf30fa7d1",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "db2c2ebe334a1b67c165d7ee9845a8fc21310241",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/hooks/shared/use-debounce.ts",
+      "size": 397,
+      "sha256": "568630e07b4505bd1bd04d04d8655efe21e66606963c3129c146edbf599ffe80",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "ed8367ce6843d5d39bc8d1ddda8ad942e8d47e8d",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/hooks/shared/use-pagination.ts",
+      "size": 1348,
+      "sha256": "96e6709bf9108741cd4344c4d3e278afcc8509f7596ebbdb24545c41ea44f997",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "b062dab9131b85fd635f89af1904846f1d763d12",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/hooks/use-mobile.ts",
+      "size": 584,
+      "sha256": "d2377fbad5ad2bdf7fa896a68c36ac8bf4aa74a974b2061f77b41ae58d623001",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "2b0fe1dfef3b17850bbac040665f514a8ffd0f15",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/hooks/use-toast.ts",
+      "size": 4110,
+      "sha256": "1deec8cbee61cf33449f8b25b5283ca2c9cb21d82328a85390e5863651ecdb77",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "b559959226c5b17b8a719d29a2cafe1ff5f935ef",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/admin-access.ts",
+      "size": 1150,
+      "sha256": "374f8cc32add00ad8ca9dfad9ee5fbf1a9e52bc99e932a9d3a64774be3d5bb0a",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "514b7c6b57df30a6cb8e6ba8fb9b37eb894bc909",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/api-client.ts",
+      "size": 6919,
+      "sha256": "0ad0918c522475ed32d6187a2b99a14d8cc1bf8fcfbbe67f46deb2e75ed7094e",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "242e6337e1c584868ebd3400ae5f5b52da1061a1",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/api-response.ts",
+      "size": 1266,
+      "sha256": "a89d5947ade5f098673ef098159da70a43f40706f698fe070e164a093c38d15b",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "6feedf1f12ee5c57d6956108126952251172bc86",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/app-settings.ts",
+      "size": 1742,
+      "sha256": "a0676c1543f3fb7413a96f290cfb646582d1b1d4db438f4e3c368d9fcf00b4ef",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "5da88d49af42003d484e399bab81cc8077e054fe",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/audit.ts",
+      "size": 3689,
+      "sha256": "6e7411144a613c9a2e46b6266a350ef59ae670f3ea3985bf44613cfc9b160f8b",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "d3abc0998b6f1d505b150c616566e899ddd51f8f",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/auth.ts",
+      "size": 6403,
+      "sha256": "e2508dee857c88460f796c53bec303fbd81bb7e6a036b88c427ff62f258923d5",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "aa280cf1513409fa554c8229530424bf16cbab54",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/commission-settlements.ts",
+      "size": 6178,
+      "sha256": "b71f43f4b1afde952275eaa39f2456f94ee5d03fbb80e55f88911fcdc6f8269c",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "f7ad5cc4bff4c3001baf4df9d90917ce989335ca",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/commissions.ts",
+      "size": 1361,
+      "sha256": "8d0869691ff584bea7986750b5b1f25d07f4b91f6b30cd78f7d30b3229711cb3",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "8c728ef96b98115eb0d56ce519e4b493c9ed8e2d",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/db.ts",
+      "size": 311,
+      "sha256": "1abf8bc65c02b6f788205d64f4ed00f4c58a5529802a58c54afa6566e4c1a266",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "7dfb80c4c07e35547d16aa4a3f91d75b43c5494c",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/doctor-discount.ts",
+      "size": 703,
+      "sha256": "b00512dca1c81b2adaccd33570500874ca6eef67cbcfcb45ee350c50ac350406",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "2f557b75423be45f7efe242b0034dff11482ebe2",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/doctor-financial-policy.ts",
+      "size": 2257,
+      "sha256": "144742ed6edaca98fdb03d27137737e669d3fc5ce42957602d243c0deb63ae13",
+      "origin": {
+        "kind": "local-added-file",
+        "baseBlob": null,
+        "decision": "Commander07 or prior bounded baseline; see MODEL_B_COMPATIBILITY_07 and reports",
+        "source": "G:\\project\\mehdi rezaee\\mypush2 - Copy\\worktree-agent-financial-04\\src\\lib\\doctor-financial-policy.ts"
+      }
+    },
+    {
+      "file": "src/lib/jwt.ts",
+      "size": 2301,
+      "sha256": "56230e8dde73f44106059d8bc1c20982c29396b26cbe67f55f46690c368e0742",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "f102a3f2551792b047d36c8e5a1fccec340889ad",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/notifications.ts",
+      "size": 4338,
+      "sha256": "fc43215e1092a932c65d7ac0d22a9cc424977b15b96df88c097f2259a57b1671",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "699e4d5a476aeef556b2643db376b828b8935cd1",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/otp.ts",
+      "size": 5026,
+      "sha256": "9e8aaf838578104e9bd5fd8666022e876b3ba8fcdbf7c6c9275ca5441c79696e",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "dc832745a969c24d43317c0b4138251640c420a4",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/password.ts",
+      "size": 329,
+      "sha256": "7cd6e560178fe09ebed25f5b1138275f793ae9f194116bc3f8af73f086946c6b",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "0b4d828a96555ad1841e84d0f9240e51069d5f86",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/payments.ts",
+      "size": 2219,
+      "sha256": "29ba46cf24ad14bfe7760716c7b53f29d57861aad5bfac3ed5d6f54892147f7d",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "d73546dda0a0ea07d810091b38fbff7aa8377d73",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/payout.ts",
+      "size": 3456,
+      "sha256": "13f4d1b0a2acb4c5c8ac4b54d44873803f1bdd5c3477f5368f9cb157aab4f323",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "f2a6c06822049722bcd70c110567d8eded3ad0c9",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/permissions.ts",
+      "size": 1504,
+      "sha256": "d28dbd9f3cc1311049f969bbee1fbaee945dfc2a5360fdf3e2bc7cd107eab41f",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "e4aeec01fbc0741ef3970d262ca3ad5da8945577",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/phone.ts",
+      "size": 1167,
+      "sha256": "330392dbca865acdd2cf0247647407ee2b0e3583023391b57f4096e3645d1ccc",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "5f2975aa7fe5d59ca93c141b3ce1b850899c0405",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/plan-holder-linking.ts",
+      "size": 4351,
+      "sha256": "9623c77dfb02498e7e451e00fd61057bf96ee17eeaaa19a5ba9ed4c01ec76c64",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "b6b030afdc49a89ebd01a59afc799290d4291628",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/rate-limit.ts",
+      "size": 2286,
+      "sha256": "92f738f7531741bce703e4d257c546d78aa50237642a02161aa01d5cb61ba2fe",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "faff0d27d8b2312a24b967a8da14350b36a34b27",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/referrals.ts",
+      "size": 3141,
+      "sha256": "bb549299c11db44599975501a112c4256e816a9527490c652c1441b3539b69e3",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "7390596740e2297d6e0f63b511177828ab15f92f",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/refresh-token.ts",
+      "size": 558,
+      "sha256": "8943d430875423a57064fb178843706acc7df1f3dd44c316f8cb9f404b333b1c",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "9e46da38ab5b45aac54e4b1b64f3a648ff3d7d54",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/reviews.ts",
+      "size": 2731,
+      "sha256": "311f393c5f2e2b52ea529e657b0331350e07f170c274a218bc98a0fe4c5365f5",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "200316e38a6e47d0389948a6b974f9756fb33b96",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/role-integrity.ts",
+      "size": 2779,
+      "sha256": "a69d898c1cae515d258067bbbf21025db03ce5b28f678179aee6cbb74dd311ca",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "e79f28384db597bd6e9e342d0486bc7cb693abda",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/sales-customers.ts",
+      "size": 3243,
+      "sha256": "a388749020f49a103fee8217203258930bafbf91ae6698d2ad5f168a37f882d3",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "e54687b9a824913e2c56a932bfc66e5c971393eb",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/services/financial/SettlementService.ts",
+      "size": 1539,
+      "sha256": "116edba07c574e8d88c5d0c10a42089669e2cea2fb59620a997d841bdd64cd31",
+      "origin": {
+        "kind": "reviewed-local-modification",
+        "baseBlob": "18cf53c372f0ea2494f74ce5bf0df5163d262357",
+        "decision": "Commander07 or prior bounded baseline; see MODEL_B_COMPATIBILITY_07 and reports",
+        "source": "G:\\project\\mehdi rezaee\\mypush2 - Copy\\worktree-agent-financial-04\\src\\lib\\services\\financial\\SettlementService.ts"
+      }
+    },
+    {
+      "file": "src/lib/upload.ts",
+      "size": 2018,
+      "sha256": "7d75f6ac2136b1907051f067ca2d005f4b959a7f4bc547154c872077fea398fc",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "3620f2925fc8b0bd002ee12429ce83f725dac63d",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/utils.ts",
+      "size": 172,
+      "sha256": "74a147991a119f1c4cdc25a4d9b22713632fa32eb136e55ab6939b006d71b9d6",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "bd0c391ddd1088e9067844c48835bf4abcd61783",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/visits.ts",
+      "size": 1431,
+      "sha256": "c06818d0d918d215f1f9b99c10e8c0a65699c665dab315335b06c7e4398bc16f",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "f1412b27ab87c65eec2e7d62f451bb1b194f7fdc",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/lib/wallets.ts",
+      "size": 6967,
+      "sha256": "3bb6ed03c35bc5a40adb2ee292a74df2b24da48eb933491b238fc452750806c9",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "a870ec192d6a03ee37eaf3b600a4f8aedac8e579",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/services/adapters/production-health-probe.py",
+      "size": 2421,
+      "sha256": "74acbc902a6e03ce7f7cd94d60871432232b52d6f7e99af313ca67f2d46ff614",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "0ac700a9999b4e3636ed0c6196f79415ec63a1e7",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/services/agents.service.ts",
+      "size": 2029,
+      "sha256": "8851d3e35e690b372b1ab9f3985e1baafdf281a7cae535d758a1c34fb3610eb1",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "dc0d38094513f2bea7672ff6cc0aa528911ca709",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/services/audit.service.ts",
+      "size": 1126,
+      "sha256": "4725d97b672bcc67907ad223f3410a14930a5132d4e74f40407e61b0d60bb918",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "accd4262c6a66e3e9a0623039e313861cdf2f8cd",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/services/auth.service.ts",
+      "size": 1489,
+      "sha256": "eb165487db73ff11665e86bdc623a6f42dac028ef9a09e7ba140100012a368f7",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "2482e84e9e4fc8a7292c933ab0fb223fdf479296",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/services/base.service.ts",
+      "size": 946,
+      "sha256": "3416c1904fd13dd723a6135f1cd22132c14b9daf1280af22aa10deed056c19cd",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "55d4c261dc929300d9007337412c992c761e9be7",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/services/commissions.service.ts",
+      "size": 4370,
+      "sha256": "e69d9cc741d17e87ea45e651a79dc296a66df03d836ebe076a6f26cec5fb4bea",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "6bee1d18177af40d7ef2c1150994c72ec29565c3",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/services/contracts.service.ts",
+      "size": 2221,
+      "sha256": "72b7a1a09cb3a44ac08dd43efe220dc1ff1a929a0715104d7a5cd0649354a71e",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "d4ae46d50773d01feaf860d903beae70a56bce0d",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/services/dashboard.service.ts",
+      "size": 293,
+      "sha256": "f050f2a00ae4793d26f70f491db37b2f58bf7163f0ec8b0ffb88c5105a0b5009",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "c1cb4b956cb91fcf5f7c2feda2d1e2c308521c27",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/services/doctors.service.ts",
+      "size": 2144,
+      "sha256": "709c403accafaad933c1d35e1cb3aef04c622e81b99e57a55f8810eefbc2339a",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "b5a4dfefeed8af42a1aab30309a4a0f0c31ff011",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/services/index.ts",
+      "size": 595,
+      "sha256": "9ce6818f1ec90ab9e654bad49b05838d9c84f6a4b5b21d3f108cb4c5ffb36dcc",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "b6113f98705d09284f25dd835a338cc43fc8945e",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/services/patients.service.ts",
+      "size": 361,
+      "sha256": "8e5e2acd1c9dd7fe5689fac606347d8ba059953fab8b399ddf847a097180126f",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "f5d44b718a6da5b5dbc22c5f932f8afa71d378f6",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/services/plans.service.ts",
+      "size": 1418,
+      "sha256": "30a25e4d5885f1698197f07a482d35fb56cd9f0117d0a207524600463443743b",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "34425e5d1068462afc07d14b493d8f045af155fe",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/services/roles.service.ts",
+      "size": 820,
+      "sha256": "7ace8422f173036cde8ff030915b6c036168fb704743bd5ee35ae116016a75b9",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "214731b303de02af5f943ae0806b933938a911cf",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/services/users.service.ts",
+      "size": 1891,
+      "sha256": "f8368186029ff7b320acd2157e98099bc594accff62f5c98e2370948d7917f07",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "a1ce763d745d99b2b8473f4ae80779d1a2a7c77f",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/stores/auth-store.ts",
+      "size": 6925,
+      "sha256": "8812c1f127c410f472a35657ac719ce0523612f050e75c2f1482a5d29be45e85",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "50fb56a4c9efbba68835cc207ed8fa15a10f4ba3",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/stores/notification-store.ts",
+      "size": 4420,
+      "sha256": "afddbb3b1d43face6f89c57ac687529da4856834c9ae904f2bcb38b6391b2d1c",
+      "origin": {
+        "kind": "reviewed-local-modification",
+        "baseBlob": "686cd81fb42c56fe17045075e52ac58d0d34a036",
+        "decision": "Commander07 or prior bounded baseline; see MODEL_B_COMPATIBILITY_07 and reports",
+        "source": "G:\\project\\mehdi rezaee\\mypush2 - Copy\\worktree-agent-financial-04\\src\\stores\\notification-store.ts"
+      }
+    },
+    {
+      "file": "src/types/index.ts",
+      "size": 8241,
+      "sha256": "db2fc9f5f26d38ea951a9baf3c37f5a4df68ab92143377b5e8f300cd8b2fd776",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "338576b8e016576026daf4c5e34a3ca17e3519e2",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/utils/cn.ts",
+      "size": 34,
+      "sha256": "a3ae9619804fd85bb29424c1c4ad8a3197f06a2a6f612b4da9ee7bc2e8e092a5",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "4c79030d4195c32c92d817259484c09e0a9fcc29",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/utils/formatters.ts",
+      "size": 3824,
+      "sha256": "31f9fb09c986e66fdd463a1fba40d4be155935816ce59537e9b97f9112c46b68",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "1cca81ec43d798f3493618ca221ec62b5f370324",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "src/utils/jalali-date.ts",
+      "size": 7014,
+      "sha256": "66751fe9b3bc9d53f1b890de0850c468752eecdae81fbca513e484e0a320737e",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "4261f126a9e6905a291f4a7dc9b10cacb4a53218",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "tailwind.config.ts",
+      "size": 1760,
+      "sha256": "5f318eb057aa6f728db6ca2cd974c1e9633314a1d4c899deb4c0684ed74d230c",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "fc48e48832707aaaff6bd9b8cbba76358adf2e83",
+        "lineEndings": "CRLF-only"
+      }
+    },
+    {
+      "file": "tools/validate-candidate-linux.cjs",
+      "size": 2616,
+      "sha256": "0b5435c9c6ba37d6a1d126af7da522599731d90cb7f871df3cc25c7b4af3ca56",
+      "origin": {
+        "kind": "isolated-build-orchestrator",
+        "decision": "Commander08",
+        "source": "G:\\project\\mehdi rezaee\\mypush2 - Copy\\worktree-agent-financial-04\\tools\\validate-candidate-linux.cjs"
+      }
+    },
+    {
+      "file": "tsconfig.json",
+      "size": 834,
+      "sha256": "f4d049b8572680012ab4824c87f5deedde2f31e5c1ba52b50f4527cefe39dee2",
+      "origin": {
+        "kind": "git-base",
+        "commit": "9377de42f3d9671820a59469873877d37a4a4d51",
+        "blob": "29b6acad131b88f13e5359459fd298e646a7d9a4",
+        "lineEndings": "CRLF-only"
+      }
+    }
+  ]
+}

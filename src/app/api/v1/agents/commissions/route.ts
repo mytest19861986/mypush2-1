@@ -30,6 +30,15 @@ export async function GET(request: NextRequest) {
 
   // If stats requested, return aggregate data
   if (includeStats) {
+    // Confirmed sales can belong to a plan holder without an application account.
+    // That flow links the plan through SalesCustomer, rather than referrerId.
+    const referredPlans = {
+      OR: [
+        { referrerId: agentUserId },
+        { salesCustomer: { is: { salesPartnerId: agentUserId } } },
+      ],
+    }
+    const now = new Date()
     const [totalAmount, paidAmount, pendingAmount, cancelledAmount, totalReferrals, activePlans] =
       await Promise.all([
         // Total commission amount
@@ -53,13 +62,18 @@ export async function GET(request: NextRequest) {
           _sum: { amount: true },
         }),
         // Total unique users referred
-        db.userPlan.groupBy({
-          by: ['userId'],
-          where: { referrerId: agentUserId },
+        db.userPlan.findMany({
+          where: referredPlans,
+          select: { userId: true, planHolderId: true },
         }),
         // Active plans referred
         db.userPlan.count({
-          where: { referrerId: agentUserId, status: 'ACTIVE' },
+          where: {
+            ...referredPlans,
+            status: 'ACTIVE',
+            startDate: { lte: now },
+            endDate: { gte: now },
+          },
         }),
       ])
 
@@ -68,7 +82,9 @@ export async function GET(request: NextRequest) {
       paidCommission: paidAmount._sum.amount || 0,
       pendingCommission: pendingAmount._sum.amount || 0,
       cancelledCommission: cancelledAmount._sum.amount || 0,
-      totalReferrals: totalReferrals.length,
+      totalReferrals: new Set(
+        totalReferrals.map((plan) => plan.userId ?? plan.planHolderId)
+      ).size,
       activePlans,
     }, 'Commission stats retrieved')
   }

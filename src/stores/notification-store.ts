@@ -1,6 +1,5 @@
 import { create } from 'zustand'
 import { apiClient } from '@/lib/api-client'
-import type { PaginatedResponse } from '@/types'
 
 export interface NotificationItem {
   id: string
@@ -72,9 +71,9 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       })
       if (unreadOnly) query.set('unreadOnly', 'true')
 
-      const res = (await apiClient.get<NotificationItem[]>(
+      const res = await apiClient.get<NotificationItem[]>(
         `/notifications?${query.toString()}`
-      )) as PaginatedResponse<NotificationItem>
+      )
 
       if (res.success && res.data) {
         set({

@@ -66,7 +66,7 @@ export async function PATCH(
 ) {
   try {
     const { authorized, payload, error } = await requirePermission(request, 'manage_doctors')
-    if (!authorized) {
+    if (!authorized || !payload) {
       return errorResponse('UNAUTHORIZED', error || 'دسترسی مجاز نیست', payload ? 403 : 401)
     }
 
@@ -265,14 +265,14 @@ export async function PATCH(
       if (Object.keys(changedFields).length > 0) {
         await tx.auditLog.create({
           data: {
-            userId: payload?.userId,
+            userId: payload.sub,
             action: AuditActions.DOCTOR_UPDATED,
             entity: 'Doctor',
             entityId: id,
             details: JSON.stringify({
               doctorId: id,
               targetUserId: existingDoctor.userId,
-              adminUserId: payload?.userId,
+              adminUserId: payload.sub,
               changedFields,
             }),
           },
