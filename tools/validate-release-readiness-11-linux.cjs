@@ -37,6 +37,14 @@ function run(name, executable, args, overrides = {}) {
 }
 run('prisma-generate', process.execPath, ['node_modules/prisma/build/index.js', 'generate', '--schema', 'prisma/schema.prisma'], { DATABASE_URL: 'file:/workspace/prisma/build-isolated.sqlite', PRISMA_SCHEMA_ENGINE_BINARY: '/artifacts/schema-engine-debian-openssl-3.0.x' })
 if (results['prisma-generate'].exit !== 0) { fs.writeFileSync('/workspace/reports/results.json', JSON.stringify(results, null, 2)); process.exit(1) }
+run('dependency-attestation-before', process.execPath, ['/source/tools/attest-release11-dependency-bytes.cjs'])
+fs.copyFileSync('/out/DEPENDENCY_BYTES.json', '/workspace/reports/DEPENDENCY_BYTES_BEFORE.json')
+const dependencyBefore = JSON.parse(fs.readFileSync('/out/DEPENDENCY_BYTES.json'))
+const priorDependencyInventory = JSON.parse(fs.readFileSync('/source/docs/release-readiness-11/DEPENDENCY_BYTES.json'))
+const baseEntries = inventory => inventory.entries.filter(entry => !entry.path.startsWith('.prisma/client/'))
+const baseUnchanged = JSON.stringify(baseEntries(dependencyBefore)) === JSON.stringify(baseEntries(priorDependencyInventory))
+results['frozen-dependency-base'] = { exit: baseUnchanged ? 0 : 1, generatedClient: 'Fresh Prisma generate output; excluded only from comparison to older generated overlay' }
+if (!baseUnchanged) { fs.writeFileSync('/workspace/reports/results.json', JSON.stringify(results, null, 2)); process.exit(1) }
 run('security-contracts-modelb', '/bun/bun', ['run', 'tests/contracts-consent-01b.ts'], {
   DATABASE_URL: 'file:/workspace/prisma/admin01b-sandbox.sqlite',
 })
@@ -83,6 +91,10 @@ run('build', process.execPath, ['node_modules/next/dist/bin/next', 'build', '--w
   DATABASE_URL: 'file:/workspace/prisma/build-isolated.sqlite',
 })
 if (results.build.exit === 0) run('standalone-assets', process.execPath, ['scripts/copy-standalone-assets.mjs'])
+run('dependency-attestation-after', process.execPath, ['/source/tools/attest-release11-dependency-bytes.cjs'])
+fs.copyFileSync('/out/DEPENDENCY_BYTES.json', '/workspace/reports/DEPENDENCY_BYTES_AFTER.json')
+const dependencyAfter = JSON.parse(fs.readFileSync('/out/DEPENDENCY_BYTES.json'))
+results['dependency-bytes-stable'] = { exit: dependencyBefore.treeSha256 === dependencyAfter.treeSha256 ? 0 : 1, before: dependencyBefore.treeSha256, after: dependencyAfter.treeSha256 }
 const sourceInputs = {}
 function recordInputs(directory) {
   for (const entry of fs.readdirSync('/workspace/' + directory, { withFileTypes: true })) {
