@@ -1,3 +1,4 @@
+BEGIN TRANSACTION;
 -- Local-only preparation. Applying this to a live database requires separate approval.
 CREATE TABLE "CallLog" (
     "id" TEXT NOT NULL PRIMARY KEY,
@@ -25,3 +26,4 @@ INSERT INTO "Permission" ("id", "name", "module", "title") VALUES
 ('hami_permission_view_call_logs', 'view_call_logs', 'call_logs', 'مشاهده تماس‌های ثبت‌شده'),
 ('hami_permission_manage_call_logs', 'manage_call_logs', 'call_logs', 'ثبت تماس و پیگیری')
 ON CONFLICT("name") DO NOTHING;
+COMMIT;
