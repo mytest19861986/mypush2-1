@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Check,
   Loader2,
@@ -35,8 +35,6 @@ import { useToast } from '@/hooks/use-toast'
 import { ApiError, apiClient } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
 import { formatDateTime, toPersianNum } from '@/utils/formatters'
-import { DEMO_REVIEWS } from '@/data/demo-reviews'
-import { DEMO_SCOPE_PHASE_1 } from '@/config/demo-scope'
 
 type ReviewStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 type StatusFilter = 'all' | ReviewStatus
@@ -187,75 +185,27 @@ function LoadingReviews() {
 
 export default function AdminReviewsPage() {
   const { toast } = useToast()
-  const DEMO_REVIEWS_STORAGE_KEY = 'hami_demo_reviews_store'
-
-  const getStoredReviews = (): AdminReview[] => {
-    if (typeof window !== 'undefined' && DEMO_SCOPE_PHASE_1) {
-      try {
-        const stored = localStorage.getItem(DEMO_REVIEWS_STORAGE_KEY)
-        if (stored) {
-          const parsed = JSON.parse(stored)
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed
-        }
-      } catch {}
-    }
-    return DEMO_SCOPE_PHASE_1 ? DEMO_REVIEWS : []
-  }
-
-  const [reviews, setReviews] = useState<AdminReview[]>(getStoredReviews)
+  const [reviews, setReviews] = useState<AdminReview[]>([])
+  const reviewRequestId = useRef(0)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [processing, setProcessing] = useState<{ id: string; action: ReviewAction } | null>(null)
   const [rejectTarget, setRejectTarget] = useState<AdminReview | null>(null)
   const [rejectReason, setRejectReason] = useState('')
 
   const fetchReviews = useCallback(async () => {
-    setIsLoading(true)
-    setErrorMessage(null)
-
+    const requestId = ++reviewRequestId.current
+    setIsLoading(true); setErrorMessage(null)
     try {
       const params = new URLSearchParams({ take: '50' })
-
-      if (statusFilter !== 'all') {
-        params.set('status', statusFilter)
-      }
-
-      const queryString = params.toString() ? `?${params.toString()}` : ''
-      const res = await apiClient.get<AdminReview[]>(`/reviews${queryString}`)
-
-      if (res.success && Array.isArray(res.data)) {
-        setReviews(res.data)
-      } else {
-        if (DEMO_SCOPE_PHASE_1) {
-          const allDemoReviews = getStoredReviews()
-          const filtered =
-            statusFilter === 'all'
-              ? allDemoReviews
-              : allDemoReviews.filter((r) => r.status === statusFilter)
-          setReviews(filtered)
-        } else {
-          const message = res.error?.message || res.message || 'خطا در دریافت فهرست نظرات'
-          setErrorMessage(message)
-          setReviews([])
-        }
-      }
+      if (statusFilter !== 'all') params.set('status', statusFilter)
+      const result = await apiClient.request<AdminReview[]>('GET', `/reviews?${params}`)
+      if (!Array.isArray(result)) throw new Error('پاسخ نظرات معتبر نیست.')
+      if (requestId === reviewRequestId.current) setReviews(result)
     } catch (error) {
-      if (DEMO_SCOPE_PHASE_1) {
-        const allDemoReviews = getStoredReviews()
-        const filtered =
-          statusFilter === 'all'
-            ? allDemoReviews
-            : allDemoReviews.filter((r) => r.status === statusFilter)
-        setReviews(filtered)
-      } else {
-        setErrorMessage(getErrorMessage(error, 'خطا در دریافت فهرست نظرات'))
-        setReviews([])
-      }
-    } finally {
-
-      setIsLoading(false)
-    }
+      if (requestId === reviewRequestId.current) { setErrorMessage(getErrorMessage(error, 'خطا در دریافت فهرست نظرات')); setReviews([]) }
+    } finally { if (requestId === reviewRequestId.current) setIsLoading(false) }
   }, [statusFilter])
 
   useEffect(() => {
@@ -267,22 +217,9 @@ export default function AdminReviewsPage() {
     [reviews]
   )
 
-  const updateReview = (updatedReview: Partial<AdminReview> & { reviewId: string }) => {
-    setReviews((currentReviews) => {
-      const next = currentReviews.map((review) =>
-        review.reviewId === updatedReview.reviewId ? { ...review, ...updatedReview } : review
-      )
-      if (typeof window !== 'undefined' && DEMO_SCOPE_PHASE_1) {
-        try {
-          const allCurrent = getStoredReviews()
-          const updatedAll = allCurrent.map((r) =>
-            r.reviewId === updatedReview.reviewId ? { ...r, ...updatedReview } : r
-          )
-          localStorage.setItem(DEMO_REVIEWS_STORAGE_KEY, JSON.stringify(updatedAll))
-        } catch {}
-      }
-      return next
-    })
+  const updateReview = (updatedReview: AdminReview) => {
+    setReviews(current => current.map(review => review.reviewId === updatedReview.reviewId ? { ...review, ...updatedReview } : review)
+      .filter(review => statusFilter === 'all' || review.status === statusFilter))
   }
 
   const handleApprove = async (review: AdminReview) => {
@@ -290,19 +227,9 @@ export default function AdminReviewsPage() {
 
     setProcessing({ id: review.reviewId, action: 'approve' })
     try {
-      try {
-        const updatedReview = await apiClient.patch<AdminReview>(
-          `/reviews/${review.reviewId}/approve`
-        )
-        if (updatedReview) {
-          updateReview(updatedReview)
-        } else {
-          updateReview({ reviewId: review.reviewId, status: 'APPROVED' })
-        }
-      } catch (apiErr) {
-        if (!DEMO_SCOPE_PHASE_1) throw apiErr
-        updateReview({ reviewId: review.reviewId, status: 'APPROVED' })
-      }
+      const updatedReview = await apiClient.request<AdminReview>('PATCH', `/reviews/${review.reviewId}/approve`)
+      if (updatedReview.reviewId !== review.reviewId || updatedReview.status !== 'APPROVED') throw new Error('تأیید نظر از سرور اثبات نشد.')
+      updateReview(updatedReview)
       toast({
         title: 'موفق',
         description: 'نظر با موفقیت تأیید شد.',
@@ -324,20 +251,9 @@ export default function AdminReviewsPage() {
     const reason = rejectReason.trim()
     setProcessing({ id: rejectTarget.reviewId, action: 'reject' })
     try {
-      try {
-        const updatedReview = await apiClient.patch<AdminReview>(
-          `/reviews/${rejectTarget.reviewId}/reject`,
-          reason ? { reason } : undefined
-        )
-        if (updatedReview) {
-          updateReview(updatedReview)
-        } else {
-          updateReview({ reviewId: rejectTarget.reviewId, status: 'REJECTED' })
-        }
-      } catch (apiErr) {
-        if (!DEMO_SCOPE_PHASE_1) throw apiErr
-        updateReview({ reviewId: rejectTarget.reviewId, status: 'REJECTED' })
-      }
+      const updatedReview = await apiClient.request<AdminReview>('PATCH', `/reviews/${rejectTarget.reviewId}/reject`, reason ? { reason } : undefined)
+      if (updatedReview.reviewId !== rejectTarget.reviewId || updatedReview.status !== 'REJECTED') throw new Error('رد نظر از سرور اثبات نشد.')
+      updateReview(updatedReview)
       setRejectTarget(null)
       setRejectReason('')
       toast({

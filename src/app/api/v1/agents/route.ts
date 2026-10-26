@@ -84,7 +84,15 @@ export async function GET(request: NextRequest) {
     db.agent.count({ where }),
   ])
 
+  const ownerIds = agents.map(agent => agent.userId)
+  const [customerCounts, paidCommissions] = ownerIds.length ? await Promise.all([
+    db.salesCustomer.groupBy({ by: ['salesPartnerId'], where: { salesPartnerId: { in: ownerIds } }, _count: { _all: true } }),
+    db.commission.groupBy({ by: ['agentId'], where: { agentId: { in: ownerIds }, status: 'PAID' }, _sum: { amount: true } }),
+  ]) : [[], []]
+  const customerCountByOwner = new Map(customerCounts.map(row => [row.salesPartnerId, row._count._all]))
+  const paidByOwner = new Map(paidCommissions.map(row => [row.agentId, row._sum.amount ?? 0]))
   const sanitizedAgents = agents.map((agent) => ({
+    stats: { registeredCustomers: customerCountByOwner.get(agent.userId) ?? 0, paidCommission: paidByOwner.get(agent.userId) ?? 0 },
     ...agent,
     user: agent.user
       ? {

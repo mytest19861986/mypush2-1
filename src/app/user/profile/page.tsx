@@ -786,12 +786,6 @@ export default function UserProfilePage() {
   const handleSave = async () => {
     setNationalCodeError(null)
 
-    const nationalCode = form.nationalCode.trim()
-    if (nationalCode && !/^\d{10}$/.test(nationalCode)) {
-      setNationalCodeError('کد ملی باید ۱۰ رقم باشد.')
-      return
-    }
-
     setIsSaving(true)
     setFeedback(null)
 
@@ -799,7 +793,6 @@ export default function UserProfilePage() {
       const payload = {
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
-        nationalCode,
         address: form.address.trim(),
         ...(form.gender ? { gender: form.gender as 'MALE' | 'FEMALE' } : {}),
       }
@@ -1054,13 +1047,13 @@ export default function UserProfilePage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm leading-7 text-muted-foreground">
-            با ثبت کد ملی، اگر طرح فعالی برای شما وجود داشته باشد، به حساب کاربری شما متصل می‌شود.
+          <p id="national-code-policy" className="text-sm leading-7 text-muted-foreground">
+            ذخیره اطلاعات پروفایل باعث اتصال یا تخصیص طرح نمی‌شود. ثبت یا تغییر کد ملی تا فراهم‌شدن فرایند معتبر احراز هویت غیرفعال است.
           </p>
 
           {hasExistingNationalCode && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
-              کد ملی مبنای اتصال طرح‌های فعال به حساب شماست. در صورت تغییر کد ملی، اتصال طرح‌ها بر اساس کد ملی جدید بررسی می‌شود.
+              کد ملی فعلی فقط نمایش داده می‌شود. این مقدار به‌تنهایی مدرک احراز هویت یا مجوز اتصال طرح نیست.
             </div>
           )}
 
@@ -1069,7 +1062,8 @@ export default function UserProfilePage() {
             <Input
               id="nationalCode"
               value={form.nationalCode}
-              onChange={(e) => updateField('nationalCode', e.target.value)}
+              disabled
+              aria-describedby="national-code-policy"
               placeholder="کد ملی ۱۰ رقمی"
               dir="ltr"
               inputMode="numeric"

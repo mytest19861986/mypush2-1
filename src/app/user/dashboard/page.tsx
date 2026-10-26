@@ -873,7 +873,7 @@ function ProfileCompletionCard({ nationalCode }: { nationalCode?: string | null 
               <div>
                 <p className="text-sm font-semibold">اطلاعات اصلی حساب شما ثبت شده است.</p>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  ثبت کد ملی برای اتصال طرح‌ها و مشاهده سوابق ضروری است.
+                  ثبت کد ملی به‌تنهایی هویت یا نمایندگی را اثبات نمی‌کند و باعث اتصال خودکار طرح نمی‌شود. تغییر کد ملی و اتصال جدید تا فراهم‌شدن فرایند معتبر احراز هویت غیرفعال است.
                 </p>
               </div>
             </div>
@@ -882,7 +882,7 @@ function ProfileCompletionCard({ nationalCode }: { nationalCode?: string | null 
           <div className="rounded-2xl border border-amber-200/70 bg-amber-50/70 p-4 text-amber-900 dark:border-amber-900/30 dark:bg-amber-950/20 dark:text-amber-200">
             <p className="text-sm font-semibold">کد ملی ثبت نشده است.</p>
             <p className="mt-2 text-sm leading-6">
-              ثبت کد ملی برای اتصال طرح‌ها و مشاهده سوابق ضروری است.
+              ثبت کد ملی به‌تنهایی هویت یا نمایندگی را اثبات نمی‌کند و باعث اتصال خودکار طرح نمی‌شود. تغییر کد ملی و اتصال جدید تا فراهم‌شدن فرایند معتبر احراز هویت غیرفعال است.
             </p>
           </div>
         )}

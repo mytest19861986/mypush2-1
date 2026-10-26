@@ -28,6 +28,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { PageHeader, StatCard, StatusBadge } from '@/components/shared'
 import { JalaliDateRangeFilter, type JalaliDateRangeValue } from '@/components/shared/jalali-date-range-filter'
 import { useToast } from '@/hooks/use-toast'
+import { useAuthStore } from '@/stores/auth-store'
+import { canPayCommissions } from '@/lib/commission-permissions'
 import { commissionsService, type AdminCommissionSummary } from '@/services'
 import type { CommissionItem, CommissionSourceType, CommissionStatus, SettlementStatus } from '@/types'
 import {
@@ -156,6 +158,8 @@ function EmptyState({
 
 export default function AdminCommissionsPage() {
   const { toast } = useToast()
+  const user = useAuthStore(state => state.user)
+  const canPay = Boolean(user && canPayCommissions(user))
   const defaultJalaliMonth = useMemo(() => getCurrentJalaliYearMonth(), [])
   const [commissions, setCommissions] = useState<AdminCommissionItem[]>([])
   const [summary, setSummary] = useState<AdminCommissionSummary | null>(null)
@@ -310,6 +314,7 @@ export default function AdminCommissionsPage() {
   }
 
   const openPayDialog = (commission: AdminCommissionItem) => {
+    if (!canPay) return
     setPayTarget(commission)
     setPayDescription('')
   }
@@ -339,7 +344,7 @@ export default function AdminCommissionsPage() {
   }
 
   const handlePay = async () => {
-    if (!payTarget) return
+    if (!payTarget || !canPay) return
 
     const description = payDescription.trim()
     const payload = description ? { description } : undefined
@@ -536,7 +541,8 @@ export default function AdminCommissionsPage() {
           <DropdownMenuContent align="end">
             <DropdownMenuItem
               className="text-primary focus:text-primary"
-              disabled={isProcessing}
+              disabled={isProcessing || !canPay}
+              title={!canPay ? 'ثبت پرداخت به مجوز مستقل پرداخت پورسانت نیاز دارد.' : undefined}
               onClick={() => openPayDialog(row)}
             >
               {isPayProcessing ? (
@@ -1080,7 +1086,7 @@ export default function AdminCommissionsPage() {
             </Button>
             <Button
               onClick={() => void handlePay()}
-              disabled={!payTarget || processingId === payTarget.id}
+              disabled={!payTarget || !canPay || processingId === payTarget.id}
             >
               {payTarget && processingId === payTarget.id && (
                 <Loader2 className="ml-1 size-4 animate-spin" />

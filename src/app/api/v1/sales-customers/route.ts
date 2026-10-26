@@ -15,6 +15,7 @@ import {
   parseBoundedInteger,
   toSafeSalesCustomerResponse,
 } from '@/lib/sales-customers'
+import { parseReportDateRange } from '@/utils/report-date-range'
 import { getClientIp } from '@/app/api/v1/auth/_helpers'
 
 const createSalesCustomerSchema = z.object({
@@ -40,18 +41,8 @@ function parseIsoDateRange(request: NextRequest) {
     return { ok: false as const }
   }
 
-  const fromDate = new Date(`${from}T00:00:00.000Z`)
-  const toDate = new Date(`${to}T23:59:59.999Z`)
-
-  if (
-    Number.isNaN(fromDate.getTime()) ||
-    Number.isNaN(toDate.getTime()) ||
-    fromDate.getTime() > toDate.getTime()
-  ) {
-    return { ok: false as const }
-  }
-
-  return { ok: true as const, filter: { gte: fromDate, lte: toDate } }
+  try { return { ok: true as const, filter: parseReportDateRange(from, to) } }
+  catch { return { ok: false as const } }
 }
 
 // POST /api/v1/sales-customers - Create a sales customer lead without plan/payment side effects

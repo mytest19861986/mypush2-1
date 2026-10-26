@@ -32,6 +32,7 @@ import { authService } from '@/services'
 import { useCountdown } from '@/hooks/shared'
 import { isValidIranianMobile } from '@/utils/formatters'
 import type { AuthUser } from '@/types'
+import { canPayCommissions } from '@/lib/commission-permissions'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -54,6 +55,7 @@ function getRedirectPathForUser(user: AuthUser) {
   if (roles.includes('DOCTOR')) return '/doctor/dashboard'
   if (roles.includes('AGENT')) return '/agent/dashboard'
   if (user.agent?.status === 'PENDING') return '/agent/pending'
+  if (canPayCommissions({ roles, permissions: user.permissions || [] })) return '/commission-payments'
   return '/user/dashboard'
 }
 

@@ -4,55 +4,20 @@ import { db } from '@/lib/db'
 import { requirePermission } from '@/lib/auth'
 import { errorResponse, successResponse } from '@/lib/api-response'
 import { getCommissionAvailability } from '@/lib/commission-settlements'
+import { generateReferralCode } from '@/lib/referrals'
+import { getRecentReportDateRange, parseReportDateRange, type ReportDateFilter } from '@/utils/report-date-range'
 
-const dateParamPattern = /^\d{4}-\d{2}-\d{2}$/
 const safeIdPattern = /^[a-zA-Z0-9_-]+$/
-
-function isSafeId(value: string) {
-  return value.length > 0 && value.length <= 100 && safeIdPattern.test(value)
-}
-
-function toInputDate(date: Date) {
-  return date.toISOString().slice(0, 10)
-}
-
-function getDefaultRange() {
-  const to = new Date()
-  const from = new Date()
-  from.setDate(to.getDate() - 29)
-
-  return {
-    from: toInputDate(from),
-    to: toInputDate(to),
-  }
-}
-
+function isSafeId(value: string) { return value.length > 0 && value.length <= 100 && safeIdPattern.test(value) }
 function parseDateRange(request: NextRequest) {
-  const defaults = getDefaultRange()
+  const defaults = getRecentReportDateRange()
   const from = request.nextUrl.searchParams.get('from')?.trim() || defaults.from
   const to = request.nextUrl.searchParams.get('to')?.trim() || defaults.to
-
-  if (!dateParamPattern.test(from) || !dateParamPattern.test(to)) {
-    return { ok: false as const, message: 'Invalid date range' }
-  }
-
-  const fromDate = new Date(`${from}T00:00:00.000Z`)
-  const toDate = new Date(`${to}T23:59:59.999Z`)
-
-  if (
-    Number.isNaN(fromDate.getTime()) ||
-    Number.isNaN(toDate.getTime()) ||
-    fromDate.getTime() > toDate.getTime()
-  ) {
-    return { ok: false as const, message: 'Invalid date range' }
-  }
-
-  return { ok: true as const, from, to, fromDate, toDate }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) return { ok: false as const, message: 'Invalid date range' }
+  try { return { ok: true as const, from, to, filter: parseReportDateRange(from, to) } }
+  catch { return { ok: false as const, message: 'Invalid date range' } }
 }
-
-function dateFilter(fromDate: Date, toDate: Date): Prisma.DateTimeFilter {
-  return { gte: fromDate, lte: toDate }
-}
+function dateFilter(filter: ReportDateFilter): Prisma.DateTimeFilter { return filter }
 
 function sumAmount(items: { amount: number }[]) {
   return items.reduce((total, item) => total + item.amount, 0)
@@ -64,8 +29,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { authorized, error } = await requirePermission(request, 'manage_agents')
-    if (!authorized) return errorResponse('UNAUTHORIZED', error!, 401)
+    const { authorized, payload, error } = await requirePermission(request, 'manage_agents')
+    if (!authorized) return errorResponse('FORBIDDEN', error!, payload ? 403 : 401)
 
     const { id } = await params
     if (!isSafeId(id)) {
@@ -80,7 +45,8 @@ export async function GET(
     const agent = await db.agent.findUnique({
       where: { id },
       select: {
-        userId: true,
+        id: true, userId: true, businessName: true, status: true,
+        user: { select: { status: true, deletedAt: true, profile: { select: { firstName: true, lastName: true } } } },
       },
     })
 
@@ -89,10 +55,10 @@ export async function GET(
     }
 
     const agentUserId = agent.userId
-    const rangeCreatedAt = dateFilter(range.fromDate, range.toDate)
-    const rangePaidAt = dateFilter(range.fromDate, range.toDate)
-    const rangeConfirmedAt = dateFilter(range.fromDate, range.toDate)
-    const rangeReturnedAt = dateFilter(range.fromDate, range.toDate)
+    const rangeCreatedAt = dateFilter(range.filter)
+    const rangePaidAt = dateFilter(range.filter)
+    const rangeConfirmedAt = dateFilter(range.filter)
+    const rangeReturnedAt = dateFilter(range.filter)
 
     const [
       registeredCustomersCount,
@@ -103,6 +69,7 @@ export async function GET(
       commissionRecords,
       settlementRecords,
       availability,
+      customerRecords,
     ] = await Promise.all([
       db.salesCustomer.count({
         where: {
@@ -180,7 +147,7 @@ export async function GET(
       db.settlement.findMany({
         where: {
           userId: agentUserId,
-          requestedAt: dateFilter(range.fromDate, range.toDate),
+          requestedAt: dateFilter(range.filter),
         },
         select: {
           amount: true,
@@ -193,6 +160,9 @@ export async function GET(
         take: 25,
       }),
       getCommissionAvailability(agentUserId),
+      db.salesCustomer.findMany({ where: { salesPartnerId: agentUserId, createdAt: rangeCreatedAt }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: 25,
+        select: { id: true, firstName: true, lastName: true, status: true, createdAt: true, paidAt: true, confirmedAt: true, returnedAt: true, plan: { select: { name: true } } },
+      }),
     ])
 
     const activeCommissions = commissions.filter((commission) => commission.status !== 'CANCELLED')
@@ -200,7 +170,15 @@ export async function GET(
     const approvedCommissions = commissions.filter((commission) => commission.status === 'APPROVED')
     const paidCommissions = commissions.filter((commission) => commission.status === 'PAID')
 
+    const referralCode = agent.status === 'APPROVED' && agent.user.status === 'ACTIVE' && !agent.user.deletedAt
+      ? generateReferralCode(agentUserId) : null
     return successResponse({
+      agent: { id: agent.id, businessName: agent.businessName, status: agent.status,
+        name: [agent.user.profile?.firstName, agent.user.profile?.lastName].filter(Boolean).join(' ') || agent.businessName || 'همکار فروش',
+      },
+      // Resolve on the browser's origin, which may differ from the reverse proxy's internal origin.
+      referral: { code: referralCode, link: referralCode ? `/auth/login?ref=${encodeURIComponent(referralCode)}` : null },
+      customerRecords,
       range: {
         from: range.from,
         to: range.to,
@@ -255,7 +233,7 @@ export async function GET(
       },
     })
   } catch (err) {
-    console.error('[GET /api/v1/admin/agents/[id]/performance]', err)
+    console.error('[GET /api/v1/admin/agents/[id]/performance]', err instanceof Error ? err.name : 'UnknownError')
     return errorResponse('INTERNAL_ERROR', 'Internal server error', 500)
   }
 }

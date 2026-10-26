@@ -2,8 +2,6 @@ import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { authenticateRequest } from '@/lib/auth'
 import { successResponse, errorResponse } from '@/lib/api-response'
-import { createAuditLog } from '@/lib/audit'
-import { calculateDiscountAmount, getEffectiveDiscountPercent } from '@/lib/doctor-discount'
 
 // GET /api/v1/contracts — List contracts for the logged-in doctor
 export async function GET(request: NextRequest) {
@@ -73,130 +71,21 @@ export async function GET(request: NextRequest) {
   return successResponse(formatted, 'Contracts retrieved')
 }
 
-// POST /api/v1/contracts — Create a new contract
+// POST /api/v1/contracts — retain the endpoint while independent consent is unresolved.
+// A login OTP, caller-supplied consent flag, or a visit status alone does not prove
+// patient authorization for this contract. No contract or plan counter may be
+// written until a reviewed, contract-bound consent workflow is available.
 export async function POST(request: NextRequest) {
   const { authenticated, payload, error } = await authenticateRequest(request)
-  if (!authenticated) return errorResponse('UNAUTHORIZED', error!, 401)
+  if (!authenticated || !payload) return errorResponse('UNAUTHORIZED', error || 'Authentication required', 401)
 
-  // Check user has DOCTOR role
-  if (!payload!.roles.includes('DOCTOR')) {
+  if (!payload.roles.includes('DOCTOR')) {
     return errorResponse('FORBIDDEN', 'DOCTOR role required', 403)
   }
 
-  const body = await request.json()
-  const { patientId, userPlanId, diagnosis, doctorNote, patientNote, totalAmount, discountAmount } = body as {
-    patientId?: string
-    userPlanId: string
-    diagnosis?: string
-    doctorNote?: string
-    patientNote?: string
-    totalAmount: number
-    discountAmount?: number
-  }
-
-  if (!userPlanId || !totalAmount) {
-    return errorResponse('VALIDATION_ERROR', 'userPlanId and totalAmount are required', 400)
-  }
-
-  if (typeof totalAmount !== 'number' || totalAmount <= 0) {
-    return errorResponse('VALIDATION_ERROR', 'totalAmount must be a positive number', 400)
-  }
-
-  // Find doctor record
-  const doctor = await db.doctor.findUnique({
-    where: { userId: payload!.sub },
-  })
-
-  if (!doctor) {
-    return errorResponse('NOT_FOUND', 'Doctor record not found', 404)
-  }
-
-  // Verify the user plan exists, belongs to the patient, and is active
-  const userPlan = await db.userPlan.findFirst({
-    where: {
-      id: userPlanId,
-      ...(patientId ? { userId: patientId } : {}),
-      status: 'ACTIVE',
-      endDate: { gte: new Date() },
-    },
-    include: {
-      plan: true,
-    },
-  })
-
-  if (!userPlan) {
-    return errorResponse('NOT_FOUND', 'طرح فعال بیمار یافت نشد', 404)
-  }
-
-  const resolvedPatientId = patientId ?? userPlan.userId
-  if (!resolvedPatientId) {
-    return errorResponse('VALIDATION_ERROR', 'Legacy contract creation requires a linked user account', 400)
-  }
-
-  const effectiveDiscountPercent = getEffectiveDiscountPercent(
-    doctor.discountPercent,
-    userPlan.plan.discountPercent
+  return errorResponse(
+    'PATIENT_CONSENT_REQUIRED',
+    'ثبت قرارداد تا احراز رضایت مستقل و معتبر بیمار امکان‌پذیر نیست. هیچ قراردادی ایجاد و هیچ سهمیه‌ای کسر نشد.',
+    403
   )
-  const computedDiscountAmount = calculateDiscountAmount(totalAmount, effectiveDiscountPercent)
-  const finalDiscountAmount =
-    typeof discountAmount === 'number' && discountAmount >= 0
-      ? discountAmount
-      : computedDiscountAmount
-
-  // Check remaining uses
-  if (userPlan.remainingUses !== -1 && userPlan.remainingUses <= 0) {
-    return errorResponse('VALIDATION_ERROR', 'No remaining uses for this plan', 400)
-  }
-
-  // Create contract
-  const contract = await db.contract.create({
-    data: {
-      userId: resolvedPatientId,
-      userPlanId,
-      doctorId: doctor.id,
-      diagnosis: diagnosis || null,
-      doctorNote: doctorNote || null,
-      patientNote: patientNote || null,
-      totalAmount,
-      discountAmount: finalDiscountAmount,
-      status: 'PENDING',
-    },
-  })
-
-  // Decrement remaining uses if limited
-  if (userPlan.remainingUses !== -1) {
-    await db.userPlan.update({
-      where: { id: userPlanId },
-      data: {
-        remainingUses: { decrement: 1 },
-        totalUses: { increment: 1 },
-      },
-    })
-  } else {
-    await db.userPlan.update({
-      where: { id: userPlanId },
-      data: { totalUses: { increment: 1 } },
-    })
-  }
-
-  // Audit log
-  const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined
-  const device = request.headers.get('user-agent') || undefined
-  createAuditLog({
-    userId: payload!.sub,
-    action: 'CONTRACT_CREATED',
-    entity: 'Contract',
-    entityId: contract.id,
-    details: {
-      patientId: resolvedPatientId,
-      userPlanId,
-      totalAmount,
-      discountAmount: finalDiscountAmount,
-      discountPercent: effectiveDiscountPercent,
-    },
-    ip,
-    device,
-  })
-
-  return successResponse(contract, 'Contract created successfully')
 }

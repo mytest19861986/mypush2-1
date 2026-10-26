@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { requireAuth } from '@/lib/auth'
 import { successResponse, errorResponse } from '@/lib/api-response'
-import { createAuditLog, AuditActions } from '@/lib/audit'
+import { AuditActions } from '@/lib/audit'
 import { linkPlanHolderToUserByNationalCode } from '@/lib/plan-holder-linking'
 import { maskCardNumber, maskSheba, normalizePayoutUpdate } from '@/lib/payout'
 
@@ -25,6 +25,10 @@ const updateProfileSchema = z.object({
   sheba: z.string().nullable().optional(),
   accountOwnerName: z.string().max(100).nullable().optional(),
 })
+
+class ProfileLinkError extends Error {
+  constructor(readonly code: string, readonly status: number) { super(code) }
+}
 
 const DUPLICATE_NATIONAL_CODE_MESSAGE = 'این کد ملی قبلاً ثبت شده است.'
 
@@ -63,7 +67,6 @@ export async function PUT(request: NextRequest) {
       sheba,
       accountOwnerName,
     } = parsed.data
-    const shouldLinkPlanHolder = nationalCode !== undefined && nationalCode.length > 0
     const payout = normalizePayoutUpdate({
       ...(cardNumber !== undefined ? { cardNumber } : {}),
       ...(sheba !== undefined ? { sheba } : {}),
@@ -74,103 +77,75 @@ export async function PUT(request: NextRequest) {
       return errorResponse('VALIDATION_ERROR', payout.errors.join(', '), 400)
     }
 
-    // Validate national code format if provided
-    if (nationalCode && nationalCode.length > 0) {
-      if (!/^\d{10}$/.test(nationalCode)) {
-        return errorResponse('VALIDATION_ERROR', 'کد ملی باید ۱۰ رقم باشد.', 400)
+    const { profile } = await db.$transaction(async (tx) => {
+      const existingProfile = await tx.userProfile.findUnique({ where: { userId: user.sub } })
+      // Echoing the stored value is an ordinary profile save, never a linkage request.
+      // Any identity change (including first entry or clearing) needs independent proof.
+      if (nationalCode !== undefined && (nationalCode || null) !== (existingProfile?.nationalCode ?? null)) {
+        if (nationalCode) {
+          const inspection = await linkPlanHolderToUserByNationalCode({ userId: user.sub, nationalCode }, tx)
+          if (inspection.conflict) throw new ProfileLinkError('PLAN_HOLDER_LINK_CONFLICT', 409)
+        }
+        throw new ProfileLinkError('IDENTITY_PROOF_REQUIRED', 403)
       }
 
-      // Check national code uniqueness
-      const existingProfile = await db.userProfile.findUnique({
-        where: { nationalCode },
-      })
-      if (existingProfile && existingProfile.userId !== user.sub) {
-        return errorResponse('DUPLICATE', DUPLICATE_NATIONAL_CODE_MESSAGE, 409)
+      if (avatar) {
+        const avatarUpload = await tx.upload.findFirst({
+          where: {
+            userId: user.sub,
+            path: avatar,
+            type: 'AVATAR',
+          },
+          select: { id: true },
+        })
+
+        if (!avatarUpload) {
+          throw new ProfileLinkError('INVALID_AVATAR', 400)
+        }
       }
-    }
 
-    if (avatar) {
-      const avatarUpload = await db.upload.findFirst({
-        where: {
-          userId: user.sub,
-          path: avatar,
-          type: 'AVATAR',
-        },
-        select: { id: true },
-      })
+      // Upsert profile
+      if (existingProfile) {
+        const updateData: Record<string, string | null> = {}
+        if (firstName !== undefined) updateData.firstName = firstName
+        if (lastName !== undefined) updateData.lastName = lastName
+        if (address !== undefined) updateData.address = address
+        if (gender !== undefined) updateData.gender = gender
+        if (avatar !== undefined) updateData.avatar = avatar || null
+        Object.assign(updateData, payout.values)
 
-      if (!avatarUpload) {
-        return errorResponse('VALIDATION_ERROR', 'Invalid avatar upload', 400)
+        await tx.userProfile.update({
+          where: { userId: user.sub },
+          data: updateData,
+        })
+      } else {
+        await tx.userProfile.create({
+          data: {
+            userId: user.sub,
+            firstName: firstName || null,
+            lastName: lastName || null,
+            nationalCode: null,
+            address: address || null,
+            gender: gender || null,
+            avatar: avatar || null,
+            ...payout.values,
+          },
+        })
       }
-    }
 
-    // Upsert profile
-    const existingProfile = await db.userProfile.findUnique({
-      where: { userId: user.sub },
-    })
-
-    if (existingProfile) {
-      const updateData: Record<string, string | null> = {}
-      if (firstName !== undefined) updateData.firstName = firstName
-      if (lastName !== undefined) updateData.lastName = lastName
-      if (nationalCode !== undefined) updateData.nationalCode = nationalCode || null
-      if (address !== undefined) updateData.address = address
-      if (gender !== undefined) updateData.gender = gender
-      if (avatar !== undefined) updateData.avatar = avatar || null
-      Object.assign(updateData, payout.values)
-
-      await db.userProfile.update({
+      // Fetch updated profile to return
+      const profile = await tx.userProfile.findUnique({
         where: { userId: user.sub },
-        data: updateData,
       })
-    } else {
-      await db.userProfile.create({
-        data: {
-          userId: user.sub,
-          firstName: firstName || null,
-          lastName: lastName || null,
-          nationalCode: nationalCode || null,
-          address: address || null,
-          gender: gender || null,
-          avatar: avatar || null,
-          ...payout.values,
-        },
-      })
-    }
 
-    let planHolderLinking:
-      | Awaited<ReturnType<typeof linkPlanHolderToUserByNationalCode>>
-      | undefined
-
-    if (shouldLinkPlanHolder) {
-      planHolderLinking = await linkPlanHolderToUserByNationalCode({
+      await tx.auditLog.create({ data: {
         userId: user.sub,
-        nationalCode,
-        actorId: user.sub,
-        request,
-      })
-
-      if (planHolderLinking.conflict) {
-        return errorResponse(
-          'PLAN_HOLDER_LINK_CONFLICT',
-          DUPLICATE_NATIONAL_CODE_MESSAGE,
-          409
-        )
-      }
-    }
-
-    // Fetch updated profile to return
-    const profile = await db.userProfile.findUnique({
-      where: { userId: user.sub },
-    })
-
-    // Audit log
-    createAuditLog({
-      userId: user.sub,
-      action: AuditActions.USER_UPDATED,
-      entity: 'User',
-      entityId: user.sub,
-      details: { action: 'profile_update' },
+        action: AuditActions.USER_UPDATED,
+        entity: 'User',
+        entityId: user.sub,
+        details: JSON.stringify({ action: 'profile_update' }),
+      } })
+      return { profile }
     })
 
     return successResponse(
@@ -184,12 +159,18 @@ export async function PUT(request: NextRequest) {
         cardNumber: maskCardNumber(profile?.payoutCardNumber),
         sheba: maskSheba(profile?.payoutSheba),
         accountOwnerName: profile?.payoutAccountOwnerName,
-        planHolderLinked: planHolderLinking?.linked ?? false,
-        linkedPlansCount: planHolderLinking?.linkedUserPlansCount ?? 0,
+        planHolderLinked: false,
+        linkedPlansCount: 0,
       },
       'Profile updated successfully'
     )
   } catch (e) {
+    if (e instanceof ProfileLinkError) {
+      const message = e.code === 'IDENTITY_PROOF_REQUIRED'
+        ? 'اتصال طرح نیازمند اثبات معتبر هویت است؛ هیچ تغییری ذخیره نشد.'
+        : e.code === 'INVALID_AVATAR' ? 'Invalid avatar upload' : DUPLICATE_NATIONAL_CODE_MESSAGE
+      return errorResponse(e.code, message, e.status)
+    }
     const msg = (e as Error).message
     if (msg.includes('token') || msg.includes('authorization')) {
       return errorResponse('UNAUTHORIZED', msg, 401)
@@ -197,7 +178,7 @@ export async function PUT(request: NextRequest) {
     if (isNationalCodeUniqueError(e)) {
       return errorResponse('DUPLICATE', DUPLICATE_NATIONAL_CODE_MESSAGE, 409)
     }
-    console.error('[PUT /api/v1/users/profile]', e)
+    console.error('[PUT /api/v1/users/profile] update unavailable')
     return errorResponse('INTERNAL_ERROR', 'Internal server error', 500)
   }
 }

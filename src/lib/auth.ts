@@ -60,7 +60,7 @@ export async function authenticateRequest(
   const token = parts[1]
   const payload = await verifyAccessToken(token)
 
-  if (!payload) {
+  if (!payload || typeof payload.sub !== 'string' || !payload.sub) {
     return {
       authenticated: false,
       payload: null,
@@ -68,30 +68,54 @@ export async function authenticateRequest(
     }
   }
 
-  // Workstream C: Ensure disabled/blocked users immediately lose access
-  // bypassing stale JWT expiry.
+  // Signed claims bound the session; current database grants bound authority.
+  // Revocation applies on the next check without granting new token privileges.
   try {
     const user = await db.user.findUnique({
       where: { id: payload.sub },
-      select: { status: true },
+      select: {
+        status: true, deletedAt: true,
+        roles: { select: { role: { select: {
+          name: true,
+          rolePermissions: { select: { permission: { select: { name: true } } } },
+        } } } },
+      },
     })
 
-    if (user && user.status !== 'ACTIVE') {
+    if (!user || user.deletedAt || user.status !== 'ACTIVE') {
       return {
         authenticated: false,
         payload: null,
-        error: 'حساب کاربری مسدود یا غیرفعال شده است',
+        error: 'Invalid or inactive account authorization',
       }
     }
-  } catch (err) {
-    // If DB fails transiently in test/dev, continue or log error
-    console.error('[auth.ts:authenticateRequest] user status check error:', err)
-  }
 
-  return {
-    authenticated: true,
-    payload,
-    error: null,
+    const currentRoles = new Set(user.roles.map(link => link.role.name))
+    const currentPermissions = new Set(user.roles.flatMap(link =>
+      link.role.rolePermissions.map(grant => grant.permission.name)))
+    const tokenRoles = Array.isArray(payload.roles) ? payload.roles : []
+    const tokenPermissions = Array.isArray(payload.permissions) ? payload.permissions : []
+    // Wildcards intersect semantically: neither side can widen the other.
+    const permissions = currentPermissions.has('*')
+      ? tokenPermissions
+      : tokenPermissions.includes('*')
+        ? [...currentPermissions]
+        : tokenPermissions.filter(permission => currentPermissions.has(permission))
+
+    return {
+      authenticated: true,
+      payload: {
+        ...payload,
+        roles: [...new Set(tokenRoles.filter(role => currentRoles.has(role)))],
+        permissions: [...new Set(permissions)],
+      },
+      error: null,
+    }
+  } catch {
+    // Never turn an authorization-store outage into authenticated access.
+    // Keep credentials, identity and query details out of this error log.
+    console.error('[auth.ts:authenticateRequest] authorization lookup unavailable')
+    return { authenticated: false, payload: null, error: 'Account authorization unavailable' }
   }
 }
 

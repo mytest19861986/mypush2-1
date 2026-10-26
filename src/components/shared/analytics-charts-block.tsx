@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { formatJalaliDate } from '@/utils/jalali-date'
 import { TrendingUp, PieChart, ChevronDown } from 'lucide-react'
 
 export interface DailyRevenueItem {
@@ -90,11 +91,9 @@ export function AnalyticsChartsBlock({
   })
 
   // Cumulative stroke offsets
-  let accumulated = 0
-  const renderedCircles = donutSegments.map((seg) => {
+  const renderedCircles = donutSegments.map((seg, index) => {
     const dash = `${seg.pctNumber} 100`
-    const offset = -accumulated
-    accumulated += seg.pctNumber
+    const offset = -donutSegments.slice(0, index).reduce((sum, previous) => sum + previous.pctNumber, 0)
     return { ...seg, dash, offset }
   })
 
@@ -124,7 +123,7 @@ export function AnalyticsChartsBlock({
             >
               <div>{(points[points.length - 1].amount).toLocaleString('fa-IR')} ت</div>
               <div className="text-[9px] text-slate-300 font-normal">
-                {points[points.length - 1].date} ({points[points.length - 1].count} تراکنش)
+                {formatJalaliDate(points[points.length - 1].date)} ({points[points.length - 1].count.toLocaleString('fa-IR')} تراکنش)
               </div>
             </div>
           )}
@@ -160,9 +159,9 @@ export function AnalyticsChartsBlock({
           <div className="flex justify-between items-center text-[11px] text-slate-400 font-medium pt-3 border-t border-slate-100 px-1">
             {points.length > 0 ? (
               <>
-                <span>{points[0].date}</span>
-                {points.length > 2 && <span>{points[Math.floor(points.length / 2)].date}</span>}
-                <span>{points[points.length - 1].date}</span>
+                <span>{formatJalaliDate(points[0].date)}</span>
+                {points.length > 2 && <span>{formatJalaliDate(points[Math.floor(points.length / 2)].date)}</span>}
+                <span>{formatJalaliDate(points[points.length - 1].date)}</span>
               </>
             ) : (
               <span className="w-full text-center text-slate-400">تراکنشی در این بازه زمانی ثبت نشده است</span>
@@ -199,7 +198,7 @@ export function AnalyticsChartsBlock({
             </svg>
             <div className="absolute text-center max-w-[85px] px-1">
               <span className="text-sm font-black text-slate-900 font-mono block truncate">
-                {(totalRevenue / 1000000).toLocaleString('fa-IR', { maximumFractionDigits: 1 })} م
+                {(totalRevenue / 1000000).toLocaleString('fa-IR', { maximumFractionDigits: 1 })} میلیون
               </span>
               <span className="text-[10px] text-slate-400 font-bold block">مجموع ت</span>
             </div>

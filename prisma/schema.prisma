@@ -57,9 +57,35 @@ model User {
   referralsSent      UserReferral[]      @relation("UserReferralsSent")
   referralReceived   UserReferral?       @relation("UserReferralReceived")
   notifications      Notification[]
+  recordedCallLogs   CallLog[] @relation("CallLogRecorder")
+  relatedCallLogs    CallLog[] @relation("CallLogSubject")
 
   @@index([mobile])
   @@index([status])
+}
+
+model CallLog {
+  id              String   @id @default(cuid())
+  recordedById    String
+  subjectUserId   String?
+  clientRequestId String
+  occurredAt      DateTime @default(now())
+  direction       String
+  topic           String
+  outcome         String
+  followUpStatus  String   @default("NONE")
+  followUpAt      DateTime?
+  note            String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  recordedBy User  @relation("CallLogRecorder", fields: [recordedById], references: [id], onDelete: Restrict)
+  subjectUser User? @relation("CallLogSubject", fields: [subjectUserId], references: [id], onDelete: SetNull)
+
+  @@unique([recordedById, clientRequestId])
+  @@index([occurredAt])
+  @@index([subjectUserId, occurredAt])
+  @@index([followUpStatus, followUpAt])
 }
 
 model UserProfile {

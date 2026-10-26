@@ -1,5 +1,6 @@
 import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
+import { canPayCommissions } from './commission-permissions'
 
 type WalletStore = typeof db | Prisma.TransactionClient
 
@@ -37,12 +38,7 @@ export function canViewSettlements(payload: { roles: string[]; permissions: stri
 }
 
 export function canManageCommissionPayments(payload: { roles: string[]; permissions: string[] }) {
-  return (
-    payload.roles.includes('SUPER_ADMIN') ||
-    payload.roles.includes('ADMIN') ||
-    payload.permissions.includes('manage_commissions') ||
-    payload.permissions.includes('manage_commission_payments')
-  )
+  return canPayCommissions(payload)
 }
 
 export function isSafeId(value: string) {

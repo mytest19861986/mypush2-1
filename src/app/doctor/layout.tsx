@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { CommissionPaymentEntry } from '@/components/shared/commission-payment-entry'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { DoctorRoute } from '@/components/guards/DoctorRoute'
@@ -55,6 +56,7 @@ function SidebarContent({
 
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-1">
+        <CommissionPaymentEntry />
         {doctorDashboardNav.map((item) => {
           const isActive = pathname === item.href
           const Icon = item.icon

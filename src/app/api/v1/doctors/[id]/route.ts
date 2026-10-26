@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { normalizeMedicalCode, medicalCodePattern, medicalCodeValidationMessage } from '@/lib/medical-code'
 import { db } from '@/lib/db'
 import { requirePermission } from '@/lib/auth'
 import { successResponse, errorResponse } from '@/lib/api-response'
@@ -77,6 +78,7 @@ export async function PATCH(
     }
 
     const body = rawBody as {
+      medicalCode?: unknown
       discountPercent?: unknown
       specialty?: unknown
       clinicName?: unknown
@@ -88,6 +90,20 @@ export async function PATCH(
       status?: unknown
       firstName?: unknown
       lastName?: unknown
+    }
+
+    let cleanMedicalCode: string | undefined
+    if (body.medicalCode !== undefined) {
+      if (typeof body.medicalCode !== 'string') return errorResponse('VALIDATION_ERROR', medicalCodeValidationMessage, 400)
+      cleanMedicalCode = normalizeMedicalCode(body.medicalCode)
+      if (!medicalCodePattern.test(cleanMedicalCode)) return errorResponse('VALIDATION_ERROR', medicalCodeValidationMessage, 400)
+      const existingCodes = await db.doctor.findMany({
+        where: { id: { not: id }, medicalCode: { not: null } },
+        select: { medicalCode: true },
+      })
+      if (existingCodes.some(doctor => normalizeMedicalCode(doctor.medicalCode!) === cleanMedicalCode)) {
+        return errorResponse('CONFLICT', 'کد نظام پزشکی قبلاً برای پزشک دیگری ثبت شده است.', 409)
+      }
     }
 
     // Strict validation for discountPercent
@@ -143,6 +159,7 @@ export async function PATCH(
     }
 
     const doctorData: Record<string, unknown> = {}
+    if (cleanMedicalCode !== undefined) doctorData.medicalCode = cleanMedicalCode
     if (validatedDiscount !== undefined) doctorData.discountPercent = validatedDiscount
     if (typeof body.specialty === 'string') doctorData.specialty = body.specialty.trim()
     if (typeof body.clinicName === 'string') doctorData.clinicName = body.clinicName.trim()
@@ -163,6 +180,9 @@ export async function PATCH(
 
     // Track previous and new values for AuditLog
     const changedFields: Record<string, { previous: unknown; next: unknown }> = {}
+    if (cleanMedicalCode !== undefined && cleanMedicalCode !== existingDoctor.medicalCode) {
+      changedFields.medicalCode = { previous: existingDoctor.medicalCode, next: cleanMedicalCode }
+    }
     if (validatedDiscount !== undefined && validatedDiscount !== existingDoctor.discountPercent) {
       changedFields.discountPercent = {
         previous: existingDoctor.discountPercent,
@@ -284,6 +304,9 @@ export async function PATCH(
 
     return successResponse(updatedDoctor, 'اطلاعات پزشک بروزرسانی شد')
   } catch (err) {
+    if (typeof err === 'object' && err !== null && 'code' in err && err.code === 'P2002') {
+      return errorResponse('CONFLICT', 'کد نظام پزشکی قبلاً ثبت شده است.', 409)
+    }
     console.error('[PATCH /api/v1/doctors/[id]]', err)
     return errorResponse('INTERNAL_ERROR', 'خطای داخلی سرور', 500)
   }

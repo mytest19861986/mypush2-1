@@ -83,52 +83,62 @@ export async function PATCH(
       return errorResponse('VALIDATION_ERROR', parsed.error.issues.map((e) => e.message).join('. '), 400)
     }
 
-    // Find contract
-    const existingContract = await db.contract.findUnique({ where: { id } })
-    if (!existingContract) {
-      return errorResponse('NOT_FOUND', 'قرارداد مورد نظر یافت نشد', 404)
-    }
-
-    // Verify the user is the doctor of this contract
-    const doctor = await db.doctor.findUnique({ where: { userId } })
-    if (!doctor || doctor.id !== existingContract.doctorId) {
-      return errorResponse('FORBIDDEN', 'فقط پزشک مربوطه مجاز به ویرایش قرارداد است', 403)
-    }
-
-    const updateData: Record<string, unknown> = {}
-    if (parsed.data.doctorNote !== undefined) updateData.doctorNote = parsed.data.doctorNote
-    if (parsed.data.diagnosis !== undefined) updateData.diagnosis = parsed.data.diagnosis
-    if (parsed.data.prescriptions !== undefined) updateData.prescriptions = parsed.data.prescriptions
-
-    if (parsed.data.status) {
-      updateData.status = parsed.data.status
-      if (parsed.data.status === 'CONFIRMED') updateData.confirmedAt = new Date()
-      if (parsed.data.status === 'COMPLETED') updateData.completedAt = new Date()
-    }
-
-    const contract = await db.contract.update({
-      where: { id },
-      data: updateData,
-      include: {
-        user: {
-          select: {
-            profile: { select: { firstName: true, lastName: true } },
-          },
+    // Resolve current account, role and approval in the same transaction as notes.
+    // JWT claims or a surviving Doctor row cannot preserve revoked authority.
+    return await db.$transaction(async (tx) => {
+      const actor = await tx.user.findUnique({
+        where: { id: userId },
+        select: {
+          status: true, deletedAt: true,
+          roles: { select: { role: { select: { name: true } } } },
+          doctor: { select: { id: true, status: true } },
         },
+      })
+      if (!actor || actor.deletedAt || actor.status !== 'ACTIVE') {
+        return errorResponse('UNAUTHORIZED', 'حساب فعال و معتبر لازم است.', 401)
+      }
+      if (!payload!.roles.includes('DOCTOR') || !actor.roles.some(link => link.role.name === 'DOCTOR')) {
+        return errorResponse('FORBIDDEN', 'فقط پزشک مربوطه مجاز به ویرایش قرارداد است', 403)
+      }
+      if (!actor.doctor || actor.doctor.status !== 'APPROVED') {
+        return errorResponse('FORBIDDEN', 'تأیید پزشک برای ویرایش قرارداد لازم است.', 403)
+      }
+      const existingContract = await tx.contract.findUnique({ where: { id } })
+      if (!existingContract) return errorResponse('NOT_FOUND', 'قرارداد مورد نظر یافت نشد', 404)
+      if (actor.doctor.id !== existingContract.doctorId) {
+        return errorResponse('FORBIDDEN', 'فقط پزشک مربوطه مجاز به ویرایش قرارداد است', 403)
+      }
+      if (parsed.data.status !== undefined && parsed.data.status !== existingContract.status) {
+        await tx.auditLog.create({ data: {
+          userId, action: 'CONTRACT_STATUS_CHANGE_DENIED', entity: 'Contract', entityId: id,
+          details: JSON.stringify({ reason: 'PATIENT_CONSENT_REQUIRED', from: existingContract.status, to: parsed.data.status }),
+        } })
+        return errorResponse('PATIENT_CONSENT_REQUIRED', 'تغییر وضعیت قرارداد نیازمند رضایت معتبر بیمار است.', 403)
+      }
+      // A same-status compatibility field is ignored, never persisted. Only
+      // explicitly allowed notes can change, with no status/timestamp assignment.
+      const updateData: { doctorNote?: string; diagnosis?: string; prescriptions?: string } = {}
+      if (parsed.data.doctorNote !== undefined) updateData.doctorNote = parsed.data.doctorNote
+      if (parsed.data.diagnosis !== undefined) updateData.diagnosis = parsed.data.diagnosis
+      if (parsed.data.prescriptions !== undefined) updateData.prescriptions = parsed.data.prescriptions
+      const include = {
+        user: { select: { profile: { select: { firstName: true, lastName: true } } } },
         userPlan: { include: { plan: true } },
-        doctor: {
-          include: {
-            user: {
-              select: {
-                profile: { select: { firstName: true, lastName: true } },
-              },
-            },
-          },
-        },
-      },
+        doctor: { include: { user: { select: { profile: { select: { firstName: true, lastName: true } } } } } },
+      } as const
+      const contract = Object.keys(updateData).length
+        ? await tx.contract.update({ where: { id }, data: updateData, include })
+        : await tx.contract.findUniqueOrThrow({ where: { id }, include })
+      if (Object.keys(updateData).length) {
+        // Existing AuditLog model, field names only: no clinical content/OTP/JWT.
+        // Audit failure rolls back the note update rather than hiding the failure.
+        await tx.auditLog.create({ data: {
+          userId, action: 'CONTRACT_NOTES_UPDATED', entity: 'Contract', entityId: id,
+          details: JSON.stringify({ fields: Object.keys(updateData) }),
+        } })
+      }
+      return successResponse(contract, 'قرارداد با موفقیت بروزرسانی شد')
     })
-
-    return successResponse(contract, 'قرارداد با موفقیت بروزرسانی شد')
   } catch (err) {
     console.error('[PATCH /api/v1/contracts/[id]]', err)
     return errorResponse('INTERNAL_ERROR', 'خطای داخلی سرور', 500)

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -41,6 +41,8 @@ import { toPersianNum } from '@/utils/formatters'
 import { DashboardAppShell } from '@/components/shared/dashboard-app-shell'
 import { PremiumMetricCard } from '@/components/shared/premium-metric-card'
 import { toast } from 'sonner'
+import { AdminUserRoleAssignment } from '@/components/shared/admin-user-role-assignment'
+import { AdminUserServiceUsage } from '@/components/shared/admin-user-service-usage'
 
 interface UserItem {
   id: string
@@ -75,6 +77,7 @@ export default function UsersPremiumPreviewPage() {
   const [apiError, setApiError] = useState<string | null>(null)
 
   // View Modal state
+  const viewRequestId = useRef(0)
   const [viewUser, setViewUser] = useState<UserItem | null>(null)
   const [viewModalOpen, setViewModalOpen] = useState(false)
   const [viewLoading, setViewLoading] = useState(false)
@@ -248,6 +251,7 @@ export default function UsersPremiumPreviewPage() {
 
   // Handle View User Details
   const handleOpenView = async (user: UserItem) => {
+    const requestId = ++viewRequestId.current
     setViewUser(user)
     setViewModalOpen(true)
     setViewLoading(true)
@@ -255,11 +259,12 @@ export default function UsersPremiumPreviewPage() {
       const res = await fetch(`/api/v1/users/${user.id}`, {
         headers: getAuthHeaders(),
       })
-      if (res.ok) {
+      if (res.ok && requestId === viewRequestId.current) {
         const json = await res.json()
+        if (requestId !== viewRequestId.current) return
         if (json.success && json.data) {
           const detail = json.data
-          setViewUser(prev => prev ? ({
+          setViewUser(prev => prev?.id === user.id ? ({
             ...prev,
             firstName: detail.profile?.firstName,
             lastName: detail.profile?.lastName,
@@ -268,13 +273,13 @@ export default function UsersPremiumPreviewPage() {
             email: detail.email,
             walletBalance: detail.wallet?.balance ?? 0,
             plan: detail.userPlans?.[0]?.plan?.name || prev.plan,
-          }) : null)
+          }) : prev)
         }
       }
     } catch (err) {
       console.warn('View user fetch failed, showing cached', err)
     } finally {
-      setViewLoading(false)
+      if (requestId === viewRequestId.current) setViewLoading(false)
     }
   }
 
@@ -783,7 +788,7 @@ export default function UsersPremiumPreviewPage() {
 
       {/* ─── Modal 1: View User Details ─── */}
       <Dialog open={viewModalOpen} onOpenChange={setViewModalOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg font-bold">
               <UserIcon className="size-5 text-primary" />
@@ -847,6 +852,8 @@ export default function UsersPremiumPreviewPage() {
                   <span className="text-foreground break-words text-left sm:text-right">{viewUser.address || 'ثبت نشده'}</span>
                 </div>
               </div>
+              <AdminUserServiceUsage key={viewUser.id} userId={viewUser.id} />
+              <AdminUserRoleAssignment key={`roles-${viewUser.id}`} userId={viewUser.id} />
             </div>
           ) : null}
 

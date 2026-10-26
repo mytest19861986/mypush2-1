@@ -1,3 +1,4 @@
+import { parseReportDateRange, type ReportDateFilter } from '@/utils/report-date-range'
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requirePermission } from '@/lib/auth'
@@ -14,8 +15,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { authorized, error } = await requirePermission(request, 'manage_doctors')
-    if (!authorized) return errorResponse('UNAUTHORIZED', error!, 401)
+    const { authorized, payload, error } = await requirePermission(request, 'manage_doctors')
+    if (!authorized) return errorResponse(payload ? 'FORBIDDEN' : 'UNAUTHORIZED', error!, payload ? 403 : 401)
 
     const { id } = await params
     if (!id || typeof id !== 'string') {
@@ -50,33 +51,15 @@ export async function GET(
     const startDateParam = searchParams.get('startDate')
     const endDateParam = searchParams.get('endDate')
 
-    let startDateTime: Date | undefined
-    let endDateTime: Date | undefined
-
-    if (startDateParam) {
-      const parsed = new Date(startDateParam)
-      if (isNaN(parsed.getTime())) {
-        return errorResponse('VALIDATION_ERROR', 'تاریخ شروع نامعتبر است.', 400)
-      }
-      startDateTime = parsed
+    let createdAtFilter: ReportDateFilter
+    try {
+      createdAtFilter = parseReportDateRange(startDateParam, endDateParam)
+    } catch (error) {
+      return errorResponse('VALIDATION_ERROR', error instanceof Error ? error.message : 'تاریخ نامعتبر است.', 400)
     }
 
-    if (endDateParam) {
-      const parsed = new Date(endDateParam)
-      if (isNaN(parsed.getTime())) {
-        return errorResponse('VALIDATION_ERROR', 'تاریخ پایان نامعتبر است.', 400)
-      }
-      endDateTime = parsed
-    }
-
-    if (startDateTime && endDateTime && startDateTime > endDateTime) {
-      return errorResponse('VALIDATION_ERROR', 'تاریخ شروع نمی‌تواند پس از تاریخ پایان باشد.', 400)
-    }
-
-    const createdAtFilter: { gte?: Date; lte?: Date } = {}
-    if (startDateTime) createdAtFilter.gte = startDateTime
-    if (endDateTime) createdAtFilter.lte = endDateTime
-
+    const startDateTime = createdAtFilter.gte
+    const endDateTime = createdAtFilter.lt ? new Date(createdAtFilter.lt.getTime() - 1) : createdAtFilter.lte
     const visitWhere = {
       doctorId: id,
       ...(Object.keys(createdAtFilter).length > 0 && { createdAt: createdAtFilter }),

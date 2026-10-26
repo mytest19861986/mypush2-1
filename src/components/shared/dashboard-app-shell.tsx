@@ -53,8 +53,9 @@ import {
 } from '@/components/ui/popover'
 import { useAuthStore } from '@/stores/auth-store'
 import { useNotificationStore } from '@/stores/notification-store'
-import { phase1DemoVisibleItems } from '@/config/demo-scope'
+import { getAdminDashboardNavForUser } from '@/config/dashboard-nav'
 import { AdminRoute } from '@/components/guards/AdminRoute'
+import { TehranClock } from '@/components/shared/tehran-clock'
 
 interface DashboardAppShellProps {
   children: React.ReactNode
@@ -126,22 +127,7 @@ export function DashboardAppShell({
     }
   }
 
-  // Production Navigation Contract filtered by DEMO_SCOPE_PHASE_1 (Exact 5 permitted items for Demo)
-  const allNavItems = [
-    { href: '/admin/dashboard', label: 'داشبورد', icon: LayoutDashboard },
-    { href: '/admin/users', label: 'کاربران', icon: Users },
-    { href: '/admin/doctors', label: 'پزشکان', icon: Stethoscope },
-    { href: '/admin/agents', label: 'همکاران فروش', icon: Briefcase },
-    { href: '/admin/plans', label: 'طرح‌ها', icon: CreditCard },
-    { href: '/admin/financial-management', label: 'مدیریت مالی', icon: CreditCard },
-    { href: '/admin/commissions', label: 'مدیریت پورسانت‌ها', icon: Wallet },
-    { href: '/admin/sales-customers', label: 'مشتریان فروش', icon: ShoppingBag },
-    { href: '/admin/reviews', label: 'مدیریت نظرات', icon: MessageSquareText },
-    { href: '/admin/roles', label: 'نقش‌ها', icon: Shield },
-    { href: '/admin/permissions', label: 'دسترسی‌ها', icon: Shield },
-    { href: '/admin/audit-logs', label: 'گزارش فعالیت‌ها', icon: BarChart3 },
-  ]
-  const navItems = phase1DemoVisibleItems(allNavItems)
+  const navItems = getAdminDashboardNavForUser(user)
 
   // Rule 5: Exactly ONE single item active per route
   const activeNavItem = [...navItems]
@@ -270,6 +256,14 @@ export function DashboardAppShell({
         <header className="h-16 sm:h-20 bg-white/95 backdrop-blur-md border-b border-slate-200/70 px-4 sm:px-8 lg:px-10 flex items-center justify-between gap-3 sticky top-0 z-30 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
           {/* Mobile Menu Button & Search Toggle */}
           <div className="flex items-center gap-2.5">
+            {pathname?.startsWith('/admin/') && pathname !== '/admin/dashboard' && (
+              <Button asChild variant="ghost" size="sm" className="gap-1">
+                <Link href="/admin/dashboard" aria-label="بازگشت به داشبورد مدیریت">
+                  <ArrowRight className="size-4" />
+                  <span className="hidden sm:inline">بازگشت</span>
+                </Link>
+              </Button>
+            )}
             <button
               onClick={() => setMobileMenuOpen(true)}
               className="md:hidden size-10 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-center text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors"
@@ -303,9 +297,8 @@ export function DashboardAppShell({
             <div className="hidden lg:flex flex-col text-left">
               <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
                 <Calendar className="size-3.5 text-[#0D5C58]" />
-                <span>سه‌شنبه ۲۷ شهریور ۱۴۰۵</span>
+                <TehranClock />
               </div>
-              <span className="text-[11px] text-slate-400 font-mono">آخرین بروزرسانی: امروز ۱۴:۳۰</span>
             </div>
 
             {/* Notification Bell with Real Backend Integration (CMD-HAMI-115 Wave 3C) */}

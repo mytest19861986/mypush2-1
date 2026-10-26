@@ -1,0 +1,16 @@
+const fs = require('node:fs'), crypto = require('node:crypto'), assert = require('node:assert/strict')
+const { PrismaClient } = require('/validation/.next/standalone/node_modules/@prisma/client')
+const db = new PrismaClient({log:[]})
+;(async () => {
+ const first = await db.userProfile.findUniqueOrThrow({where:{userId:'codex08-a'}})
+ const second = await db.userProfile.findUniqueOrThrow({where:{userId:'codex08-c'}})
+ assert.equal(first.firstName, 'کاربر آزمایشی ۰۸آ'); assert.equal(first.address, 'نشانی ساختگی آزمون محلی ۰۸آ'); assert.equal(first.nationalCode,'0000000803')
+ assert.equal(second.firstName,'کاربر بدون طرح ۰۸آ'); assert.equal(second.nationalCode,null)
+ const unassigned = await db.userPlan.findUniqueOrThrow({where:{id:'codex08-owned-unassigned'}})
+ assert.equal(unassigned.userId,null)
+ const domains = await Promise.all([db.contract.findMany({orderBy:{id:'asc'}}),db.visit.findMany({orderBy:{id:'asc'}}),db.userPlan.findMany({orderBy:{id:'asc'}}),db.wallet.findMany({orderBy:{id:'asc'}}),db.walletTransaction.findMany({orderBy:{id:'asc'}}),db.settlement.findMany({orderBy:{id:'asc'}})])
+ const after = crypto.createHash('sha256').update(JSON.stringify(domains)).digest('hex')
+ const before = JSON.parse(fs.readFileSync('/data/domain-before.json')).hash
+ assert.equal(after,before)
+ console.log(JSON.stringify({status:'PASS',firstProfilePersisted:true,failedUpdateAbsent:true,secondProfilePersistedWithoutNationalCode:true,unassignedPlanStillUnassigned:true,domainBefore:before,domainAfter:after,buildId:fs.readFileSync('/validation/.next/BUILD_ID','utf8').trim()}))
+})().catch(e=>{console.error(e.message);process.exitCode=1}).finally(()=>db.$disconnect())

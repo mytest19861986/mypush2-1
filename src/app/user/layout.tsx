@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { CommissionPaymentEntry } from '@/components/shared/commission-payment-entry'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { UserRoute } from '@/components/guards/UserRoute'
@@ -69,6 +70,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 p-3">
+        <CommissionPaymentEntry />
         {userDashboardNav.map((item) => {
           const isActive =
             pathname === item.href || pathname.startsWith(item.href + '/')

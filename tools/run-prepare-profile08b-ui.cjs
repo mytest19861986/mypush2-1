@@ -1,0 +1,10 @@
+const fs = require('node:fs'), { spawnSync } = require('node:child_process')
+if (fs.existsSync('/workspace/tools')) throw Error('Fresh workspace required')
+fs.mkdirSync('/workspace/tools', { recursive: true })
+fs.copyFileSync('/source/tools/prepare-profile08b-ui.ts', '/workspace/tools/prepare-profile08b-ui.ts')
+fs.copyFileSync('/source/eslint.config.mjs', '/workspace/eslint.config.mjs')
+const lint = spawnSync(process.execPath, ['node_modules/eslint/bin/eslint.js', 'tools/prepare-profile08b-ui.ts'], { cwd: '/workspace', encoding: 'utf8' })
+fs.writeFileSync('/data/UI_TOOL_LINT.txt', (lint.stdout || '') + (lint.stderr || ''))
+if (lint.status !== 0) process.exit(lint.status || 1)
+const result = spawnSync('/bun/bun', ['run', 'tools/prepare-profile08b-ui.ts'], { cwd: '/workspace', env: process.env, stdio: 'inherit' })
+process.exitCode = result.status ?? 1

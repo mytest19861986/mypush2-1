@@ -43,6 +43,11 @@ import { toPersianNum } from '@/utils/formatters'
 import { DashboardAppShell } from '@/components/shared/dashboard-app-shell'
 import { PremiumMetricCard } from '@/components/shared/premium-metric-card'
 import { toast } from 'sonner'
+import { JalaliIsoDateRangeFilter } from '@/components/shared/jalali-iso-date-range-filter'
+import { apiClient } from '@/lib/api-client'
+import { getReportErrorMessage } from '@/lib/report-client'
+import { normalizeMedicalCode, medicalCodePattern, medicalCodeValidationMessage } from '@/lib/medical-code'
+
 
 interface DoctorClinicItem {
   id: string
@@ -150,6 +155,8 @@ export default function DoctorsClinicsPremiumPreviewPage() {
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editFirstName, setEditFirstName] = useState('')
   const [editLastName, setEditLastName] = useState('')
+  const [editMedicalCode, setEditMedicalCode] = useState('')
+  const [editError, setEditError] = useState<string | null>(null)
   const [editDiscountPercent, setEditDiscountPercent] = useState<string>('0')
   const [editSpecialty, setEditSpecialty] = useState('')
   const [editClinicName, setEditClinicName] = useState('')
@@ -177,27 +184,31 @@ export default function DoctorsClinicsPremiumPreviewPage() {
   } | null>(null)
   const [perfStartDate, setPerfStartDate] = useState('')
   const [perfEndDate, setPerfEndDate] = useState('')
+  const [perfError, setPerfError] = useState<string | null>(null)
+  const perfRequestId = React.useRef(0)
 
   const fetchDoctorPerformance = async (doctorId: string, start?: string, end?: string) => {
+    const requestId = ++perfRequestId.current
     setPerfLoading(true)
+    setPerfData(null)
+    setPerfError(null)
     try {
       const params = new URLSearchParams()
       if (start) params.set('startDate', start)
       if (end) params.set('endDate', end)
       const q = params.toString() ? `?${params.toString()}` : ''
-      const res = await fetch(`/api/v1/doctors/${doctorId}/performance${q}`, {
-        headers: getAuthHeaders(),
-      })
-      const json = await res.json()
-      if (res.ok && json.success && json.data) {
-        setPerfData(json.data.metrics)
-      } else {
-        toast.error(json.message || 'خطا در بارگذاری گزارش عملکرد')
-      }
-    } catch {
-      toast.error('ارتباط با سرور برقرار نشد')
+      const data = await apiClient.request<{ metrics: NonNullable<typeof perfData> }>(
+        'GET', `/doctors/${doctorId}/performance${q}`
+      )
+      if (!data?.metrics || typeof data.metrics.totalVisits !== 'number') throw new Error('ساختار پاسخ گزارش معتبر نیست.')
+      if (requestId === perfRequestId.current) setPerfData(data.metrics)
+    } catch (error: unknown) {
+      if (requestId !== perfRequestId.current) return
+      const message = getReportErrorMessage(error)
+      setPerfError(message)
+      toast.error(message)
     } finally {
-      setPerfLoading(false)
+      if (requestId === perfRequestId.current) setPerfLoading(false)
     }
   }
 
@@ -396,9 +407,11 @@ export default function DoctorsClinicsPremiumPreviewPage() {
 
   // Handle Edit Doctor
   const handleOpenEdit = (doc: DoctorClinicItem) => {
+    setEditError(null)
     setEditDoc(doc)
     setEditFirstName(doc.firstName || '')
     setEditLastName(doc.lastName || '')
+    setEditMedicalCode(doc.medicalCode || '')
     setEditDiscountPercent(String(doc.discountPercent ?? 0))
     setEditSpecialty(doc.specialty || '')
     setEditClinicName(doc.clinicName || '')
@@ -411,17 +424,25 @@ export default function DoctorsClinicsPremiumPreviewPage() {
 
   const handleSaveEdit = async () => {
     if (!editDoc) return
+    setEditError(null)
+    const showError = (message: string) => { setEditError(message); toast.error(message) }
+    const medicalCode = normalizeMedicalCode(editMedicalCode)
+    const medicalCodeChanged = medicalCode !== normalizeMedicalCode(editDoc.medicalCode || '')
+    if (medicalCodeChanged && !medicalCodePattern.test(medicalCode)) {
+      showError(medicalCodeValidationMessage)
+      return
+    }
     const parsedDiscount = Number(editDiscountPercent)
     if (Number.isNaN(parsedDiscount) || parsedDiscount < 0 || parsedDiscount > 100) {
-      toast.error('درصد تخفیف اختصاصی باید عددی بین ۰ تا ۱۰۰ باشد')
+      showError('درصد تخفیف اختصاصی باید عددی بین ۰ تا ۱۰۰ باشد')
       return
     }
     if (editFirstName.trim().length > 0 && editFirstName.trim().length < 2) {
-      toast.error('نام باید حداقل ۲ حرف باشد')
+      showError('نام باید حداقل ۲ حرف باشد')
       return
     }
     if (editLastName.trim().length > 0 && editLastName.trim().length < 2) {
-      toast.error('نام خانوادگی باید حداقل ۲ حرف باشد')
+      showError('نام خانوادگی باید حداقل ۲ حرف باشد')
       return
     }
 
@@ -431,6 +452,7 @@ export default function DoctorsClinicsPremiumPreviewPage() {
         method: 'PATCH',
         headers: getAuthHeaders(),
         body: JSON.stringify({
+          medicalCode: medicalCodeChanged ? medicalCode : undefined,
           firstName: editFirstName.trim() || undefined,
           lastName: editLastName.trim() || undefined,
           discountPercent: parsedDiscount,
@@ -448,10 +470,10 @@ export default function DoctorsClinicsPremiumPreviewPage() {
         setEditModalOpen(false)
         fetchDoctors()
       } else {
-        toast.error(json.message || json.error?.message || 'خطا در ویرایش اطلاعات پزشک')
+        showError(json.message || json.error?.message || 'خطا در ویرایش اطلاعات پزشک')
       }
     } catch {
-      toast.error('ارتباط با سرور برقرار نشد')
+      showError('ارتباط با سرور برقرار نشد')
     } finally {
       setIsSubmittingEdit(false)
     }
@@ -901,7 +923,7 @@ export default function DoctorsClinicsPremiumPreviewPage() {
 
       {/* ─── Modal 1: View Doctor Details ─── */}
       <Dialog open={viewModalOpen} onOpenChange={setViewModalOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg font-bold">
               <Stethoscope className="size-5 text-primary" />
@@ -995,7 +1017,7 @@ export default function DoctorsClinicsPremiumPreviewPage() {
 
       {/* ─── Modal 1.5: Physician Performance Report ─── */}
       <Dialog open={perfModalOpen} onOpenChange={setPerfModalOpen}>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg font-bold">
               <Activity className="size-5 text-emerald-600" />
@@ -1023,26 +1045,11 @@ export default function DoctorsClinicsPremiumPreviewPage() {
                 حذف فیلتر
               </Button>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <div>
-                <label className="text-[11px] text-muted-foreground block mb-1">از تاریخ (ISO / میلادی):</label>
-                <Input
-                  type="date"
-                  value={perfStartDate}
-                  onChange={(e) => setPerfStartDate(e.target.value)}
-                  className="text-xs font-mono h-8"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] text-muted-foreground block mb-1">تا تاریخ (ISO / میلادی):</label>
-                <Input
-                  type="date"
-                  value={perfEndDate}
-                  onChange={(e) => setPerfEndDate(e.target.value)}
-                  className="text-xs font-mono h-8"
-                />
-              </div>
-            </div>
+            <JalaliIsoDateRangeFilter
+              from={perfStartDate}
+              to={perfEndDate}
+              onChange={({ from, to }) => { setPerfStartDate(from); setPerfEndDate(to) }}
+            />
             <Button
               size="sm"
               onClick={() => {
@@ -1051,7 +1058,14 @@ export default function DoctorsClinicsPremiumPreviewPage() {
               disabled={perfLoading}
               className="w-full text-xs h-8 bg-emerald-600 hover:bg-emerald-700 text-white"
             >
-              {perfLoading ? <Loader2 className="size-3.5 animate-spin ml-1" /> : <Filter className="size-3.5 ml-1" />}
+              {perfError && (
+            <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+              <p>{perfError}</p>
+              <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => { if (perfDoc) void fetchDoctorPerformance(perfDoc.id, perfStartDate, perfEndDate) }}>تلاش مجدد</Button>
+            </div>
+          )}
+
+          {perfLoading ? <Loader2 className="size-3.5 animate-spin ml-1" /> : <Filter className="size-3.5 ml-1" />}
               اعمال بازه تاریخی
             </Button>
           </div>
@@ -1143,7 +1157,7 @@ export default function DoctorsClinicsPremiumPreviewPage() {
 
       {/* ─── Modal 2: Edit Doctor ─── */}
       <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg font-bold">
               <Edit3 className="size-5 text-blue-600" />
@@ -1162,8 +1176,8 @@ export default function DoctorsClinicsPremiumPreviewPage() {
                 <span className="font-mono font-medium" dir="ltr">{editDoc?.mobile || 'ثبت‌نشده'}</span>
               </div>
               <div>
-                <span className="text-muted-foreground block">کد نظام پزشکی:</span>
-                <span className="font-mono font-medium" dir="ltr">{editDoc?.medicalCode || 'ثبت‌نشده'}</span>
+                <label htmlFor="edit-doctor-medical-code" className="text-muted-foreground block mb-1">کد نظام پزشکی</label>
+                <Input id="edit-doctor-medical-code" inputMode="numeric" dir="ltr" value={editMedicalCode} onChange={event => { setEditMedicalCode(event.target.value); setEditError(null) }} className="font-mono" />
               </div>
             </div>
 
@@ -1270,6 +1284,7 @@ export default function DoctorsClinicsPremiumPreviewPage() {
             </div>
           </div>
 
+          {editError && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{editError}</p>}
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setEditModalOpen(false)}>
               انصراف

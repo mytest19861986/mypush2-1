@@ -1,12 +1,14 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { authenticateRequest } from '@/lib/auth'
+import { getCurrentCommissionPaymentAccess } from '@/lib/commission-payment-access'
+import { COMMISSION_PAYMENT_PERMISSION } from '@/lib/commission-permissions'
 import { AuditActions } from '@/lib/audit'
 import { successResponse, errorResponse } from '@/lib/api-response'
 import { getClientIp } from '@/app/api/v1/auth/_helpers'
 import {
   DuplicateWalletTransactionError,
   canManageCommissionPayments,
+  isSafeId,
   creditWallet,
 } from '@/lib/wallets'
 
@@ -19,10 +21,16 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { authenticated, payload, error } = await authenticateRequest(request)
-    if (!authenticated || !payload) return errorResponse('UNAUTHORIZED', error!, 401)
+    const { payload, error } = await getCurrentCommissionPaymentAccess(request)
+    if (!payload) return errorResponse('UNAUTHORIZED', error!, 401)
 
     if (!canManageCommissionPayments(payload)) {
+      const deniedId = (await params).id
+      await db.auditLog.create({ data: {
+        userId: payload.sub, action: 'COMMISSION_PAYMENT_DENIED', entity: 'Commission',
+        entityId: isSafeId(deniedId) ? deniedId : undefined,
+        details: JSON.stringify({ requiredPermission: COMMISSION_PAYMENT_PERMISSION }),
+      } })
       return errorResponse('FORBIDDEN', 'Commission payment permission required', 403)
     }
 
@@ -180,7 +188,7 @@ export async function POST(
       return errorResponse('CONFLICT', 'Wallet transaction already exists for this commission', 409)
     }
 
-    console.error('[POST /api/v1/commissions/[id]/pay]', err)
+    console.error('[POST /api/v1/commissions/[id]/pay]', err instanceof Error ? err.name : 'Unknown error')
     return errorResponse('INTERNAL_ERROR', 'Internal server error', 500)
   }
 }

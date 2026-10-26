@@ -1,0 +1,36 @@
+const assert = require('node:assert/strict')
+const { PrismaClient } = require('/build/.next/standalone/node_modules/@prisma/client')
+assert.equal(process.env.DATABASE_URL, 'file:/data/admin01a-ui.sqlite')
+const db = new PrismaClient({ log: [] })
+;(async () => {
+  const start = new Date('2026-09-30T20:30:00Z'), end = new Date('2026-10-01T20:30:00Z')
+  const patient = 'codex01b-patient'
+  const visits = await db.$queryRawUnsafe('SELECT v.id, v.status, v.doctorId FROM Visit v LEFT JOIN PlanHolder h ON h.id = v.planHolderId WHERE (v.userId = ? OR (v.userId IS NULL AND h.userId = ?)) AND COALESCE(v.completedAt, v.visitedAt, v.createdAt) >= ? AND COALESCE(v.completedAt, v.visitedAt, v.createdAt) < ?', patient, patient, start.getTime(), end.getTime())
+  const legacy = await db.$queryRawUnsafe('SELECT c.id, c.status, c.doctorId FROM Contract c WHERE c.userId = ? AND NOT EXISTS (SELECT 1 FROM Visit v WHERE v.contractId = c.id) AND COALESCE(c.completedAt, c.createdAt) >= ? AND COALESCE(c.completedAt, c.createdAt) < ?', patient, start.getTime(), end.getTime())
+  const all = [...visits, ...legacy], completed = all.filter(row => row.status === 'COMPLETED')
+  const usage = { registered: all.length, completed: completed.length, doctors: new Set(completed.map(row => row.doctorId)).size }
+  assert.deepEqual(usage, { registered: 7, completed: 5, doctors: 2 })
+  const agents = []
+  for (const owner of ['codex01b-agent', 'codex01a-scope-agent-two']) {
+    const commissions = await db.commission.findMany({ where: { agentId: owner, createdAt: { gte: start, lt: end } }, select: { id: true, amount: true, status: true } })
+    const settlements = await db.settlement.findMany({ where: { userId: owner, requestedAt: { gte: start, lt: end } }, select: { id: true, amount: true, status: true } })
+    const customers = await db.salesCustomer.findMany({ where: { salesPartnerId: owner, createdAt: { gte: start, lt: end } }, select: { id: true } })
+    agents.push({ owner, commissions, settlements, customers })
+  }
+  assert.deepEqual(agents.map(row => row.commissions.reduce((sum, item) => sum + item.amount, 0)), [111, 222])
+  assert.deepEqual(agents.map(row => row.settlements.reduce((sum, item) => sum + item.amount, 0)), [11, 22])
+  assert.deepEqual(agents.map(row => row.customers.length), [1, 1])
+  const calls = await db.callLog.findMany({ where: { note: 'آزمون نهایی مرورگر F — پیگیری اجرایی 20261025' }, select: { id: true, recordedById: true } })
+  assert.equal(calls.length, 1)
+  const callAudits = await db.auditLog.count({ where: { action: 'CALL_LOG_CREATED', entityId: calls[0].id, userId: 'codex01b-admin' } })
+  assert.equal(callAudits, 1)
+  const doctor = await db.doctor.findUniqueOrThrow({ where: { id: 'codex01b-physician' }, select: { medicalCode: true } })
+  assert.equal(doctor.medicalCode, '7654321')
+  const doctorAudits = await db.auditLog.count({ where: { action: 'DOCTOR_UPDATED', entityId: 'codex01b-physician', userId: 'codex01b-admin' } })
+  assert.ok(doctorAudits >= 1)
+  const reviews = await db.review.findMany({ where: { comment: 'نظر ساختگی پذیرش مرورگر F — 20261025' }, select: { id: true, userId: true, status: true, visitId: true } })
+  assert.equal(reviews.length, 1)
+  assert.equal(reviews[0].userId, patient)
+  assert.equal(reviews[0].status, 'APPROVED')
+  console.log(JSON.stringify({ status: 'PASS', scope: 'Local UI F database only; raw SQL usage cross-check, synthetic owners only', usage, usageIds: all.map(row => row.id), agents, calls, callAudits, doctor, doctorAudits, reviews }, null, 2))
+})().catch(error => { console.error(error.name + ': ' + error.message); process.exitCode = 1 }).finally(() => db.$disconnect())

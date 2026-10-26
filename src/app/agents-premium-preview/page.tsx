@@ -1,5 +1,8 @@
 'use client'
 
+import { AdminAgentRecentCommissions } from '@/components/shared/admin-agent-recent-commissions'
+import { AdminUserRoleAssignment } from '@/components/shared/admin-user-role-assignment'
+
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -15,6 +18,11 @@ import {
   DialogFooter
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
+import { JalaliIsoDateRangeFilter } from '@/components/shared/jalali-iso-date-range-filter'
+import { apiClient } from '@/lib/api-client'
+import { getReportErrorMessage } from '@/lib/report-client'
+import { formatReportMonthRange } from '@/utils/report-month-label'
+
 import {
   Briefcase,
   TrendingUp,
@@ -59,26 +67,13 @@ interface AgentMock {
   nationalCode?: string
   email?: string
   activeClientsCount: number
-  totalSalesVolume: string
+  documentCount: number
   totalCommissionPaid: string
   rank: string
   status: 'ACTIVE' | 'PENDING' | 'SUSPENDED'
   statusLabel: string
   lastSale: string
   avatarInitial: string
-}
-
-interface SaleActivityMock {
-  id: string
-  clientName: string
-  clientMobile: string
-  planName: string
-  agentName: string
-  amount: string
-  commission: string
-  status: 'PAID' | 'PENDING' | 'REJECTED'
-  statusLabel: string
-  time: string
 }
 
 export default function AgentsPremiumPreviewPage() {
@@ -91,6 +86,7 @@ export default function AgentsPremiumPreviewPage() {
   const [apiError, setApiError] = useState<string | null>(null)
 
   // Selected agent for details modal
+  const detailRequestId = React.useRef(0)
   const [selectedAgentDetail, setSelectedAgentDetail] = useState<any | null>(null)
   const [isLoadingDetail, setIsLoadingDetail] = useState(false)
   const [detailModalOpen, setDetailModalOpen] = useState(false)
@@ -124,30 +120,31 @@ export default function AgentsPremiumPreviewPage() {
   } | null>(null)
   const [perfStartDate, setPerfStartDate] = useState('')
   const [perfEndDate, setPerfEndDate] = useState('')
+  const [perfError, setPerfError] = useState<string | null>(null)
+  const perfRequestId = React.useRef(0)
 
   const fetchAgentPerformance = async (agentId: string, start?: string, end?: string) => {
+    const requestId = ++perfRequestId.current
     setPerfLoading(true)
+    setPerfData(null)
+    setPerfError(null)
     try {
-      const headers: Record<string, string> = {}
-      if (typeof window !== 'undefined') {
-        const token = localStorage.getItem('accessToken')
-        if (token) headers['X-App-Authorization'] = `Bearer ${token}`
-      }
       const params = new URLSearchParams()
       if (start) params.set('startDate', start)
       if (end) params.set('endDate', end)
       const q = params.toString() ? `?${params.toString()}` : ''
-      const res = await fetch(`/api/v1/agents/${agentId}/performance${q}`, { headers })
-      const json = await res.json()
-      if (res.ok && json.success && json.data) {
-        setPerfData(json.data)
-      } else {
-        toast.error(json.message || 'خطا در بارگذاری گزارش مالی همکار فروش')
-      }
-    } catch {
-      toast.error('ارتباط با سرور جهت دریافت گزارش عملکرد برقرار نشد')
+      const data = await apiClient.request<NonNullable<typeof perfData>>(
+        'GET', `/agents/${agentId}/performance${q}`
+      )
+      if (!data?.metrics || typeof data.metrics.totalEarnedCommission !== 'number') throw new Error('ساختار پاسخ گزارش معتبر نیست.')
+      if (requestId === perfRequestId.current) setPerfData(data)
+    } catch (error: unknown) {
+      if (requestId !== perfRequestId.current) return
+      const message = getReportErrorMessage(error)
+      setPerfError(message)
+      toast.error(message)
     } finally {
-      setPerfLoading(false)
+      if (requestId === perfRequestId.current) setPerfLoading(false)
     }
   }
 
@@ -225,7 +222,7 @@ export default function AgentsPremiumPreviewPage() {
             : item.businessName || `همکار شماره ${idx + 1}`
           const mobile = item.user?.mobile || 'ثبت نشده'
           const nationalCode = profile?.nationalCode || 'نامشخص'
-          const status = item.status === 'APPROVED' ? 'ACTIVE' : item.status === 'PENDING' ? 'PENDING' : 'SUSPENDED'
+          const status = item.status === 'APPROVED' ? 'ACTIVE' : ['PENDING', 'UNDER_REVIEW'].includes(item.status) ? 'PENDING' : 'SUSPENDED'
           const initial = name ? name.charAt(0) : 'ن'
           return {
             id: item.id,
@@ -235,21 +232,23 @@ export default function AgentsPremiumPreviewPage() {
             mobile,
             nationalCode,
             email: item.user?.email || null,
-            activeClientsCount: item._count?.documents || 0,
-            totalSalesVolume: 'به‌روزرسانی خودکار',
-            totalCommissionPaid: 'محاسبه در دوره تسویه',
+            activeClientsCount: item.stats?.registeredCustomers ?? 0,
+            documentCount: item._count?.documents ?? 0,
+            totalCommissionPaid: item.stats ? `${Number(item.stats.paidCommission).toLocaleString('fa-IR')} تومان` : 'در دسترس نیست',
             rank: status === 'ACTIVE' ? 'همکار تاییدشده' : 'در صف بررسی مدارک',
             status,
-            statusLabel: status === 'ACTIVE' ? 'فعال و تاییدشده' : 'در صف احراز هویت',
+            statusLabel: ({ APPROVED: 'تأییدشده', PENDING: 'در انتظار بررسی', UNDER_REVIEW: 'در حال بررسی', REJECTED: 'ردشده', SUSPENDED: 'تعلیق' } as Record<string, string>)[item.status] || 'نامشخص',
             lastSale: item.createdAt ? new Date(item.createdAt).toLocaleDateString('fa-IR') : 'به‌تازگی',
             avatarInitial: initial,
           }
         })
         setLiveAgents(mapped)
       } else {
+        setLiveAgents([])
         setApiError(json.error?.message || 'خطا در واکشی فهرست نمایندگان')
       }
     } catch (err) {
+      setLiveAgents([])
       setApiError('ارتباط با سرور جهت دریافت فهرست نمایندگان برقرار نشد')
     } finally {
       setIsLoadingAgents(false)
@@ -261,6 +260,8 @@ export default function AgentsPremiumPreviewPage() {
   }, [fetchAgents])
 
   const openAgentDetails = async (agentId: string) => {
+    const requestId = ++detailRequestId.current
+    setSelectedAgentDetail(null)
     setIsLoadingDetail(true)
     setDetailModalOpen(true)
     try {
@@ -271,6 +272,7 @@ export default function AgentsPremiumPreviewPage() {
       }
       const res = await fetch(`/api/v1/agents/${agentId}`, { headers })
       const json = await res.json()
+      if (requestId !== detailRequestId.current) return
       if (res.ok && json.success && json.data) {
         setSelectedAgentDetail(json.data)
       } else {
@@ -279,115 +281,11 @@ export default function AgentsPremiumPreviewPage() {
     } catch {
       toast.error('ارتباط با سرور برای دریافت جزئیات برقرار نشد')
     } finally {
-      setIsLoadingDetail(false)
+      if (requestId === detailRequestId.current) setIsLoadingDetail(false)
     }
   }
 
-  const agents: AgentMock[] = liveAgents.length > 0 ? liveAgents : [
-    {
-      id: 'AG-201',
-      name: 'پیمان حسینی',
-      branch: 'شعبه مرکزی غرب تهران',
-      location: 'تهران، صادقیه',
-      mobile: '۰۹۱۲***۸۸۱۱',
-      nationalCode: '۰۰۱****۴۵۶',
-      activeClientsCount: 342,
-      totalSalesVolume: '۳۸۰,۰۰۰,۰۰۰ تومان',
-      totalCommissionPaid: '۵۷,۰۰۰,۰۰۰ تومان',
-      rank: 'رتبه ۱ فروش (VIP)',
-      status: 'ACTIVE',
-      statusLabel: 'فعال و تاییدشده',
-      lastSale: '۱۵ دقیقه پیش',
-      avatarInitial: 'پ'
-    },
-    {
-      id: 'AG-202',
-      name: 'الهام سلیمی',
-      branch: 'نمایندگی منطقه سعادت‌آباد',
-      location: 'تهران، سعادت‌آباد',
-      mobile: '۰۹۱۹***۴۴۲۲',
-      nationalCode: '۰۴۵****۷۸۹',
-      activeClientsCount: 285,
-      totalSalesVolume: '۳۱۰,۰۰۰,۰۰۰ تومان',
-      totalCommissionPaid: '۴۶,۵۰۰,۰۰۰ تومان',
-      rank: 'رتبه ۲ فروش',
-      status: 'ACTIVE',
-      statusLabel: 'فعال و تاییدشده',
-      lastSale: '۲ ساعت پیش',
-      avatarInitial: 'ا'
-    },
-    {
-      id: 'AG-203',
-      name: 'شرکت خدمات نوین مهر',
-      branch: 'نمایندگی حقوقی و سازمانی',
-      location: 'تهران، مطهری',
-      mobile: '۰۹۱۲***۳۳۲۲',
-      nationalCode: '۱۰۱۰****۹۹۰',
-      activeClientsCount: 520,
-      totalSalesVolume: '۵۴۰,۰۰۰,۰۰۰ تومان',
-      totalCommissionPaid: '۸۱,۰۰۰,۰۰۰ تومان',
-      rank: 'نماینده طلایی سازمانی',
-      status: 'ACTIVE',
-      statusLabel: 'قرارداد کلان',
-      lastSale: 'امروز ۱۱:۰۰',
-      avatarInitial: 'ش'
-    },
-    {
-      id: 'AG-204',
-      name: 'فرهاد بهرامی',
-      branch: 'دفتر نمایندگی شرق',
-      location: 'تهران، تهرانپارس',
-      mobile: '۰۹۳۵***۵۵۴۴',
-      nationalCode: '۰۰۷****۱۲۳',
-      activeClientsCount: 64,
-      totalSalesVolume: '۵۸,۰۰۰,۰۰۰ تومان',
-      totalCommissionPaid: '۸,۷۰۰,۰۰۰ تومان',
-      rank: 'همکار در حال توسعه',
-      status: 'PENDING',
-      statusLabel: 'در صف احراز مدارک',
-      lastSale: '۳ روز پیش',
-      avatarInitial: 'ف'
-    },
-  ]
-
-  const recentSales: SaleActivityMock[] = [
-    {
-      id: 'TX-901',
-      clientName: 'سارا میرزایی',
-      clientMobile: '۰۹۱۲***۸۸۱۱',
-      planName: 'طرح طلایی یک‌ساله',
-      agentName: 'پیمان حسینی',
-      amount: '۲,۵۰۰,۰۰۰ تومان',
-      commission: '۳۷۵,۰۰۰ تومان',
-      status: 'PAID',
-      statusLabel: 'تسویه دستی انجام‌شده (نمونه نمایشی)',
-      time: '۱۵ دقیقه پیش'
-    },
-    {
-      id: 'TX-902',
-      clientName: 'حمیدرضا کیانی',
-      clientMobile: '۰۹۱۹***۴۴۲۲',
-      planName: 'طرح نقره‌ای خانواده',
-      agentName: 'الهام سلیمی',
-      amount: '۱,۸۰۰,۰۰۰ تومان',
-      commission: '۲۷۰,۰۰۰ تومان',
-      status: 'PAID',
-      statusLabel: 'تسویه دستی انجام‌شده (نمونه نمایشی)',
-      time: '۱ ساعت پیش'
-    },
-    {
-      id: 'TX-903',
-      clientName: 'نیلوفر امینی',
-      clientMobile: '۰۹۳۵***۱۱۹۹',
-      planName: 'طرح دندانپزشکی انفرادی',
-      agentName: 'شرکت خدمات نوین مهر',
-      amount: '۱,۲۰۰,۰۰۰ تومان',
-      commission: '۱۸۰,۰۰۰ تومان',
-      status: 'PENDING',
-      statusLabel: 'در انتظار بررسی واریز دستی (نمونه نمایشی)',
-      time: '۳ ساعت پیش'
-    },
-  ]
+  const agents: AgentMock[] = liveAgents
 
   // Create Agent Modal state
   const [createAgentModalOpen, setCreateAgentModalOpen] = useState(false)
@@ -506,41 +404,32 @@ export default function AgentsPremiumPreviewPage() {
         {/* ─── KPI Section ─── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 w-full">
           <PremiumMetricCard
-            title="همکاران فعال (نمونه نمایشی)"
-            value="۸۶"
-            trend="داده‌های دمو"
+            title="همکاران تأییدشده در فهرست"
+            value={isLoadingAgents || apiError ? '—' : String(agents.filter(agent => agent.status === 'ACTIVE').length)}
             isUp={true}
             icon={Briefcase}
             variant="blue"
-            badge="نمونه نمایشی"
           />
           <PremiumMetricCard
-            title="حجم فروش کل (نمونه نمایشی)"
-            value="۱,۴۲۰M"
-            unit="تومان"
-            trend="داده‌های دمو"
+            title="همکاران در انتظار در فهرست"
+            value={isLoadingAgents || apiError ? '—' : String(agents.filter(agent => agent.status === 'PENDING').length)}
             isUp={true}
             icon={TrendingUp}
             variant="green"
-            badge="نمونه نمایشی"
           />
           <PremiumMetricCard
-            title="مشتریان فعال (نمونه نمایشی)"
-            value="۱,۷۴۰"
-            trend="داده‌های دمو"
+            title="مشتریان ثبت‌شده همکاران فهرست"
+            value={isLoadingAgents || apiError ? '—' : String(agents.reduce((sum, agent) => sum + agent.activeClientsCount, 0))}
             isUp={true}
             icon={Users}
             variant="amber"
-            badge="نمونه نمایشی"
           />
           <PremiumMetricCard
-            title="مجموع کمیسیون‌ها (نمونه نمایشی)"
-            value="۲۱۸.۵M"
-            unit="تومان"
-            description="محاسبه سیستمی / تسویه دستی"
+            title="تعداد همکاران در فهرست"
+            value={isLoadingAgents || apiError ? '—' : String(agents.length)}
+            description="حداکثر ۵۰ مورد اخیر؛ آمار این کارت‌ها مربوط به همین فهرست است."
             icon={DollarSign}
             variant="purple"
-            badge="نمونه نمایشی"
           />
         </div>
 
@@ -580,6 +469,9 @@ export default function AgentsPremiumPreviewPage() {
         </CardContent>
       </Card>
 
+      {isLoadingAgents && <p role="status" className="rounded-xl border p-6 text-center text-sm">در حال دریافت فهرست همکاران…</p>}
+      {apiError && <div role="alert" className="space-y-3 rounded-xl border border-red-200 p-4 text-sm text-red-700"><p>{apiError}</p><Button type="button" variant="outline" onClick={() => void fetchAgents()}>تلاش مجدد</Button></div>}
+      {!isLoadingAgents && !apiError && filteredAgents.length === 0 && <p className="rounded-xl border p-6 text-center text-sm text-muted-foreground">همکاری مطابق فیلترها یافت نشد.</p>}
       {/* ─── Agent Performance Showcase Cards ─── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {filteredAgents.map((agent) => (
@@ -600,7 +492,8 @@ export default function AgentsPremiumPreviewPage() {
 
                 <div className="flex flex-col items-end gap-1.5">
                   {agent.status === 'ACTIVE' && <Badge variant="success">همکار تاییدشده</Badge>}
-                  {agent.status === 'PENDING' && <Badge variant="warning">در صف احراز</Badge>}
+                  {agent.status === 'PENDING' && <Badge variant="warning">{agent.statusLabel}</Badge>}
+                  {agent.status === 'SUSPENDED' && <Badge variant="outline">{agent.statusLabel}</Badge>}
                   <Badge variant="outline" className="text-[11px] font-normal border-primary/30 text-primary bg-primary/5">
                     {agent.rank}
                   </Badge>
@@ -626,15 +519,15 @@ export default function AgentsPremiumPreviewPage() {
                   <p className="font-bold text-foreground mt-0.5 text-sm">{toPersianNum(agent.activeClientsCount)} نفر</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">مجموع حجم فروش:</p>
-                  <p className="font-bold text-foreground mt-0.5 text-sm">{agent.totalSalesVolume}</p>
+                  <p className="text-muted-foreground">مدارک ثبت‌شده:</p>
+                  <p className="font-bold text-foreground mt-0.5 text-sm">{toPersianNum(agent.documentCount)} مورد</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">کمیسیون تسویه‌شده:</p>
+                  <p className="text-muted-foreground">پورسانت با وضعیت پرداخت‌شده:</p>
                   <p className="font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 text-sm">{agent.totalCommissionPaid}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">آخرین فعالیت ثبت‌شده:</p>
+                  <p className="text-muted-foreground">تاریخ عضویت:</p>
                   <p className="font-semibold text-foreground mt-0.5">{agent.lastSale}</p>
                 </div>
               </div>
@@ -664,7 +557,7 @@ export default function AgentsPremiumPreviewPage() {
                     variant="outline" 
                     size="sm" 
                     className="h-8 px-2.5 sm:px-3 text-xs cursor-pointer flex-1 sm:flex-none"
-                    onClick={() => router.push(`/admin/sales-customers?agent=${encodeURIComponent(agent.name)}`)}
+                    onClick={() => router.push(`/admin/agents/${encodeURIComponent(agent.id)}`)}
                   >
                     ریز عملکرد
                   </Button>
@@ -673,7 +566,7 @@ export default function AgentsPremiumPreviewPage() {
                     variant="premium" 
                     size="sm" 
                     className="h-8 px-2.5 sm:px-3 text-xs cursor-pointer flex-1 sm:flex-none"
-                    onClick={() => router.push(`/admin/commissions?agent=${encodeURIComponent(agent.name)}`)}
+                    onClick={() => router.push(`/admin/agents/${encodeURIComponent(agent.id)}/financial`)}
                   >
                     مدیریت مالی و تسویه
                   </Button>
@@ -684,70 +577,11 @@ export default function AgentsPremiumPreviewPage() {
         ))}
       </div>
 
-      {/* ─── Sales Activity Table ─── */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
-            <CreditCard className="size-4 text-primary" />
-            <span>آخرین تراکنش‌ها و فروش‌های ارجاعی نمایندگان (نمونه نمایشی)</span>
-          </h2>
-          <span className="text-xs text-muted-foreground">پرداخت و تسویه به صورت دستی با تایید مدیر</span>
-        </div>
-
-        <Card variant="default" className="overflow-hidden border border-border/60">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-right">
-              <thead className="bg-muted/50 text-xs font-bold text-muted-foreground border-b border-border/60">
-                <tr>
-                  <th className="py-4 px-6">مشتری ارجاعی</th>
-                  <th className="py-4 px-4">طرح انتخابی</th>
-                  <th className="py-4 px-4">نماینده معرف</th>
-                  <th className="py-4 px-4">مبلغ تراکنش</th>
-                  <th className="py-4 px-4">سهم کمیسیون</th>
-                  <th className="py-4 px-4">وضعیت تسویه</th>
-                  <th className="py-4 px-6 text-center">زمان</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/40">
-                {recentSales.map((sale) => (
-                  <tr key={sale.id} className="hover:bg-muted/20 transition-colors">
-                    <td className="py-4 px-6">
-                      <div className="font-bold text-foreground">{sale.clientName}</div>
-                      <div className="text-xs text-muted-foreground font-mono">{sale.clientMobile}</div>
-                    </td>
-                    <td className="py-4 px-4 text-xs font-semibold text-foreground">
-                      {sale.planName}
-                    </td>
-                    <td className="py-4 px-4 text-xs font-medium text-muted-foreground">
-                      {sale.agentName}
-                    </td>
-                    <td className="py-4 px-4 text-xs font-bold font-mono text-foreground">
-                      {sale.amount}
-                    </td>
-                    <td className="py-4 px-4 text-xs font-bold font-mono text-emerald-600 dark:text-emerald-400">
-                      {sale.commission}
-                    </td>
-                    <td className="py-4 px-4">
-                      {sale.status === 'PAID' ? (
-                        <Badge variant="success">تسویه دستی انجام‌شده (نمونه آزمایشی)</Badge>
-                      ) : (
-                        <Badge variant="warning">در انتظار بررسی واریز دستی (نمونه آزمایشی)</Badge>
-                      )}
-                    </td>
-                    <td className="py-4 px-6 text-xs text-muted-foreground text-center font-mono">
-                      {sale.time}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      </div>
+      <AdminAgentRecentCommissions />
 
       {/* ─── Modal: Create Agent Modal ─── */}
       <Dialog open={createAgentModalOpen} onOpenChange={setCreateAgentModalOpen}>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="sm:max-w-xl max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg font-bold text-slate-900">
               <Plus className="size-5 text-primary" />
@@ -846,7 +680,7 @@ export default function AgentsPremiumPreviewPage() {
       </Dialog>
       {/* ─── Agent Detail Modal Dialog ─── */}
       <Dialog open={detailModalOpen} onOpenChange={setDetailModalOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <IdCard className="size-5 text-primary" />
@@ -923,6 +757,8 @@ export default function AgentsPremiumPreviewPage() {
                 <p>تاریخ عضویت: {new Date(selectedAgentDetail.createdAt).toLocaleDateString('fa-IR')}</p>
                 <p>تعداد اسناد و قراردادهای ثبت‌شده: {selectedAgentDetail._count?.documents || 0} مورد</p>
               </div>
+
+              {selectedAgentDetail.userId && <AdminUserRoleAssignment key={selectedAgentDetail.userId} userId={selectedAgentDetail.userId} />}
 
               {/* Lifecycle Audit Trail History */}
               <div className="space-y-2 pt-2 border-t border-border/40">
@@ -1099,7 +935,7 @@ export default function AgentsPremiumPreviewPage() {
 
       {/* ─── Modal: Financial Performance Report ─── */}
       <Dialog open={perfModalOpen} onOpenChange={setPerfModalOpen}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="sm:max-w-2xl max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg font-bold">
               <BarChart3 className="size-5 text-emerald-600" />
@@ -1127,26 +963,11 @@ export default function AgentsPremiumPreviewPage() {
                 حذف فیلتر
               </Button>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <div>
-                <label className="text-[11px] text-muted-foreground block mb-1">از تاریخ (ISO / میلادی):</label>
-                <Input
-                  type="date"
-                  value={perfStartDate}
-                  onChange={(e) => setPerfStartDate(e.target.value)}
-                  className="text-xs font-mono h-8"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] text-muted-foreground block mb-1">تا تاریخ (ISO / میلادی):</label>
-                <Input
-                  type="date"
-                  value={perfEndDate}
-                  onChange={(e) => setPerfEndDate(e.target.value)}
-                  className="text-xs font-mono h-8"
-                />
-              </div>
-            </div>
+            <JalaliIsoDateRangeFilter
+              from={perfStartDate}
+              to={perfEndDate}
+              onChange={({ from, to }) => { setPerfStartDate(from); setPerfEndDate(to) }}
+            />
             <Button
               size="sm"
               onClick={() => {
@@ -1155,7 +976,14 @@ export default function AgentsPremiumPreviewPage() {
               disabled={perfLoading}
               className="w-full text-xs h-8 bg-emerald-600 hover:bg-emerald-700 text-white"
             >
-              {perfLoading ? <Loader2 className="size-3.5 animate-spin ml-1" /> : <Filter className="size-3.5 ml-1" />}
+              {perfError && (
+            <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+              <p>{perfError}</p>
+              <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => { if (perfAgent) void fetchAgentPerformance(perfAgent.id, perfStartDate, perfEndDate) }}>تلاش مجدد</Button>
+            </div>
+          )}
+
+          {perfLoading ? <Loader2 className="size-3.5 animate-spin ml-1" /> : <Filter className="size-3.5 ml-1" />}
               اعمال بازه تاریخی
             </Button>
           </div>
@@ -1210,7 +1038,7 @@ export default function AgentsPremiumPreviewPage() {
                     return (
                       <div key={m.yearMonth} className="space-y-1">
                         <div className="flex justify-between text-xs font-mono">
-                          <span className="font-bold text-slate-700 dark:text-slate-300">{m.yearMonth}</span>
+                          <span className="font-bold text-slate-700 dark:text-slate-300">{formatReportMonthRange(m.yearMonth)}</span>
                           <span className="text-muted-foreground">
                             کسب‌شده: <strong className="text-emerald-600">{toPersianNum(m.earnedCommission.toLocaleString())}</strong> تومان | 
                             پرداخت‌شده: <strong className="text-purple-600">{toPersianNum(m.paidCommission.toLocaleString())}</strong> | 

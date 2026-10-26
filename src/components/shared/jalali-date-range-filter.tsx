@@ -39,7 +39,7 @@ function clampDate(value: JalaliDateParts): JalaliDateParts {
   }
 }
 
-function DateFields({
+export function JalaliDateFields({
   idPrefix,
   label,
   value,
@@ -67,7 +67,7 @@ function DateFields({
           onValueChange={(selectedYear) => updateValue({ year: Number(selectedYear) })}
           dir="rtl"
         >
-          <SelectTrigger id={`${idPrefix}-year`} className="h-9 w-full min-w-0">
+          <SelectTrigger id={`${idPrefix}-year`} aria-label={`${label} ـ سال`} className="h-9 w-full min-w-0">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -83,7 +83,7 @@ function DateFields({
           onValueChange={(selectedMonth) => updateValue({ month: Number(selectedMonth) })}
           dir="rtl"
         >
-          <SelectTrigger id={`${idPrefix}-month`} className="h-9 w-full min-w-0">
+          <SelectTrigger id={`${idPrefix}-month`} aria-label={`${label} ـ ماه`} className="h-9 w-full min-w-0">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -99,7 +99,7 @@ function DateFields({
           onValueChange={(selectedDay) => updateValue({ day: Number(selectedDay) })}
           dir="rtl"
         >
-          <SelectTrigger id={`${idPrefix}-day`} className="h-9 w-full min-w-0">
+          <SelectTrigger id={`${idPrefix}-day`} aria-label={`${label} ـ روز`} className="h-9 w-full min-w-0">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -127,14 +127,14 @@ export function JalaliDateRangeFilter({
       className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,20rem),1fr))] gap-3"
       dir="rtl"
     >
-      <DateFields
+      <JalaliDateFields
         idPrefix="jalali-range-from"
         label={fromLabel}
         value={value.from}
         yearOptions={yearOptions}
         onChange={(from) => onChange({ ...value, from })}
       />
-      <DateFields
+      <JalaliDateFields
         idPrefix="jalali-range-to"
         label={toLabel}
         value={value.to}

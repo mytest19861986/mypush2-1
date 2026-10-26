@@ -5,55 +5,27 @@ import { requirePermission } from '@/lib/auth'
 import { errorResponse, successResponse } from '@/lib/api-response'
 import { getCommissionAvailability } from '@/lib/commission-settlements'
 import { generateReferralCode } from '@/lib/referrals'
+import { getRecentReportDateRange, parseReportDateRange, type ReportDateFilter } from '@/utils/report-date-range'
+import { getUserServiceUsage } from '@/lib/user-service-usage'
 
-const dateParamPattern = /^\d{4}-\d{2}-\d{2}$/
 const safeIdPattern = /^[a-zA-Z0-9_-]+$/
 
 function isSafeId(value: string) {
   return value.length > 0 && value.length <= 100 && safeIdPattern.test(value)
 }
 
-function toInputDate(date: Date) {
-  return date.toISOString().slice(0, 10)
-}
-
-function getDefaultRange() {
-  const to = new Date()
-  const from = new Date()
-  from.setDate(to.getDate() - 29)
-
-  return {
-    from: toInputDate(from),
-    to: toInputDate(to),
-  }
-}
-
 function parseDateRange(request: NextRequest) {
-  const defaults = getDefaultRange()
+  const defaults = getRecentReportDateRange()
   const from = request.nextUrl.searchParams.get('from')?.trim() || defaults.from
   const to = request.nextUrl.searchParams.get('to')?.trim() || defaults.to
-
-  if (!dateParamPattern.test(from) || !dateParamPattern.test(to)) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
     return { ok: false as const, message: 'Invalid date range' }
   }
-
-  const fromDate = new Date(`${from}T00:00:00.000Z`)
-  const toDate = new Date(`${to}T23:59:59.999Z`)
-
-  if (
-    Number.isNaN(fromDate.getTime()) ||
-    Number.isNaN(toDate.getTime()) ||
-    fromDate.getTime() > toDate.getTime()
-  ) {
-    return { ok: false as const, message: 'Invalid date range' }
-  }
-
-  return { ok: true as const, from, to, fromDate, toDate }
+  try { return { ok: true as const, from, to, filter: parseReportDateRange(from, to) } }
+  catch { return { ok: false as const, message: 'Invalid date range' } }
 }
 
-function dateFilter(fromDate: Date, toDate: Date): Prisma.DateTimeFilter {
-  return { gte: fromDate, lte: toDate }
-}
+function dateFilter(filter: ReportDateFilter): Prisma.DateTimeFilter { return filter }
 
 function sumAmount(items: { amount: number }[]) {
   return items.reduce((total, item) => total + item.amount, 0)
@@ -133,7 +105,7 @@ export async function GET(
 
     const targetUserId = user.id
     const now = new Date()
-    const rangeCreatedAt = dateFilter(range.fromDate, range.toDate)
+    const rangeCreatedAt = dateFilter(range.filter)
     const referralCommissionWhere: Prisma.CommissionWhereInput = {
       agentId: targetUserId,
       userPlan: {
@@ -155,6 +127,7 @@ export async function GET(
       commissionRecords,
       settlementRecords,
       availability,
+      serviceUsage,
     ] = await Promise.all([
       db.userPlan.findFirst({
         where: {
@@ -324,7 +297,7 @@ export async function GET(
       db.settlement.findMany({
         where: {
           userId: targetUserId,
-          requestedAt: dateFilter(range.fromDate, range.toDate),
+          requestedAt: dateFilter(range.filter),
         },
         select: {
           amount: true,
@@ -337,6 +310,7 @@ export async function GET(
         take: 25,
       }),
       getCommissionAvailability(targetUserId),
+      getUserServiceUsage(targetUserId, range.filter),
     ])
 
     const activeCommissions = commissions.filter((commission) => commission.status !== 'CANCELLED')
@@ -393,6 +367,7 @@ export async function GET(
         })),
       },
       visits: {
+        serviceUsage,
         totalVisitsCount,
         recentVisits: recentVisits.map((visit, index) => ({
           key: `visit-${index + 1}`,
@@ -460,7 +435,7 @@ export async function GET(
       },
     })
   } catch (err) {
-    console.error('[GET /api/v1/admin/users/[id]/profile-summary]', err)
+    console.error('[GET /api/v1/admin/users/[id]/profile-summary]', err instanceof Error ? err.name : 'UnknownError')
     return errorResponse('INTERNAL_ERROR', 'Internal server error', 500)
   }
 }

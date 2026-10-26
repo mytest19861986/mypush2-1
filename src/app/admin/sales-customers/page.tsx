@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Check,
   Loader2,
@@ -51,6 +51,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { PageHeader, StatusBadge } from '@/components/shared'
 import { useToast } from '@/hooks/use-toast'
 import { ApiError, apiClient } from '@/lib/api-client'
+import { JalaliIsoDateRangeFilter } from '@/components/shared/jalali-iso-date-range-filter'
 import { cn } from '@/lib/utils'
 import { formatDateTime, isValidNationalCode } from '@/utils/formatters'
 
@@ -246,6 +247,8 @@ export default function AdminSalesCustomersPage() {
   const [customers, setCustomers] = useState<SalesCustomer[]>([])
   const [plans, setPlans] = useState<PlanOption[]>([])
   const [agentNames, setAgentNames] = useState<Record<string, string>>({})
+  const [dateRange, setDateRange] = useState({ from: '', to: '' })
+  const customerRequestId = useRef(0)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -266,6 +269,7 @@ export default function AdminSalesCustomersPage() {
   )
 
   const fetchCustomers = useCallback(async () => {
+    const requestId = ++customerRequestId.current
     setIsLoading(true)
     setErrorMessage(null)
 
@@ -275,8 +279,10 @@ export default function AdminSalesCustomersPage() {
         params.set('status', statusFilter)
       }
 
+      if (dateRange.from && dateRange.to) { params.set('from', dateRange.from); params.set('to', dateRange.to) }
       const res = await apiClient.get<SalesCustomer[]>(`/sales-customers?${params.toString()}`)
 
+      if (requestId !== customerRequestId.current) return
       if (res.success && Array.isArray(res.data)) {
         setCustomers(res.data)
       } else {
@@ -285,12 +291,13 @@ export default function AdminSalesCustomersPage() {
         setCustomers([])
       }
     } catch (error) {
+      if (requestId !== customerRequestId.current) return
       setErrorMessage(getErrorMessage(error, 'خطا در دریافت فهرست مشتریان فروش'))
       setCustomers([])
     } finally {
-      setIsLoading(false)
+      if (requestId === customerRequestId.current) setIsLoading(false)
     }
-  }, [statusFilter])
+  }, [statusFilter, dateRange])
 
   const fetchCreateOptions = useCallback(async () => {
     try {
@@ -765,6 +772,13 @@ export default function AdminSalesCustomersPage() {
           </div>
         </div>
       </div>
+
+      <section aria-label="بازه تاریخ ثبت مشتریان" className="space-y-3 rounded-2xl border bg-card p-4">
+        <p className="text-sm font-semibold">{statusFilter === 'RETURNED' ? 'بازهٔ تاریخ مرجوعی مشتریان' : 'بازهٔ تاریخ ثبت مشتریان'} — تقویم شمسی، به وقت تهران</p>
+        <JalaliIsoDateRangeFilter {...dateRange} onChange={setDateRange} />
+        {(dateRange.from || dateRange.to) && <Button type="button" variant="outline" size="sm" onClick={() => setDateRange({ from: '', to: '' })}>همهٔ تاریخ‌ها</Button>}
+        <p className="text-xs text-muted-foreground">حداکثر ۵۰ رکورد آخر مطابق فیلتر نمایش داده می‌شود.</p>
+      </section>
 
       {isLoading ? (
         <LoadingCustomers />

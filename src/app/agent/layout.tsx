@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { CommissionPaymentEntry } from '@/components/shared/commission-payment-entry'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { AgentRoute } from '@/components/guards/AgentRoute'
@@ -70,6 +71,7 @@ function SidebarContent({
       {/* Navigation */}
       <ScrollArea className="flex-1 px-3 py-2">
         <nav className="flex flex-col gap-1">
+          <CommissionPaymentEntry />
           {phase1DemoAgentDashboardNav.map((item) => {
             const isActive = pathname === item.href
             const Icon = item.icon
