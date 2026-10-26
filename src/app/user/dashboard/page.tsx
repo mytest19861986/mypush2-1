@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import Link from 'next/link'
 import { apiClient } from '@/lib/api-client'
+import { isReferralStats, type ReferralStats } from '@/lib/referral-stats-contract'
 import { DEMO_SCOPE_PHASE_1 } from '@/config/demo-scope'
 import { useAuthStore } from '@/stores/auth-store'
 import { useToast } from '@/hooks/use-toast'
@@ -996,23 +997,34 @@ function ReferralCodeCard({ referralCode }: { referralCode?: string | null }) {
 }
 
 function ReferredUsersCard() {
-  const [stats, setStats] = useState<{ totalReferrals: number; referrals: Array<{ id: string; referredUserId: string; maskedMobile: string; name: string; attributedAt: string }> } | null>(null)
+  const [stats, setStats] = useState<ReferralStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+  const [reload, setReload] = useState(0)
 
   useEffect(() => {
     let mounted = true
-    apiClient.get<{ totalReferrals: number; referrals: Array<{ id: string; referredUserId: string; maskedMobile: string; name: string; attributedAt: string }> }>('/referrals/stats')
+    apiClient.get<ReferralStats>('/referrals/stats')
       .then(res => {
-        if (mounted && res.success && res.data) {
-          setStats(res.data)
+        if (!res.success || !isReferralStats(res.data)) throw new Error('Invalid referral response')
+        if (mounted) setStats(res.data)
+      })
+      .catch(() => {
+        if (mounted) {
+          setStats(null)
+          setError(true)
         }
       })
-      .catch(() => {})
-      .finally(() => {
-        if (mounted) setLoading(false)
-      })
+      .finally(() => { if (mounted) setLoading(false) })
     return () => { mounted = false }
-  }, [])
+  }, [reload])
+
+  const retry = () => {
+    setStats(null)
+    setError(false)
+    setLoading(true)
+    setReload(value => value + 1)
+  }
 
   return (
     <Card className="rounded-2xl border border-slate-100/60 bg-card shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:border-slate-800/60">
@@ -1023,7 +1035,7 @@ function ReferredUsersCard() {
             <span>اعضای معرفی‌شده شما</span>
           </CardTitle>
           <Badge variant="outline" className="text-xs">
-            {stats ? toPersianNum(stats.totalReferrals) : '۰'} نفر
+            {loading ? 'در حال دریافت' : stats && !error ? `${toPersianNum(stats.totalReferrals)} نفر` : 'نامشخص'}
           </Badge>
         </div>
       </CardHeader>
@@ -1033,21 +1045,21 @@ function ReferredUsersCard() {
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
           </div>
-        ) : !stats || stats.referrals.length === 0 ? (
+        ) : error || !stats ? (
+          <div role="alert" className="space-y-3 rounded-2xl border border-destructive/30 p-4 text-sm">
+            <p>دریافت آمار ارجاع ممکن نیست. وضعیت ارجاع‌ها در حال حاضر نامشخص است.</p>
+            <Button variant="outline" size="sm" onClick={retry}>تلاش مجدد</Button>
+          </div>
+        ) : stats.totalReferrals === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-200/80 bg-background/70 p-4 text-center text-xs text-muted-foreground">
             هنوز عضوی با لینک معرفی شما ثبت‌نام نکرده است.
           </div>
         ) : (
           <div className="divide-y rounded-xl border border-slate-100/70 bg-background dark:border-slate-800/70">
-            {stats.referrals.map((ref) => (
-              <div key={ref.id} className="flex items-center justify-between p-3 text-xs">
-                <div>
-                  <p className="font-semibold">{ref.name}</p>
-                  <p className="font-mono text-muted-foreground">{ref.maskedMobile}</p>
-                </div>
-                <Badge variant="secondary" className="text-[10px]">
-                  ثبت‌شده
-                </Badge>
+            {stats.referrals.map((member, index) => (
+              <div key={index} className="flex items-center justify-between p-3 text-xs">
+                <p className="font-semibold">{member.label}</p>
+                <Badge variant="secondary" className="text-[10px]">ثبت‌شده</Badge>
               </div>
             ))}
           </div>
