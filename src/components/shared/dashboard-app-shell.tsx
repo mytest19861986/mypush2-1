@@ -107,6 +107,14 @@ export function DashboardAppShell({
 
   const roleTitle = user?.roles?.[0] || 'SUPER_ADMIN'
 
+  const profileHref = (user?.roles?.includes('SUPER_ADMIN') || user?.roles?.includes('ADMIN') || user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN')
+    ? '/admin-profile-premium-preview'
+    : (user?.roles?.includes('DOCTOR') || user?.role === 'DOCTOR')
+      ? '/doctor/profile'
+      : (user?.roles?.includes('SALES_PARTNER') || user?.roles?.includes('AGENT') || user?.role === 'SALES_PARTNER' || user?.role === 'AGENT')
+        ? '/agent/profile'
+        : '/user/profile'
+
   const userInitials = user?.profile?.firstName
     ? `${(user.profile.firstName || '').charAt(0)}${(user.profile.lastName || '').charAt(0)}`
     : (user?.mobile || '').slice(-2) || 'م‌س'
@@ -449,7 +457,7 @@ export function DashboardAppShell({
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="my-1 bg-slate-100" />
                 <DropdownMenuItem asChild>
-                  <Link href="/profile" className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors">
+                  <Link href={profileHref} className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors">
                     <Users className="size-4 text-slate-500" />
                     <span>پروفایل من</span>
                   </Link>
