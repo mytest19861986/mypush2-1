@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { successResponse, errorResponse } from '@/lib/api-response'
 import { db } from '@/lib/db'
-import { verifyOTP } from '@/lib/otp'
+import { verifyOTP, isDemoFixedOTPEnabled, isTestFixedOTPAllowedForMobile } from '@/lib/otp'
 import { buildUserResponse, generateAuthTokens, getClientIp } from '../_helpers'
 import { DEMO_SCOPE_PHASE_1 } from '@/config/demo-scope'
 import { generateAccessToken, generateRefreshToken } from '@/lib/jwt'
@@ -68,8 +68,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Demo Mode Isolation: Only allowed if explicitly in non-production AND DEMO_SCOPE_PHASE_1 is true
-    if (DEMO_SCOPE_PHASE_1 && process.env.NODE_ENV !== 'production') {
+    // Enforce Test Fixed OTP allowlist before verification when Test Fixed OTP mode is active
+    if (isDemoFixedOTPEnabled() && !isTestFixedOTPAllowedForMobile(mobile)) {
+      return errorResponse(
+        'FORBIDDEN',
+        'در حالت آزمون OTP ثابت، ورود فقط برای حساب‌های آزمایشی مجاز چهار نقش امکان‌پذیر است',
+        403
+      )
+    }
+
+    // Demo Mode Isolation: Only allowed if explicitly in non-production AND DEMO_SCOPE_PHASE_1 is true AND Test Fixed OTP DB flow is not active
+    if (DEMO_SCOPE_PHASE_1 && process.env.NODE_ENV !== 'production' && !isDemoFixedOTPEnabled()) {
       if (code !== '12345') {
         return errorResponse('OTP_INVALID', 'کد تایید وارد شده نادرست است', 401)
       }
@@ -84,6 +93,9 @@ export async function POST(request: NextRequest) {
       })
 
       if (dbUser) {
+        if (dbUser.status !== 'ACTIVE' || dbUser.deletedAt) {
+          return errorResponse('USER_BLOCKED', 'حساب کاربری شما مسدود یا غیرفعال شده است', 403)
+        }
         const tokens = await generateAuthTokens({
           userId: dbUser.id,
           device,
@@ -179,8 +191,8 @@ export async function POST(request: NextRequest) {
       return errorResponse('USER_NOT_FOUND', 'کاربر یافت نشد', 404)
     }
 
-    if (user.status === 'BLOCKED') {
-      return errorResponse('USER_BLOCKED', 'حساب کاربری شما مسدود شده است', 403)
+    if (user.status !== 'ACTIVE' || user.deletedAt) {
+      return errorResponse('USER_BLOCKED', 'حساب کاربری شما مسدود یا غیرفعال شده است', 403)
     }
 
     // Update mobile verification status

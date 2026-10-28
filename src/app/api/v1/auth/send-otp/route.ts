@@ -2,7 +2,15 @@ import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { successResponse, errorResponse } from '@/lib/api-response'
 import { db } from '@/lib/db'
-import { getOTPForSend, storeOTP, canResendOTP, recordOTPSend, getOTPAttempts } from '@/lib/otp'
+import {
+  getOTPForSend,
+  storeOTP,
+  canResendOTP,
+  recordOTPSend,
+  getOTPAttempts,
+  isTestFixedOTPAllowedForMobile,
+  isDemoFixedOTPEnabled,
+} from '@/lib/otp'
 import { rateLimit } from '@/lib/rate-limit'
 import { createAuditLog, AuditActions } from '@/lib/audit'
 import { DEMO_SCOPE_PHASE_1 } from '@/config/demo-scope'
@@ -45,35 +53,7 @@ export async function POST(request: NextRequest) {
 
     const purpose = parsed.data.purpose ?? 'login'
 
-    // Demo Mode Isolation: strictly forbidden in real production environment
-    if (DEMO_SCOPE_PHASE_1 && process.env.NODE_ENV !== 'production') {
-      const DEMO_ACCOUNTS: Record<string, string> = {
-        '09999999999': '12345',
-        '09222222222': '12345',
-        '09123456789': '12345',
-        '09111111111': '12345',
-        '09333333333': '12345',
-      }
-
-      if (DEMO_ACCOUNTS[mobile] || purpose === 'register') {
-        return successResponse(
-          {
-            canResend: true,
-            expiresIn: 120,
-          },
-          'کد تایید ارسال شد'
-        )
-      }
-
-      return errorResponse(
-        'USER_NOT_FOUND',
-        'در محیط دمو لطفاً از شماره‌های تاییدشده آزمایشی (مانند 09999999999) استفاده کنید',
-        400
-      )
-    }
-
-
-    // Rate limit check: IP and Mobile
+    // Rate limit check: IP and Mobile (enforced in all modes including Test fixed OTP)
     const ip = getClientIp(request)
     const ipLimit = sendOtpIpLimiter.check(`send-otp-ip:${ip}`)
     if (!ipLimit.allowed) {
@@ -104,7 +84,35 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Demo accounts must exist from seed (password login) — do not auto-create as plain USER
+    // Demo Mode Isolation: strictly forbidden in real production environment
+    // When Test Fixed OTP is enabled, use the real DB-backed flow below so OTP records, rate limits, and roles are verified.
+    if (DEMO_SCOPE_PHASE_1 && process.env.NODE_ENV !== 'production' && !isDemoFixedOTPEnabled()) {
+      const DEMO_ACCOUNTS: Record<string, string> = {
+        '09999999999': '12345',
+        '09222222222': '12345',
+        '09123456789': '12345',
+        '09111111111': '12345',
+        '09333333333': '12345',
+      }
+
+      if (DEMO_ACCOUNTS[mobile] || purpose === 'register') {
+        return successResponse(
+          {
+            canResend: true,
+            expiresIn: 120,
+          },
+          'کد تایید ارسال شد'
+        )
+      }
+
+      return errorResponse(
+        'USER_NOT_FOUND',
+        'در محیط دمو لطفاً از شماره‌های تاییدشده آزمایشی (مانند 09999999999) استفاده کنید',
+        400
+      )
+    }
+
+    // Demo accounts must exist from seed — do not auto-create as plain USER
     const SEEDED_DEMO_MOBILES = [
       '09999999999',
       '09222222222',
@@ -113,15 +121,24 @@ export async function POST(request: NextRequest) {
       '09333333333',
     ]
 
+    // When Test Fixed OTP is enabled, reject non-allowlisted mobile numbers on login
+    if (isDemoFixedOTPEnabled() && !isTestFixedOTPAllowedForMobile(mobile)) {
+      return errorResponse(
+        'FORBIDDEN',
+        'در حالت آزمون OTP ثابت، فقط حساب‌های آزمایشی مجاز چهار نقش قابل استفاده هستند',
+        403
+      )
+    }
+
     // Find or create user
     let user = await db.user.findUnique({
       where: { mobile },
     })
 
-    if (!user && SEEDED_DEMO_MOBILES.includes(mobile)) {
+    if (!user && (SEEDED_DEMO_MOBILES.includes(mobile) || isTestFixedOTPAllowedForMobile(mobile))) {
       return errorResponse(
         'USER_NOT_FOUND',
-        'این شماره حساب آزمایشی است. از تب «رمز عبور» با رمز seed وارد شوید (مدیر: Admin@123456)',
+        'این شماره حساب آزمایشی در دیتابیس یافت نشد یا غیرفعال است',
         404
       )
     }
@@ -201,23 +218,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Check user status
-    if (user && user.status === 'BLOCKED') {
+    if (user && (user.status !== 'ACTIVE' || user.deletedAt)) {
       return errorResponse(
         'USER_BLOCKED',
-        'حساب کاربری شما مسدود شده است',
+        'حساب کاربری شما مسدود یا غیرفعال شده است',
         403
       )
     }
 
-    // Generate and store OTP in database. Demo fixed OTP is env-gated in getOTPForSend().
-    const otp = getOTPForSend()
+    // Generate and store OTP in database. Test fixed OTP is strictly gated per allowlisted mobile in getOTPForSend(mobile).
+    const otp = getOTPForSend(mobile)
     await storeOTP(mobile, otp)
     await recordOTPSend(mobile)
-
-    // Development only: never log OTP values in production.
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(`[DEV OTP] Mobile: ${mobile}, Code: ${otp}`)
-    }
 
     const { remaining } = await getOTPAttempts(mobile)
     const canResendFlag = remaining > 0
@@ -226,7 +238,7 @@ export async function POST(request: NextRequest) {
       {
         canResend: canResendFlag,
         expiresIn: 120,
-        // Development only: return OTP in response
+        // Development only: never expose OTP in production responses
         otp: process.env.NODE_ENV !== 'production' ? otp : undefined,
       },
       'کد تایید ارسال شد'

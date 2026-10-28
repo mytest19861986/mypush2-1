@@ -11,22 +11,107 @@ const MAX_RESEND_ATTEMPTS = 3
 const RESEND_WINDOW_MS = 5 * 60 * 1000 // 5 minutes
 const OTP_CODE_PATTERN = /^\d{5}$/
 
+/**
+ * Authorized synthetic test accounts for the four required roles in Test environment:
+ * - 09999999999: ADMIN / SUPER_ADMIN
+ * - 09222222222: DOCTOR
+ * - 09111111111: USER
+ * - 09123456789: AGENT (Sales Partner / همکار فروش)
+ */
+export const DEFAULT_TEST_OTP_ALLOWLIST = [
+  '09999999999',
+  '09222222222',
+  '09111111111',
+  '09123456789',
+] as const
+
+/**
+ * Check whether Test Fixed OTP is explicitly enabled AND the runtime is verified as the Test environment.
+ * Fails closed (returns false) in production or when environment is unspecified/ambiguous.
+ *
+ * Environment validation rules (Stage22J / F-22I-01 fix):
+ * - HAMI_ENV and APP_ENV are read and normalized independently.
+ * - If EITHER variable is explicitly 'production' or 'prod', fixed OTP is disabled immediately.
+ * - If BOTH variables are defined and non-empty, they must agree (no conflict); otherwise fail closed.
+ * - If neither variable indicates production, fixed OTP is allowed only if:
+ *   - At least one of HAMI_ENV or APP_ENV is explicitly 'test', OR
+ *   - Neither is set and NODE_ENV is explicitly 'test' or 'development'.
+ * - Must always have TEST_FIXED_OTP_ENABLED or DEMO_FIXED_OTP_ENABLED set to 'true'.
+ */
 export function isDemoFixedOTPEnabled(): boolean {
-  return process.env['DEMO_FIXED_OTP_ENABLED'] === 'true'
+  const enabledFlag =
+    process.env['TEST_FIXED_OTP_ENABLED'] === 'true' ||
+    process.env['DEMO_FIXED_OTP_ENABLED'] === 'true'
+  if (!enabledFlag) {
+    return false
+  }
+
+  const rawHamiEnv = process.env['HAMI_ENV']
+  const rawAppEnv = process.env['APP_ENV']
+  const hamiEnv = (rawHamiEnv ?? '').trim().toLowerCase()
+  const appEnv = (rawAppEnv ?? '').trim().toLowerCase()
+  const nodeEnv = (process.env['NODE_ENV'] || '').trim().toLowerCase()
+
+  const isHamiProd = hamiEnv === 'production' || hamiEnv === 'prod'
+  const isAppProd = appEnv === 'production' || appEnv === 'prod'
+
+  // Fail closed if either variable explicitly marks production
+  if (isHamiProd || isAppProd) {
+    return false
+  }
+
+  // If both are defined and non-empty, fail closed if they conflict
+  if (hamiEnv && appEnv && hamiEnv !== appEnv) {
+    return false
+  }
+
+  // Allow only when explicitly marked as 'test' in HAMI_ENV or APP_ENV
+  if (hamiEnv === 'test' || appEnv === 'test') {
+    return true
+  }
+
+  // In local test/development where neither custom env is defined
+  if (!hamiEnv && !appEnv && (nodeEnv === 'test' || nodeEnv === 'development')) {
+    return true
+  }
+
+  // Ambiguous, conflicting, or production NODE_ENV without explicit verified test env -> fail closed
+  return false
+}
+
+export function getAllowedTestOTPMobiles(): Set<string> {
+  const raw = process.env['TEST_FIXED_OTP_ALLOWED_MOBILES']?.trim()
+  if (raw) {
+    return new Set(
+      raw
+        .split(',')
+        .map((m) => m.trim())
+        .filter((m) => /^09\d{9}$/.test(m))
+    )
+  }
+  return new Set(DEFAULT_TEST_OTP_ALLOWLIST)
+}
+
+export function isTestFixedOTPAllowedForMobile(mobile: string): boolean {
+  if (!isDemoFixedOTPEnabled()) {
+    return false
+  }
+  return getAllowedTestOTPMobiles().has(mobile)
 }
 
 /**
- * Demo/staging only: use a fixed OTP from the environment when explicitly enabled.
- * Never enable DEMO_FIXED_OTP_ENABLED for real production users.
+ * Demo/Test only: use a fixed OTP from the environment ONLY when explicitly enabled in Test
+ * and ONLY for allowlisted test mobile numbers.
+ * Never enable for real production users or arbitrary mobile numbers.
  */
-export function getOTPForSend(): string {
-  if (!isDemoFixedOTPEnabled()) {
+export function getOTPForSend(mobile?: string): string {
+  if (!mobile || !isTestFixedOTPAllowedForMobile(mobile)) {
     return generateOTP()
   }
 
-  const fixedOTP = process.env['DEMO_FIXED_OTP']?.trim()
-  if (!fixedOTP || !OTP_CODE_PATTERN.test(fixedOTP)) {
-    throw new Error('DEMO_FIXED_OTP must be exactly 5 digits when DEMO_FIXED_OTP_ENABLED is true')
+  const fixedOTP = (process.env['TEST_FIXED_OTP'] || process.env['DEMO_FIXED_OTP'] || '12345').trim()
+  if (!OTP_CODE_PATTERN.test(fixedOTP)) {
+    throw new Error('Fixed OTP must be exactly 5 digits when Test Fixed OTP is enabled')
   }
 
   return fixedOTP
