@@ -105,13 +105,13 @@ export function DashboardAppShell({
     ? `${user.profile.firstName} ${user.profile.lastName}`
     : (user?.profile?.firstName || 'مدیر کل سیستم')
 
-  const roleTitle = user?.roles?.[0] || 'SUPER_ADMIN'
+  const roleTitle = (user as any)?.roles?.[0] || 'SUPER_ADMIN'
 
-  const profileHref = (user?.roles?.includes('SUPER_ADMIN') || user?.roles?.includes('ADMIN') || user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN')
+  const profileHref = ((user as any)?.roles?.includes('SUPER_ADMIN') || (user as any)?.roles?.includes('ADMIN') || (user as any)?.role === 'SUPER_ADMIN' || (user as any)?.role === 'ADMIN')
     ? '/admin-profile-premium-preview'
-    : (user?.roles?.includes('DOCTOR') || user?.role === 'DOCTOR')
+    : ((user as any)?.roles?.includes('DOCTOR') || (user as any)?.role === 'DOCTOR')
       ? '/doctor/profile'
-      : (user?.roles?.includes('SALES_PARTNER') || user?.roles?.includes('AGENT') || user?.role === 'SALES_PARTNER' || user?.role === 'AGENT')
+      : ((user as any)?.roles?.includes('SALES_PARTNER') || (user as any)?.roles?.includes('AGENT') || (user as any)?.role === 'SALES_PARTNER' || (user as any)?.role === 'AGENT')
         ? '/agent/profile'
         : '/user/profile'
 
